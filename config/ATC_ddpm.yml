@@ -1,0 +1,59 @@
+DATA_AGGREGATION:
+  RAW_DATA_DIR: 'datasets/ATC/rawData/'
+  AGG_DATA_DIR: 'datasets/ATC/aggData/'
+PICKLE:
+  PICKLE_DIR: 'datasets/ATC/pickle/'
+  USE_PICKLE: False
+MACROPROPS:
+  # Grid size
+  ROWS: 12
+  COLS: 36
+  # Grid resolution
+  DX: 1.0
+  DY: 1.0
+  # Section of ATC mall: central square [-25,10], east corridor [10,-20], init mall [12, -15]
+  LU:
+    - 38.2789
+    - -15.8076
+  # EPSILON value to avoid division by cero
+  EPS: 0.000001
+  OVERLAP: True
+  THETA: 2.5647
+  TIME_RES: 0.5
+DATASET:
+  NAME: "ATC2D"
+  OBS_LEN: 1
+  PRED_LEN: 1
+  TRAIN_FILE_COUNT: 3
+  VAL_FILE_COUNT: 2
+  TEST_FILE_COUNT: 1
+  params: 
+    batch_size: 64
+    shuffle: True
+    num_workers: 6
+MODEL:
+  CONDITION: "None"
+  NUM_RES_BLOCKS: 1
+  BASE_CH: 32  # 64, 128, 256, 512
+  BASE_CH_MULT: [1, 2, 4] # 32, 16, 8, 4
+  APPLY_ATTENTION: [False, True, False]
+  DROPOUT_RATE: 0.05
+  TIME_EMB_MULT: 4 # 128
+  SAVE_DIR: "saved_models/"
+  MODEL_NAME: "UNet_Macropros2D_E{}_LR{}.pth"
+  RETRAIN: False
+  MIN_RHO_4_PRED: 20
+DIFFUSION:
+  SAMPLER: "DDIM"
+  TIMESTEPS: 1000  # Define canonical number of diffusion timesteps
+  DDIM_DIVIDER: 90 # Define number of timesteps to divide by
+  NSAMPLES: 5   # Define number of samples: how many samples do we want -> preds
+TRAIN:
+  INITIAL_LR: 0.0005
+  EPOCHS: 600
+  SOLVER:
+    LR: 0.00001
+    WEIGHT_DECAY: 0.003
+    BETAS:
+      - 0.5
+      - 0.999
