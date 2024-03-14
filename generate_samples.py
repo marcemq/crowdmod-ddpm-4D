@@ -92,7 +92,7 @@ def generate_samples(cfg, filenames):
         plt.suptitle("Sampling for diffusion process", y=0.95)
         plt.axis("off")
         plt.show()
-        match = re.search(r'_E\d+_LR\d+', model_fullname)
+        match = re.search(r'_E\d+_LR\de-\d+', model_fullname)
         fig.savefig(f"images/mpSampling_{match.group()}.svg", format='svg', bbox_inches='tight')
         break
 
