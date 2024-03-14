@@ -55,7 +55,7 @@ class ResnetBlock(nn.Module):
 
         # Group 2
         # add in timestep embedding
-        h += self.dense_1(self.activation(t))[:, :, None, None, None]
+        h += self.dense_1(self.activation(t))[:, :, None, None]
 
         # Group 3
         h = self.activation(self.normalize_2(h))
@@ -82,6 +82,6 @@ class UpSample(nn.Module):
         super().__init__()
         self.upsample = nn.Sequential(
             nn.Upsample(scale_factor=2, mode="nearest"),
-            nn.Con2d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1))
+            nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1))
     def forward(self, x, *args):
         return self.upsample(x)

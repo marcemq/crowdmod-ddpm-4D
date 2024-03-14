@@ -50,7 +50,7 @@ DIFFUSION:
   NSAMPLES: 5   # Define number of samples: how many samples do we want -> preds
 TRAIN:
   INITIAL_LR: 0.0005
-  EPOCHS: 600
+  EPOCHS: 60
   SOLVER:
     LR: 0.00001
     WEIGHT_DECAY: 0.003

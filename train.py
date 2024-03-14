@@ -1,5 +1,5 @@
 import sys
-import os
+import os, re
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
@@ -70,7 +70,7 @@ def train(cfg, filenames, show_losses_plot=False):
 
         # One epoch of training
         epoch_loss = train_one_epoch(denoiser,diffusionmodel,batched_train_data,optimizer,device,epoch=epoch,total_epochs=cfg.TRAIN.EPOCHS)
-        wandb.log({"loss": epoch_loss})
+        wandb.log({"loss_2D": epoch_loss})
         if epoch_loss < best_loss:
             best_loss = epoch_loss
             # Save best checkpoints -> AR, shouldn't we save diffusionmodel too?? I think it also has weigths, isn't?
@@ -81,7 +81,8 @@ def train(cfg, filenames, show_losses_plot=False):
             if not os.path.exists(cfg.MODEL.SAVE_DIR):
                 # Create a new directory if it does not exist
                 os.makedirs(cfg.MODEL.SAVE_DIR)
-            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS))
+            lr_parts = str(cfg.TRAIN.SOLVER.LR).split('.')
+            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_parts[0]))
             torch.save(checkpoint_dict, save_path)
             del checkpoint_dict
 

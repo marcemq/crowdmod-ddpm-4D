@@ -24,7 +24,7 @@ class MacroprosDenoiser(nn.Module):
         time_emb_dims_exp    = base_channels * time_multiple
         self.time_embeddings = SinusoidalPositionEmbeddings(time_emb_dims=base_channels, time_emb_dims_exp=time_emb_dims_exp)
 
-        self.first = nn.Conv3d(in_channels=input_channels, out_channels=base_channels, kernel_size=3, stride=1, padding="same")
+        self.first = nn.Conv2d(in_channels=input_channels, out_channels=base_channels, kernel_size=3, stride=1, padding="same")
 
         num_resolutions = len(base_channels_multiples)
 
@@ -106,7 +106,7 @@ class MacroprosDenoiser(nn.Module):
         self.final = nn.Sequential(
             nn.GroupNorm(num_groups=8, num_channels=in_channels), #AR: not sure about 8
             nn.SiLU(),
-            nn.Conv3d(in_channels=in_channels, out_channels=output_channels, kernel_size=3, stride=1, padding="same"),
+            nn.Conv2d(in_channels=in_channels, out_channels=output_channels, kernel_size=3, stride=1, padding="same"),
         )
 
     def forward(self, x, t):
