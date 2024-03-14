@@ -2,7 +2,7 @@ DATA_AGGREGATION:
   RAW_DATA_DIR: 'datasets/ATC/rawData/'
   AGG_DATA_DIR: 'datasets/ATC/aggData/'
 PICKLE:
-  PICKLE_DIR: 'datasets/ATC/pickle/'
+  PICKLE_DIR: '/datasets/ATC/processed/'
   USE_PICKLE: False
 MACROPROPS:
   # Grid size
@@ -21,7 +21,7 @@ MACROPROPS:
   THETA: 2.5647
   TIME_RES: 0.5
 DATASET:
-  NAME: "ATC2D"
+  NAME: "ATC-2D"
   OBS_LEN: 1
   PRED_LEN: 1
   TRAIN_FILE_COUNT: 3
@@ -40,14 +40,14 @@ MODEL:
   DROPOUT_RATE: 0.05
   TIME_EMB_MULT: 4 # 128
   SAVE_DIR: "saved_models/"
-  MODEL_NAME: "UNet_Macropros2D_E{}_LR{}.pth"
+  MODEL_NAME: "UNet_Macroprops2D_E{}_LR{}.pth"
   RETRAIN: False
   MIN_RHO_4_PRED: 20
 DIFFUSION:
   SAMPLER: "DDIM"
   TIMESTEPS: 1000  # Define canonical number of diffusion timesteps
   DDIM_DIVIDER: 90 # Define number of timesteps to divide by
-  NSAMPLES: 5   # Define number of samples: how many samples do we want -> preds
+  NSAMPLES: 2   # Define number of samples: how many samples do we want -> preds
 TRAIN:
   INITIAL_LR: 0.0005
   EPOCHS: 600
