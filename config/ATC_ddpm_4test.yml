@@ -47,7 +47,7 @@ DIFFUSION:
   SAMPLER: "DDIM"
   TIMESTEPS: 1000  # Define canonical number of diffusion timesteps
   DDIM_DIVIDER: 90 # Define number of timesteps to divide by
-  NSAMPLES: 5   # Define number of samples: how many samples do we want -> preds
+  NSAMPLES: 2   # Define number of samples: how many samples do we want -> preds
 TRAIN:
   INITIAL_LR: 0.0005
   EPOCHS: 60

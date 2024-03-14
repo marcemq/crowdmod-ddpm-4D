@@ -51,7 +51,7 @@ def predTraining(cfg, filenames, show_losses_plot=False):
         noisy_images.append(xts)
 
     # Plot and see samples at different timesteps
-    fig, ax = plt.subplots(len(noisy_images), 1, figsize=(9, 11), facecolor='white')
+    fig, ax = plt.subplots(len(noisy_images), 1, figsize=(5, 11), facecolor='white')
     fig.subplots_adjust(hspace=0.5)
     print(f'Shape of  batch of noisy_images:{noisy_images[0].shape}')
     # Display the results row by row

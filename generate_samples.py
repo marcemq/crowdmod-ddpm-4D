@@ -12,24 +12,23 @@ from torchvision.utils import make_grid
 
 def inverseTransform(y, stats):
     stats = stats[0,:,:]
-    print(f'stats shape:{stats.shape}')
-    print(f'y shape:{y.shape}')
+    yt = torch.randn_like(y)
     for i in range(1, len(stats)-1):
-        y[:,i,:,:,:] = (y[:,i,:,:,:] + 1)/2 * (stats[i,3] - stats[i,2]) + stats[i,2]
-    return y
+        yt[:,i,:,:] = (y[:,i,:,:] + 1)/2 * (stats[i,3] - stats[i,2]) + stats[i,2]
+    return yt
 
 def getGrid(x, cols, mode="RGB", showGrid=False):
-    "x shape: BxCHxRxCxObsLen"
+    "x shape: NsamplesxCHxRxC"
     # Set as grid and show
-    mp_as_img = x[1,:,:,:,:].permute(3,0,1,2)
+    #mp_as_img = x[0,:,:,:].permute(3,0,1,2)
     if mode == "RGB":
-        mp_as_img = mp_as_img[:,0:3,:,:]
+        mp_as_img = x[:,0:3,:,:]
     elif mode == "GRAY":
-        mp_as_img = mp_as_img[:,0:1,:,:]
-    print(f'first element in batch:{mp_as_img.shape}')
+        mp_as_img = x[:,0:1,:,:]
+
     grid_img = make_grid(mp_as_img, nrow=cols, padding=True, pad_value=1, normalize=True)
     if showGrid:
-        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.imshow(grid_img, cmap='gray')
         plt.axis("off")
         plt.show()
     return grid_img
@@ -48,8 +47,9 @@ def generate_samples(cfg, filenames):
                                 apply_attention         = cfg.MODEL.APPLY_ATTENTION,
                                 dropout_rate            = cfg.MODEL.DROPOUT_RATE,
                                 time_multiple           = cfg.MODEL.TIME_EMB_MULT)
-    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS))
-    model_fullname = "saved_models/UNet_Macropros_E1000_LR0000005.pth"
+    lr_parts = str(cfg.TRAIN.SOLVER.LR).split('.')
+    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_parts[0]))
+
     print(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
@@ -72,16 +72,19 @@ def generate_samples(cfg, filenames):
             print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
         for i in range(len(xnoisy_over_time)):
-            xts      = getGrid(xnoisy_over_time[i], cfg.DATASET.OBS_LEN, mode="GRAY")
+            xts      = xnoisy_over_time[i]
+            xts      = inverseTransform(xts, stats)
             noisy_images.append(xts)
         
         # Plot and see samples at different timesteps
-        fig, ax = plt.subplots(len(noisy_images), 1, figsize=(12, 11), facecolor='white')
+        fig, ax = plt.subplots(len(noisy_images), 1, figsize=(5, 11), facecolor='white')
         fig.subplots_adjust(hspace=0.5)
 
         # Display the results row by row
         for i, (timestep, noisy_sample) in enumerate(zip(reversed(taus), noisy_images)):
-            ax[i].imshow(noisy_sample.permute(1, 2, 0))
+            one_noisy_sample = noisy_sample[0]
+            one_noisy_sample_gray = torch.squeeze(one_noisy_sample[0:1,:,:], axis=0)
+            ax[i].imshow(one_noisy_sample_gray, cmap='gray')
             ax[i].set_title(f"t={timestep}", fontsize=10)
             ax[i].axis("off")
             ax[i].grid(False)
