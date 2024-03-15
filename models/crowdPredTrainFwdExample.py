@@ -34,7 +34,7 @@ def predTraining(cfg, filenames, show_losses_plot=False):
     x_train, y_train = x_train.to(device=device), y_train.to(device=device)
 
     # Instantiate a forward sampler
-    fwdSampler = ForwardSampler(1000)
+    fwdSampler = ForwardSampler(timesteps=1000, scale=cfg.DIFFUSION.SCALE)
     # Keeping the results for visualization
     noisy_images = []
 

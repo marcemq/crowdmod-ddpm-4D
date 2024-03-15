@@ -59,7 +59,7 @@ def train(cfg, filenames, show_losses_plot=False):
     optimizer = optim.Adam(denoiser.parameters(),lr=cfg.TRAIN.SOLVER.LR, betas=cfg.TRAIN.SOLVER.BETAS,weight_decay=cfg.TRAIN.SOLVER.WEIGHT_DECAY)
 
     # Instantiate the diffusion model
-    diffusionmodel = DDPM(timesteps = cfg.DIFFUSION.TIMESTEPS)
+    diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS, scale=cfg.DIFFUSION.SCALE)
     diffusionmodel.to(device)
 
     # Training loop
@@ -82,7 +82,8 @@ def train(cfg, filenames, show_losses_plot=False):
                 # Create a new directory if it does not exist
                 os.makedirs(cfg.MODEL.SAVE_DIR)
             lr_parts = str(cfg.TRAIN.SOLVER.LR).split('.')
-            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_parts[0]))
+            scale_parts = str(cfg.DIFFUSION.SCALE).split('.')
+            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_parts[0], scale_parts[1]))
             torch.save(checkpoint_dict, save_path)
             del checkpoint_dict
 

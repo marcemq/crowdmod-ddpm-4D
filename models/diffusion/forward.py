@@ -7,14 +7,14 @@ def get_from_idx(element: torch.Tensor, idx: torch.Tensor):
 
 # This class implements the forward diffusion process
 class ForwardSampler(nn.Module):
-    def __init__(self, timesteps=1000, beta_start=1e-4, beta_end=2e-2):
+    def __init__(self, timesteps=1000, scale=1, beta_start=1e-4, beta_end=2e-2):
         super().__init__()
         # Total number of steps in the diffusion process
         self.timesteps = timesteps
         # The betas and the alphas
         beta = torch.linspace(
-                beta_start,
-                beta_end,
+                scale*beta_start,
+                scale*beta_end,
                 self.timesteps,
                 dtype=torch.float32
             )
