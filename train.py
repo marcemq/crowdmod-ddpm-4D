@@ -82,7 +82,8 @@ def train(cfg, filenames, show_losses_plot=False):
                 # Create a new directory if it does not exist
                 os.makedirs(cfg.MODEL.SAVE_DIR)
             lr_parts = str(cfg.TRAIN.SOLVER.LR).split('.')
-            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_parts[0]))
+            scale_parts = str(cfg.DIFFUSION.SCALE).split('.')
+            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_parts[0], scale_parts[0]))
             torch.save(checkpoint_dict, save_path)
             del checkpoint_dict
 

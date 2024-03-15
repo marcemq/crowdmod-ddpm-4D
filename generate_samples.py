@@ -48,8 +48,8 @@ def generate_samples(cfg, filenames):
                                 dropout_rate            = cfg.MODEL.DROPOUT_RATE,
                                 time_multiple           = cfg.MODEL.TIME_EMB_MULT)
     lr_parts = str(cfg.TRAIN.SOLVER.LR).split('.')
-    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_parts[0]))
-
+    scale_parts = str(cfg.DIFFUSION.SCALE).split('.')
+    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_parts[0], scale_parts[0]))
     print(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
