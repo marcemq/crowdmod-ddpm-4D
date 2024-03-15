@@ -47,9 +47,9 @@ def generate_samples(cfg, filenames):
                                 apply_attention         = cfg.MODEL.APPLY_ATTENTION,
                                 dropout_rate            = cfg.MODEL.DROPOUT_RATE,
                                 time_multiple           = cfg.MODEL.TIME_EMB_MULT)
-    lr_parts = str(cfg.TRAIN.SOLVER.LR).split('.')
-    scale_parts = str(cfg.DIFFUSION.SCALE).split('.')
-    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_parts[0], scale_parts[1]))
+    lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
+    scale_str = "{:.0e}".format(cfg.DIFFUSION.SCALE)
+    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, scale_str))
     print(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
@@ -92,8 +92,8 @@ def generate_samples(cfg, filenames):
         plt.suptitle("Sampling for diffusion process", y=0.95)
         plt.axis("off")
         plt.show()
-        match = re.search(r'_E\d+_LR\de-\d+', model_fullname)
-        fig.savefig(f"images/mpSampling_{match.group()}.svg", format='svg', bbox_inches='tight')
+        match = re.search(r'_E\d+_LR\de-\d+_S\de-\d', model_fullname)
+        fig.savefig(f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
         break
 
 if __name__ == '__main__':
