@@ -59,7 +59,7 @@ def train(cfg, filenames, show_losses_plot=False):
     optimizer = optim.Adam(denoiser.parameters(),lr=cfg.TRAIN.SOLVER.LR, betas=cfg.TRAIN.SOLVER.BETAS,weight_decay=cfg.TRAIN.SOLVER.WEIGHT_DECAY)
 
     # Instantiate the diffusion model
-    diffusionmodel = DDPM(timesteps = cfg.DIFFUSION.TIMESTEPS)
+    diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS, scale=cfg.DIFFUSION.SCALE)
     diffusionmodel.to(device)
 
     # Training loop
