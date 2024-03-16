@@ -6,11 +6,12 @@ from models.diffusion.forward import get_from_idx
 
 # This is how we will use the model once trained
 @torch.inference_mode()
-def generate_ddpm(denoiser_model:nn.Module, backward_sampler:DDPM, past_cond:torch.Tensor, cond_mask:torch.Tensor, cfg, device,verbose=True):
+def generate_ddpm(denoiser_model:nn.Module, backward_sampler:DDPM, cfg, device,verbose=True):
     # Set the model in evaluation mode
     denoiser_model.eval()
     # Noise from a normal distribution
     xnoisy = torch.randn((cfg.DIFFUSION.NSAMPLES, 4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS), device=device)
+    xnoisy_over_time = [xnoisy]
     # Now, to reverse the diffusion process, use a sequence of denoising steps
     for t in tqdm(iterable=reversed(range(0, backward_sampler.timesteps)),
                           dynamic_ncols=False,total=backward_sampler.timesteps,
@@ -19,8 +20,9 @@ def generate_ddpm(denoiser_model:nn.Module, backward_sampler:DDPM, past_cond:tor
         # Estimate the noise
         eps_pred = denoiser_model(xnoisy, t_tensor)
         # Denoise with the sampler and the estimation of the noise
-        xnoisy = backward_sampler.step_backward(eps_pred, xnoisy, t)
-    return xnoisy
+        xnoisy = backward_sampler.step(eps_pred, xnoisy, t)
+        xnoisy_over_time.append(xnoisy)
+    return xnoisy, xnoisy_over_time
 
 @torch.inference_mode()
 def generate_ddim(denoiser_model:nn.Module, taus, backward_sampler:DDPM, cfg, device, verbose=True):
