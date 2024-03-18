@@ -27,8 +27,8 @@ DATASET:
   TRAIN_FILE_COUNT: 3
   VAL_FILE_COUNT: 2
   TEST_FILE_COUNT: 1
-  params: 
-    batch_size: 64
+  BATCH_SIZE: 64
+  params:
     shuffle: True
     num_workers: 6
 MODEL:
