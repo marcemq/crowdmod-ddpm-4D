@@ -64,6 +64,9 @@ def generate_samples(cfg, filenames):
         x_train, y_train, stats = batch
         if cfg.DIFFUSION.SAMPLER == "DDPM":
             x, xnoisy_over_time  = generate_ddpm(denoiser, diffusionmodel, cfg, device) # AR review .cpu() call here
+            if cfg.DIFFUSION.GUIDANCE == "sparsity" or cfg.DIFFUSION.GUIDANCE == "none":
+                l1 = torch.mean(torch.abs(x[:,0,:,:])).cpu().detach().numpy()
+                print('L1 norm {:.2f}'.format(l1))
         elif cfg.DIFFUSION.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.DIFFUSION.DDIM_DIVIDER)
             print(f'taus:{taus}')
@@ -84,8 +87,7 @@ def generate_samples(cfg, filenames):
         for i in range(xnoisy_over_time[0].shape[0]):
             one_noisy_sample = xnoisy_over_time[999][i]
             one_noisy_sample_gray = torch.squeeze(one_noisy_sample[0:1,:,:], axis=0)
-            ax[i//2][i%2].imshow(one_noisy_sample_gray.cpu(), cmap='gray')
-
+            ax[i//2][i%2].imshow(one_noisy_sample_gray.cpu(), cmap='gray',vmin=0, vmax=3)
        #     one_noisy_sample = noisy_sample[0]
        #     one_noisy_sample_gray = torch.squeeze(one_noisy_sample[0:1,:,:], axis=0)
        #     ax[i].imshow(one_noisy_sample_gray.cpu(), cmap='gray')
