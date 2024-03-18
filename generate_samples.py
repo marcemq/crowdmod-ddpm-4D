@@ -77,7 +77,7 @@ def generate_samples(cfg, filenames):
             noisy_images.append(xts)
 
         # Plot and see samples at different timesteps
-        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES//2, 2, figsize=(5, 11), facecolor='white')
+        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES//2, 2, figsize=(5, 8), facecolor='white')
         #fig.subplots_adjust(hspace=0.5)
         # Display the results row by row
        # for i, (timestep, noisy_sample) in enumerate(zip(reversed(taus), noisy_images)):
@@ -85,18 +85,18 @@ def generate_samples(cfg, filenames):
             one_noisy_sample = xnoisy_over_time[999][i]
             one_noisy_sample_gray = torch.squeeze(one_noisy_sample[0:1,:,:], axis=0)
             ax[i//2][i%2].imshow(one_noisy_sample_gray.cpu(), cmap='gray')
+            ax[i//2][i%2].axis("off")
 
        #     one_noisy_sample = noisy_sample[0]
        #     one_noisy_sample_gray = torch.squeeze(one_noisy_sample[0:1,:,:], axis=0)
        #     ax[i].imshow(one_noisy_sample_gray.cpu(), cmap='gray')
        #     ax[i].set_title(f"t={timestep}", fontsize=10)
-       #     ax[i].axis("off")
        #     ax[i].grid(False)
 
-        plt.suptitle("Sampling for diffusion process", y=0.95)
+        plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}", y=0.95)
         plt.axis("off")
         plt.show()
-        match = re.search(r'_E\d+_LR\de-\d+_S\de-\d', model_fullname)
+        match = re.search(r'E\d+_LR\de-\d+_S\de-\d', model_fullname)
         fig.savefig(f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
         break
 
