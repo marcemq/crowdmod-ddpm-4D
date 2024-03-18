@@ -47,9 +47,9 @@ def generate_samples(cfg, filenames):
                                 apply_attention         = cfg.MODEL.APPLY_ATTENTION,
                                 dropout_rate            = cfg.MODEL.DROPOUT_RATE,
                                 time_multiple           = cfg.MODEL.TIME_EMB_MULT)
-    lr_parts = str(cfg.TRAIN.SOLVER.LR).split('.')
-    scale_parts = str(cfg.DIFFUSION.SCALE).split('.')
-    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_parts[0], scale_parts[0]))
+    lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
+    scale_str = "{:.0e}".format(cfg.DIFFUSION.SCALE)
+    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, scale_str))
     print(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
@@ -80,7 +80,7 @@ def generate_samples(cfg, filenames):
             noisy_images.append(xts)
 
         # Plot and see samples at different timesteps
-        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES//2, 2, figsize=(5, 11), facecolor='white')
+        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES//2, 2, figsize=(5, 8), facecolor='white')
         #fig.subplots_adjust(hspace=0.5)
         # Display the results row by row
        # for i, (timestep, noisy_sample) in enumerate(zip(reversed(taus), noisy_images)):
@@ -88,18 +88,19 @@ def generate_samples(cfg, filenames):
             one_noisy_sample = xnoisy_over_time[999][i]
             one_noisy_sample_gray = torch.squeeze(one_noisy_sample[0:1,:,:], axis=0)
             ax[i//2][i%2].imshow(one_noisy_sample_gray.cpu(), cmap='gray',vmin=0, vmax=3)
+            ax[i//2][i%2].axis("off")
+  
        #     one_noisy_sample = noisy_sample[0]
        #     one_noisy_sample_gray = torch.squeeze(one_noisy_sample[0:1,:,:], axis=0)
        #     ax[i].imshow(one_noisy_sample_gray.cpu(), cmap='gray')
        #     ax[i].set_title(f"t={timestep}", fontsize=10)
-       #     ax[i].axis("off")
        #     ax[i].grid(False)
 
-        plt.suptitle("Sampling for diffusion process", y=0.95)
+        plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}", y=0.95)
         plt.axis("off")
         plt.show()
-        match = re.search(r'_E\d+_LR\de-\d+', model_fullname)
-        fig.savefig(f"images/mpSampling_{match.group()}.svg", format='svg', bbox_inches='tight')
+        match = re.search(r'E\d+_LR\de-\d+_S\de-\d', model_fullname)
+        fig.savefig(f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
         break
 
 if __name__ == '__main__':
