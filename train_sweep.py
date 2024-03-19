@@ -2,6 +2,7 @@ import sys
 import os, re
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
+import functools
 
 import logging
 import torch
@@ -23,7 +24,7 @@ from functools import partial
 
 def train(cfg, filenames, show_losses_plot=False):
     wandb.init(
-        project="my-first-sweep",
+        project="sweep_crowdmod_ddpm_2D",
         #config={
         #"architecture": "DDPM",
         #"dataset": cfg.DATASET.NAME,
@@ -37,7 +38,7 @@ def train(cfg, filenames, show_losses_plot=False):
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get batched datasets ready to iterate
-    batched_train_data, _, _ = getDataset(cfg, filenames)
+    batched_train_data, _, _ = getDataset(cfg, filenames, wandb.config.batch_size)
 
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacroprosDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
@@ -91,7 +92,7 @@ sweep_configuration = {
     "parameters": {
         "learning_rate": {"min": 0.00001, "max": 0.001},
         "batch_size": {"values": [16, 32, 64]},
-        "epochs": {"values": [400, 600, 800]},    
+        "epochs": {"values": [40, 60, 80]},    
     },
 }
 
@@ -100,6 +101,6 @@ if __name__ == '__main__':
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project="my-first-sweep")
-    wandb.agent(sweep_id, function=train(cfg, filenames), count=11)
+    sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ddpm_2D")
+    wandb.agent(sweep_id, function=functools.partial(train, cfg, filenames), count=2)
     #train(cfg, filenames)

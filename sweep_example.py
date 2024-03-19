@@ -1,4 +1,5 @@
 # Import the W&B Python Library and log into W&B
+import functools
 import wandb
 
 # 1: Define objective/training function
@@ -6,7 +7,9 @@ def objective(config):
     score = config.x**3 + config.y
     return score
 
-def main():
+def main(myVar1, myVar2):
+    print(f'parametro pasado:{myVar1}')
+    print(f'otro:{myVar2}')
     wandb.init(project="my-first-sweep")
     score = objective(wandb.config)
     wandb.log({"score": score})
@@ -23,5 +26,6 @@ sweep_configuration = {
 
 # 3: Start the sweep
 sweep_id = wandb.sweep(sweep=sweep_configuration, project="my-first-sweep")
-
-wandb.agent(sweep_id, function=main, count=10)
+var1=5
+var2="hola"
+wandb.agent(sweep_id, function=functools.partial(main, var1, var2), count=3)
