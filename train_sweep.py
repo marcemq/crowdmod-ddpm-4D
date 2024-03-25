@@ -33,7 +33,7 @@ def train(cfg, filenames, show_losses_plot=False):
         }
     wandb.init(project="sweep_crowdmod_ddpm2D")
     # add more params config to wandb
-    wandb.config.update(config)
+    #wandb.config.update(config)
 
     torch.manual_seed(42)
     # Setting the device to work with
@@ -80,7 +80,7 @@ def train(cfg, filenames, show_losses_plot=False):
             if not os.path.exists(cfg.MODEL.SAVE_DIR):
                 # Create a new directory if it does not exist
                 os.makedirs(cfg.MODEL.SAVE_DIR)
-            lr_str = "{:.0e}".format(wandb.config.SOLVER.LR)
+            lr_str = "{:.0e}".format(wandb.config.learning_rate)
             scale_str = "{:.0e}".format(wandb.config.scale)
             save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(wandb.config.epochs, lr_str, scale_str))
             torch.save(checkpoint_dict, save_path)
