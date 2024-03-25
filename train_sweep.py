@@ -23,17 +23,18 @@ from torchsummary import summary
 from functools import partial
 
 def train(cfg, filenames, show_losses_plot=False):
-    wandb.init(
-        project="sweep_crowdmod_ddpm_2D",
-        #config={
-        #"architecture": "DDPM",
-        #"dataset": cfg.DATASET.NAME,
-        #"observation_len": cfg.DATASET.OBS_LEN,
-        #"prediction_len": cfg.DATASET.PRED_LEN,
-        #"weight_decay": cfg.TRAIN.SOLVER.WEIGHT_DECAY,
-        #"solver_betas": cfg.TRAIN.SOLVER.BETAS,
-        #}
-    )
+    config={
+        "architecture": "DDPM",
+        "dataset": cfg.DATASET.NAME,
+        "observation_len": cfg.DATASET.OBS_LEN,
+        "prediction_len": cfg.DATASET.PRED_LEN,
+        "weight_decay": cfg.TRAIN.SOLVER.WEIGHT_DECAY,
+        "solver_betas": cfg.TRAIN.SOLVER.BETAS,
+        }
+    wandb.init(project="sweep_crowdmod_ddpm2D")
+    # add more params config to wandb
+    wandb.config.update(config)
+
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -42,11 +43,11 @@ def train(cfg, filenames, show_losses_plot=False):
 
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacroprosDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
-                                base_channels           = cfg.MODEL.BASE_CH,
+                                base_channels           = wandb.config.base_ch,
                                 base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
                                 apply_attention         = cfg.MODEL.APPLY_ATTENTION,
-                                dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                time_multiple           = cfg.MODEL.TIME_EMB_MULT)
+                                dropout_rate            = wandb.config.dropout_rate,
+                                time_multiple           = wandb.config.time_emb_mult)
     denoiser.to(device)
     #specific_timesteps = [250]
     #t = torch.as_tensor(specific_timesteps, dtype=torch.long)
@@ -57,7 +58,7 @@ def train(cfg, filenames, show_losses_plot=False):
     optimizer = optim.Adam(denoiser.parameters(),lr=wandb.config.learning_rate, betas=cfg.TRAIN.SOLVER.BETAS,weight_decay=cfg.TRAIN.SOLVER.WEIGHT_DECAY)
 
     # Instantiate the diffusion model
-    diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS, scale=cfg.DIFFUSION.SCALE)
+    diffusionmodel = DDPM(timesteps=wandb.config.timesteps, scale=wandb.config.scale)
     diffusionmodel.to(device)
 
     # Training loop
@@ -79,9 +80,9 @@ def train(cfg, filenames, show_losses_plot=False):
             if not os.path.exists(cfg.MODEL.SAVE_DIR):
                 # Create a new directory if it does not exist
                 os.makedirs(cfg.MODEL.SAVE_DIR)
-            lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
-            scale_str = "{:.0e}".format(cfg.DIFFUSION.SCALE)
-            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, scale_str))
+            lr_str = "{:.0e}".format(wandb.config.SOLVER.LR)
+            scale_str = "{:.0e}".format(wandb.config.scale)
+            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(wandb.config.epochs, lr_str, scale_str))
             torch.save(checkpoint_dict, save_path)
             del checkpoint_dict
 
@@ -92,7 +93,12 @@ sweep_configuration = {
     "parameters": {
         "learning_rate": {"min": 0.00001, "max": 0.001},
         "batch_size": {"values": [16, 32, 64]},
-        "epochs": {"values": [40, 60, 80]},    
+        "epochs": {"values": [400, 600, 800]},
+        "base_ch": {"values": [16, 32, 64]},
+        "dropout_rate": {"values": [0.05, 0.15, 0.25]},
+        "time_emb_mult": {"values": [2, 4, 8]},
+        "scale": {"values": [0.1, 0.3, 0.5, 0.8]},
+        "timesteps": {"values": [500, 1000, 1500]},
     },
 }
 
@@ -101,6 +107,5 @@ if __name__ == '__main__':
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ddpm_2D")
-    wandb.agent(sweep_id, function=functools.partial(train, cfg, filenames), count=2)
-    #train(cfg, filenames)
+    sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ddpm2D")
+    wandb.agent(sweep_id, function=functools.partial(train, cfg, filenames), count=50)
