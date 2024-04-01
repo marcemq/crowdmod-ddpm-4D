@@ -26,8 +26,8 @@ class YamlParser(edict):
 def get_config(config_file=None):
     return YamlParser(config_file=config_file)
 
-def getYamlConfig():
+def getYamlConfig(config_yml_file, configList_yml_file):
     cfg = get_config()
-    cfg.merge_from_file(config_file="config/ATC_ddpm_4test.yml")
-    cfg.merge_from_file(config_file="config/ATC_ddpm_DSlist4test.yml")
+    cfg.merge_from_file(config_file=config_yml_file,)
+    cfg.merge_from_file(config_file=configList_yml_file)
     return cfg
