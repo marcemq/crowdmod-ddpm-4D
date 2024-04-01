@@ -113,7 +113,7 @@ def dataHelper(cfg, filenames):
 
     return train_data, val_data, test_data, train_stats, val_stats, test_stats
 
-def getDataset(cfg, filenames):
+def getDataset(cfg, filenames, BATCH_SIZE=None):
     if 'merge_from_file' in cfg.DATASET.params:
         del cfg.DATASET.params['merge_from_file']
     if 'merge_from_dict' in cfg.DATASET.params:
@@ -128,8 +128,10 @@ def getDataset(cfg, filenames):
     val_data  = MacropropsDataset(tmp_val_data, cfg, transform=custom_transform)
     test_data = MacropropsDataset(tmp_test_data, cfg, transform=custom_transform)
     # Form batches
-    batched_train_data = DataLoader(train_data, **cfg.DATASET.params)
-    batched_val_data   = DataLoader(val_data, **cfg.DATASET.params)
-    batched_test_data  = DataLoader(test_data, **cfg.DATASET.params)
+    if BATCH_SIZE == None:
+        BATCH_SIZE = cfg.DATASET.BATCH_SIZE
+    batched_train_data = DataLoader(train_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
+    batched_val_data   = DataLoader(val_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
+    batched_test_data  = DataLoader(test_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
 
     return batched_train_data, batched_val_data, batched_test_data
