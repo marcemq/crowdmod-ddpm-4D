@@ -1,3 +1,4 @@
+import argparse
 import sys
 import os, re
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -103,7 +104,12 @@ sweep_configuration = {
 }
 
 if __name__ == '__main__':
-    cfg = getYamlConfig()
+    parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
+    parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
+    parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
+    args = parser.parse_args()
+
+    cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
