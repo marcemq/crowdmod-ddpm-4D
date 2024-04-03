@@ -30,7 +30,7 @@ def train(cfg, filenames, show_losses_plot=False):
         "dataset": cfg.DATASET.NAME,
         "learning_rate": cfg.TRAIN.SOLVER.LR,
         "epochs": cfg.TRAIN.EPOCHS,
-        "batch_size": cfg.DATASET.params.batch_size,
+        "batch_size": cfg.DATASET.BATCH_SIZE,
         "observation_len": cfg.DATASET.OBS_LEN,
         "prediction_len": cfg.DATASET.PRED_LEN,
         "weight_decay": cfg.TRAIN.SOLVER.WEIGHT_DECAY,
