@@ -24,12 +24,12 @@ class MacropropsDataset(Dataset):
         self.transform = transform
         if self.transform:
             seq_all, stats = self.transform(seq_all)
-
-        self.X = seq_all[:,:,:,:,:cfg.DATASET.OBS_LEN]
-        self.X = np.squeeze(self.X, axis=-1)
-        self.Y = seq_all[:,:,:,:,cfg.DATASET.OBS_LEN:cfg.DATASET.OBS_LEN+cfg.DATASET.PRED_LEN]
-        self.Y = np.squeeze(self.Y, axis=-1)
-        self.stats = stats
+        if seq_all:
+            self.X = seq_all[:,:,:,:,:cfg.DATASET.OBS_LEN]
+            self.X = np.squeeze(self.X, axis=-1)
+            self.Y = seq_all[:,:,:,:,cfg.DATASET.OBS_LEN:cfg.DATASET.OBS_LEN+cfg.DATASET.PRED_LEN]
+            self.Y = np.squeeze(self.Y, axis=-1)
+            self.stats = stats
 
     def __len__(self):
         return len(self.X)
@@ -86,7 +86,7 @@ def getMacropropsFromFilenames(filenames):
 
     return data, stats
 
-def dataHelper(cfg, filenames):
+def dataHelper(cfg, filenames, train_data_only=False):
     "Compute macroprops sequences and split data by filecount defined at config file."
     if not cfg.PICKLE.USE_PICKLE:
         logging.info("Read macroproperties data to define train, validation and test sets.")
@@ -94,11 +94,15 @@ def dataHelper(cfg, filenames):
         random.shuffle(filenames)
         train_filenames = filenames[:cfg.DATASET.TRAIN_FILE_COUNT]
         val_filenames = filenames[cfg.DATASET.TRAIN_FILE_COUNT:cfg.DATASET.TRAIN_FILE_COUNT+cfg.DATASET.VAL_FILE_COUNT]
-        test_filenames = filenames[cfg.DATASET.TRAIN_FILE_COUNT+cfg.DATASET.VAL_FILE_COUNT:]
+        test_filenames = filenames[cfg.DATASET.TRAIN_FILE_COUNT+cfg.DATASET.VAL_FILE_COUNT:cfg.DATASET.TRAIN_FILE_COUNT+cfg.DATASET.VAL_FILE_COUNT+cfg.DATASET.TEST_FILE_COUNT]
 
         train_data, train_stats = getMacropropsFromFilenames(train_filenames)
-        val_data, val_stats = getMacropropsFromFilenames(val_filenames)
-        test_data, test_stats = getMacropropsFromFilenames(test_filenames)
+        if train_data_only:
+            val_data, val_stats = None, None
+            test_data, test_stats = None, None
+        else:
+            val_data, val_stats = getMacropropsFromFilenames(val_filenames)
+            test_data, test_stats = getMacropropsFromFilenames(test_filenames)
         #saveData(train_data, val_data, test_data, cfg.PICKLE.PICKLE_DIR)
     else:
         logging.info("Unpickling data...")
@@ -108,19 +112,22 @@ def dataHelper(cfg, filenames):
         val_data = pickle.load(pickle_in)
         pickle_in = open(cfg.PICKLE.PICKLE_DIR+"test_data.pkl","rb")
         test_data = pickle.load(pickle_in)
-        
-    logging.info("In dataHelper func, shape of train_data:{}, val_data:{}, test_data:{} from files".format(train_data.shape, val_data.shape, test_data.shape))
+
+    if train_data_only:
+        logging.info("In dataHelper func, shape of train_data:{} from files".format(train_data.shape))
+    else:
+        logging.info("In dataHelper func, shape of train_data:{}, val_data:{}, test_data:{} from files".format(train_data.shape, val_data.shape, test_data.shape))
 
     return train_data, val_data, test_data, train_stats, val_stats, test_stats
 
-def getDataset(cfg, filenames, BATCH_SIZE=None):
+def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False):
     if 'merge_from_file' in cfg.DATASET.params:
         del cfg.DATASET.params['merge_from_file']
     if 'merge_from_dict' in cfg.DATASET.params:
         del cfg.DATASET.params['merge_from_dict']
 
     # Load the dataset and perform the split
-    tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames)
+    tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, train_data_only)
     # Transfor set
     custom_transform = CustomTransform()
     # Torch dataset

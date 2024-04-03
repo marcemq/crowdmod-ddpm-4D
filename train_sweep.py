@@ -32,7 +32,7 @@ def train(cfg, filenames, show_losses_plot=False):
         "weight_decay": cfg.TRAIN.SOLVER.WEIGHT_DECAY,
         "solver_betas": cfg.TRAIN.SOLVER.BETAS,
         }
-    wandb.init(project="sweep_crowdmod_ddpm2D")
+    wandb.init(project="sweep_crowdmod_ddpm2D_final")
     # add more params config to wandb
     #wandb.config.update(config)
 
@@ -40,7 +40,7 @@ def train(cfg, filenames, show_losses_plot=False):
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get batched datasets ready to iterate
-    batched_train_data, _, _ = getDataset(cfg, filenames, wandb.config.batch_size)
+    batched_train_data, _, _ = getDataset(cfg, filenames, wandb.config.batch_size, train_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacroprosDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
@@ -113,5 +113,5 @@ if __name__ == '__main__':
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ddpm2D")
+    sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ddpm2D_final")
     wandb.agent(sweep_id, function=functools.partial(train, cfg, filenames), count=50)

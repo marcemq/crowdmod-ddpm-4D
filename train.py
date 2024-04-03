@@ -41,7 +41,7 @@ def train(cfg, filenames, show_losses_plot=False):
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get batched datasets ready to iterate
-    batched_train_data, _, _ = getDataset(cfg, filenames)
+    batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacroprosDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
