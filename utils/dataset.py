@@ -22,9 +22,9 @@ class CustomTransform():
 class MacropropsDataset(Dataset):
     def __init__(self, seq_all, cfg, transform=None):
         self.transform = transform
-        if self.transform:
+        if self.transform and seq_all is not None:
             seq_all, stats = self.transform(seq_all)
-        if seq_all:
+        if seq_all is not None:
             self.X = seq_all[:,:,:,:,:cfg.DATASET.OBS_LEN]
             self.X = np.squeeze(self.X, axis=-1)
             self.Y = seq_all[:,:,:,:,cfg.DATASET.OBS_LEN:cfg.DATASET.OBS_LEN+cfg.DATASET.PRED_LEN]
