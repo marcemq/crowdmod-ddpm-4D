@@ -125,6 +125,8 @@ def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False):
         del cfg.DATASET.params['merge_from_file']
     if 'merge_from_dict' in cfg.DATASET.params:
         del cfg.DATASET.params['merge_from_dict']
+    if BATCH_SIZE == None:
+        BATCH_SIZE = cfg.DATASET.BATCH_SIZE
 
     # Load the dataset and perform the split
     tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, train_data_only)
@@ -132,17 +134,17 @@ def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False):
     custom_transform = CustomTransform()
     # Torch dataset
     train_data= MacropropsDataset(tmp_train_data, cfg, transform=custom_transform)
-    if not train_data_only:
-        val_data  = MacropropsDataset(tmp_val_data, cfg, transform=custom_transform)
-        test_data = MacropropsDataset(tmp_test_data, cfg, transform=custom_transform)
     # Form batches
-    if BATCH_SIZE == None:
-        BATCH_SIZE = cfg.DATASET.BATCH_SIZE
     batched_train_data = DataLoader(train_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
+
     if train_data_only:
         batched_val_data = None
         batched_test_data = None
     else:
+        # Torch dataset
+        val_data  = MacropropsDataset(tmp_val_data, cfg, transform=custom_transform)
+        test_data = MacropropsDataset(tmp_test_data, cfg, transform=custom_transform)
+        # Form batches
         batched_val_data   = DataLoader(val_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
         batched_test_data  = DataLoader(test_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
 
