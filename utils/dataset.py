@@ -22,14 +22,14 @@ class CustomTransform():
 class MacropropsDataset(Dataset):
     def __init__(self, seq_all, cfg, transform=None):
         self.transform = transform
-        if self.transform and seq_all is not None:
+        if self.transform:
             seq_all, stats = self.transform(seq_all)
-        if seq_all is not None:
-            self.X = seq_all[:,:,:,:,:cfg.DATASET.OBS_LEN]
-            self.X = np.squeeze(self.X, axis=-1)
-            self.Y = seq_all[:,:,:,:,cfg.DATASET.OBS_LEN:cfg.DATASET.OBS_LEN+cfg.DATASET.PRED_LEN]
-            self.Y = np.squeeze(self.Y, axis=-1)
-            self.stats = stats
+
+        self.X = seq_all[:,:,:,:,:cfg.DATASET.OBS_LEN]
+        self.X = np.squeeze(self.X, axis=-1)
+        self.Y = seq_all[:,:,:,:,cfg.DATASET.OBS_LEN:cfg.DATASET.OBS_LEN+cfg.DATASET.PRED_LEN]
+        self.Y = np.squeeze(self.Y, axis=-1)
+        self.stats = stats
 
     def __len__(self):
         return len(self.X)
@@ -132,13 +132,18 @@ def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False):
     custom_transform = CustomTransform()
     # Torch dataset
     train_data= MacropropsDataset(tmp_train_data, cfg, transform=custom_transform)
-    val_data  = MacropropsDataset(tmp_val_data, cfg, transform=custom_transform)
-    test_data = MacropropsDataset(tmp_test_data, cfg, transform=custom_transform)
+    if not train_data_only:
+        val_data  = MacropropsDataset(tmp_val_data, cfg, transform=custom_transform)
+        test_data = MacropropsDataset(tmp_test_data, cfg, transform=custom_transform)
     # Form batches
     if BATCH_SIZE == None:
         BATCH_SIZE = cfg.DATASET.BATCH_SIZE
     batched_train_data = DataLoader(train_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
-    batched_val_data   = DataLoader(val_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
-    batched_test_data  = DataLoader(test_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
+    if train_data_only:
+        batched_val_data = None
+        batched_test_data = None
+    else:
+        batched_val_data   = DataLoader(val_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
+        batched_test_data  = DataLoader(test_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
 
     return batched_train_data, batched_val_data, batched_test_data
