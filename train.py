@@ -30,7 +30,7 @@ def train(cfg, filenames, show_losses_plot=False):
         "dataset": cfg.DATASET.NAME,
         "learning_rate": cfg.TRAIN.SOLVER.LR,
         "epochs": cfg.TRAIN.EPOCHS,
-        "batch_size": cfg.DATASET.params.batch_size,
+        "batch_size": cfg.DATASET.BATCH_SIZE,
         "observation_len": cfg.DATASET.OBS_LEN,
         "prediction_len": cfg.DATASET.PRED_LEN,
         "weight_decay": cfg.TRAIN.SOLVER.WEIGHT_DECAY,
@@ -41,7 +41,7 @@ def train(cfg, filenames, show_losses_plot=False):
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get batched datasets ready to iterate
-    batched_train_data, _, _ = getDataset(cfg, filenames)
+    batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacroprosDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
