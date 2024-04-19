@@ -11,7 +11,7 @@ def generate_ddpm(denoiser_model:nn.Module, backward_sampler:DDPM, cfg, device,v
     # Set the model in evaluation mode
     denoiser_model.eval()
     # Noise from a normal distribution
-    xnoisy = torch.randn((cfg.DIFFUSION.NSAMPLES, 4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS), device=device)
+    xnoisy = torch.randn((cfg.DIFFUSION.NSAMPLES, 4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.OBS_LEN), device=device)
     xnoisy_over_time = [xnoisy]
     # Now, to reverse the diffusion process, use a sequence of denoising steps
     for t in tqdm(iterable=reversed(range(0, backward_sampler.timesteps)),
@@ -34,7 +34,7 @@ def generate_ddim(denoiser_model:nn.Module, taus, backward_sampler:DDPM, cfg, de
     # Set the model in evaluation mode
     denoiser_model.eval()
     # Noise from a normal distribution
-    xnoisy = torch.randn((cfg.DIFFUSION.NSAMPLES, 4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS), device=device)
+    xnoisy = torch.randn((cfg.DIFFUSION.NSAMPLES, 4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.OBS_LEN), device=device)
     last_t                     = torch.ones(xnoisy.shape[0], dtype=torch.long, device=device) * (backward_sampler.timesteps-1)
     sqrt_alpha_bar_t           = get_from_idx(backward_sampler.sqrt_alpha_bar, last_t)
     sqrt_one_minus_alpha_bar_t = get_from_idx(backward_sampler.sqrt_one_minus_alpha_bar, last_t)

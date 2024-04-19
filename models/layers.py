@@ -10,11 +10,11 @@ class AttentionBlock(nn.Module):
         self.mhsa      = nn.MultiheadAttention(embed_dim=self.channels, num_heads=4, batch_first=True)
 # AR: review H, W
     def forward(self, x):
-        B, _, H, W = x.shape
+        B, _, H, W, L = x.shape
         h    = self.group_norm(x)
-        h    = h.reshape(B, self.channels, H * W ).swapaxes(1, 2)  # [B, C, H, W, L] --> [B, C, H*W*L] --> [B, H*W*L, C]
-        h, _ = self.mhsa(h, h, h)  # [B, H*W, C]
-        h    = h.swapaxes(2, 1).view(B, self.channels, H, W)  # [B, C, H*W*L] --> [B, C, H, W]
+        h    = h.reshape(B, self.channels, H * W * L).swapaxes(1, 2)  # [B, C, H, W, L] --> [B, C, H*W*L] --> [B, H*W*L, C]
+        h, _ = self.mhsa(h, h, h)  # [B, H*W*L, C]
+        h    = h.swapaxes(2, 1).view(B, self.channels, H, W, L)  # [B, C, H*W*L] --> [B, C, H, W, L]
         return x + h
     
 # Resnet block
@@ -28,18 +28,18 @@ class ResnetBlock(nn.Module):
         # Group 1
         self.normalize_1 = nn.GroupNorm(num_groups=8, num_channels=self.in_channels)
         #AR: N, C, L, H, W we might need to change last channel to be in the midle one??
-        self.conv_1      = nn.Conv2d(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=3, stride=1, padding="same")
+        self.conv_1      = nn.Conv3d(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=3, stride=1, padding="same")
 
         # Group 2 time embedding
         self.dense_1    = nn.Linear(in_features=time_emb_dims, out_features=self.out_channels)
 
         # Group 3
         self.normalize_2= nn.GroupNorm(num_groups=8, num_channels=self.out_channels)
-        self.dropout    = nn.Dropout2d(p=dropout_rate)
-        self.conv_2     = nn.Conv2d(in_channels=self.out_channels, out_channels=self.out_channels, kernel_size=3, stride=1, padding="same")
+        self.dropout    = nn.Dropout3d(p=dropout_rate)
+        self.conv_2     = nn.Conv3d(in_channels=self.out_channels, out_channels=self.out_channels, kernel_size=3, stride=1, padding="same")
 
         if self.in_channels != self.out_channels:
-            self.match_input = nn.Conv2d(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=1, stride=1)
+            self.match_input = nn.Conv3d(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=1, stride=1)
         else:
             self.match_input = nn.Identity()
 
@@ -55,7 +55,7 @@ class ResnetBlock(nn.Module):
 
         # Group 2
         # add in timestep embedding
-        h += self.dense_1(self.activation(t))[:, :, None, None]
+        h += self.dense_1(self.activation(t))[:, :, None, None, None]
 
         # Group 3
         h = self.activation(self.normalize_2(h))
@@ -72,7 +72,7 @@ class ResnetBlock(nn.Module):
 class DownSample(nn.Module):
     def __init__(self, channels):
         super().__init__()
-        self.downsample = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=3, stride=2, padding=1)
+        self.downsample = nn.Conv3d(in_channels=channels, out_channels=channels, kernel_size=3, stride=2, padding=1)
     def forward(self, x, *args):
         return self.downsample(x)
 
@@ -82,6 +82,6 @@ class UpSample(nn.Module):
         super().__init__()
         self.upsample = nn.Sequential(
             nn.Upsample(scale_factor=2, mode="nearest"),
-            nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1))
+            nn.Conv3d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1))
     def forward(self, x, *args):
         return self.upsample(x)

@@ -24,9 +24,9 @@ from functools import partial
 
 def train(cfg, filenames, show_losses_plot=False):
     wandb.init(
-        project="macroprops-predict",
+        project="macroprops-predict-4D",
         config={
-        "architecture": "DDPM",
+        "architecture": "DDPM-4D",
         "dataset": cfg.DATASET.NAME,
         "learning_rate": cfg.TRAIN.SOLVER.LR,
         "epochs": cfg.TRAIN.EPOCHS,
@@ -71,7 +71,7 @@ def train(cfg, filenames, show_losses_plot=False):
 
         # One epoch of training
         epoch_loss = train_one_epoch(denoiser,diffusionmodel,batched_train_data,optimizer,device,epoch=epoch,total_epochs=cfg.TRAIN.EPOCHS)
-        wandb.log({"loss_2D": epoch_loss})
+        wandb.log({"loss": epoch_loss})
         if epoch_loss < best_loss:
             best_loss = epoch_loss
             # Save best checkpoints -> AR, shouldn't we save diffusionmodel too?? I think it also has weigths, isn't?
