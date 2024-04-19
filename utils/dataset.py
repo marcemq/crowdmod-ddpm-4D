@@ -15,7 +15,7 @@ class CustomTransform():
             stats[i, 0], stats[i, 1], stats[i, 2], stats[i, 3] = np.mean(tensor[:,i,:,:]), np.std(tensor[:,i,:,:]), np.min(tensor[:,i,:,:]), np.max(tensor[:,i,:,:])
         # density and var channels won't be normalized
         for channel in range(1, channels_to_normalize-1):
-            tensor[:,channel,:,:]=((tensor[:, channel, :, :] - stats[channel,2]) / (stats[channel,3] - stats[channel,2])) * 2 - 1
+            tensor[:,channel,:,:,:]=((tensor[:, channel, :, :] - stats[channel,2]) / (stats[channel,3] - stats[channel,2])) * 2 - 1
 
         return tensor, stats
 
@@ -26,9 +26,7 @@ class MacropropsDataset(Dataset):
             seq_all, stats = self.transform(seq_all)
 
         self.X = seq_all[:,:,:,:,:cfg.DATASET.OBS_LEN]
-        self.X = np.squeeze(self.X, axis=-1)
         self.Y = seq_all[:,:,:,:,cfg.DATASET.OBS_LEN:cfg.DATASET.OBS_LEN+cfg.DATASET.PRED_LEN]
-        self.Y = np.squeeze(self.Y, axis=-1)
         self.stats = stats
 
     def __len__(self):

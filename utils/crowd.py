@@ -15,7 +15,7 @@ logging.basicConfig(format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(messa
                     datefmt='%H:%M:%S',
                     level=logging.INFO,
                     handlers=[
-                        logging.FileHandler("logs/CrowdMacropropsVis.log"),
+                        logging.FileHandler("logs/CrowdMacroprops.log"),
                         logging.StreamHandler(sys.stdout)]
                     )
 
