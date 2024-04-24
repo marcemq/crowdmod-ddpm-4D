@@ -22,8 +22,8 @@ MACROPROPS:
   TIME_RES: 0.5
 DATASET:
   NAME: "ATC4TEST-4D"
-  OBS_LEN: 5
-  PRED_LEN: 1
+  PAST_LEN: 5
+  FUTURE_LEN: 2 # this are the only that get workout by difussion at training ang generation
   TRAIN_FILE_COUNT: 3
   VAL_FILE_COUNT: 2
   TEST_FILE_COUNT: 1
@@ -32,7 +32,8 @@ DATASET:
     shuffle: True
     num_workers: 6
 MODEL:
-  CONDITION: "None"
+  CONDITION: "Past"
+  CONDITION_HANDLING: "embed"
   NUM_RES_BLOCKS: 1
   BASE_CH: 64  # 64, 128, 256, 512
   BASE_CH_MULT: [1, 2, 4] # 32, 16, 8, 4

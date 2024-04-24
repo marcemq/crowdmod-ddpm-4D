@@ -4,7 +4,7 @@ import numpy as np
 import os, re
 from models.generate import generate_ddpm, generate_ddim
 
-from models.unet import MacroprosDenoiser
+from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from utils.dataset import getDataset
 from utils.myparser import getYamlConfig
@@ -41,7 +41,7 @@ def generate_samples(cfg, filenames):
     batched_train_data, _, _ = getDataset(cfg, filenames)
 
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacroprosDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
+    denoiser = MacropropsDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
                                 base_channels           = cfg.MODEL.BASE_CH,
                                 base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
                                 apply_attention         = cfg.MODEL.APPLY_ATTENTION,

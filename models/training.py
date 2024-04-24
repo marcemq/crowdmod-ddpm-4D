@@ -8,14 +8,14 @@ from models.diffusion.ddpm import DDPM
 
 
 # Apply one training step
-def train_step(batch:torch.Tensor, denoiser_model:nn.Module, forwardsampler:DDPM):
+def train_step(future:torch.Tensor,past:torch.Tensor, denoiser_model:nn.Module, forwardsampler:DDPM):
     # Sample a timestep uniformly
-    t = torch.randint(low=0, high=forwardsampler.timesteps, size=(batch.shape[0],), device=batch.device)
+    t = torch.randint(low=0, high=forwardsampler.timesteps, size=(future.shape[0],), device=future.device)
     # Apply forward noising process on original images, up to step t (sample from q(x_t|x_0))
-    macroprops_noisy, eps_true = forwardsampler(batch, t)
+    future_macroprops_noisy, eps_true = forwardsampler(future, t)
     with amp.autocast():
         # Our prediction for the denoised macropros sequence AR:beLOW is needed a permutation? lo we have LxHxW?
-        eps_predicted = denoiser_model(macroprops_noisy, t)
+        eps_predicted = denoiser_model(future_macroprops_noisy, t, past)
         # Deduce the loss
         loss          = F.mse_loss(eps_predicted, eps_true)
     return loss
@@ -33,12 +33,12 @@ def train_one_epoch(denoiser_model:nn.Module,sampler:nn.Module,loader,optimizer,
         for batched_train_data in loader:
             tq.update(1)
             # Take a batch of macropros sequences
-            x_train, y_train, stats = batched_train_data
-            x_train, y_train = x_train.float(), y_train.float()
-            x_train, y_train = x_train.to(device=device), y_train.to(device=device)
+            past_train, future_train, stats = batched_train_data
+            past_train, future_train = past_train.float(), future_train.float()
+            past_train, future_train = past_train.to(device=device), future_train.to(device=device)
 
             # Evaluate loss AR: I need to pass the GT to below? of the loss be computed taking only x_train?
-            loss = train_step(x_train, denoiser_model, sampler)
+            loss = train_step(future_train, past_train, denoiser_model, sampler)
 
             # Backpropagation and update
             optimizer.zero_grad(set_to_none=True)

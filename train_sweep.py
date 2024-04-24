@@ -17,7 +17,7 @@ from matplotlib import pyplot as plt
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset
 from models.diffusion.forward import ForwardSampler
-from models.unet import MacroprosDenoiser
+from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from models.training import train_one_epoch
 from torchsummary import summary
@@ -43,7 +43,7 @@ def train(cfg, filenames, show_losses_plot=False):
     batched_train_data, _, _ = getDataset(cfg, filenames, wandb.config.batch_size, train_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacroprosDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
+    denoiser = MacropropsDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
                                 base_channels           = wandb.config.base_ch,
                                 base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
                                 apply_attention         = cfg.MODEL.APPLY_ATTENTION,

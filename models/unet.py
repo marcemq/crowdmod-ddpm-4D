@@ -4,7 +4,7 @@ from models.embeddings import SinusoidalPositionEmbeddings
 from models.layers import DownSample, UpSample, ResnetBlock
 
 
-class MacroprosDenoiser(nn.Module):
+class MacropropsDenoiser(nn.Module):
     def __init__(
         self,
         input_channels = 4,
@@ -18,15 +18,20 @@ class MacroprosDenoiser(nn.Module):
         apply_attention=[False, False, True, False, False],
         dropout_rate   = 0.1,
         time_multiple  = 4,
+        condition = "Past"
     ):
         super().__init__()
 
         time_emb_dims_exp    = base_channels * time_multiple
+        self.condition      = condition
         self.time_embeddings = SinusoidalPositionEmbeddings(time_emb_dims=base_channels, time_emb_dims_exp=time_emb_dims_exp)
 
         self.first = nn.Conv3d(in_channels=input_channels, out_channels=base_channels, kernel_size=3, stride=1, padding="same")
 
         num_resolutions = len(base_channels_multiples)
+        if self.condition == "Past":
+            # We need a way to emb the past frames
+            self.past_encoding  = nn.LSTM(2, past_emb_dims_exp, num_layers=2,batch_first=True) 
 
         # Encoder part of the UNet. Dimension reduction.
         self.encoder_blocks = nn.ModuleList()
@@ -47,6 +52,7 @@ class MacroprosDenoiser(nn.Module):
                     dropout_rate=dropout_rate,
                     time_emb_dims=time_emb_dims_exp,
                     apply_attention=apply_attention[level],
+                    condition=self.condition
                 )
                 # Add it to the group of blocks
                 self.encoder_blocks.append(block)
@@ -68,6 +74,7 @@ class MacroprosDenoiser(nn.Module):
                     dropout_rate=dropout_rate,
                     time_emb_dims=time_emb_dims_exp,
                     apply_attention=True,
+                    condition=self.condition
                 ),
                 ResnetBlock(
                     in_channels=in_channels,
@@ -75,6 +82,7 @@ class MacroprosDenoiser(nn.Module):
                     dropout_rate=dropout_rate,
                     time_emb_dims=time_emb_dims_exp,
                     apply_attention=False,
+                    condition=self.condition
                 ),
             )
         )
@@ -94,6 +102,7 @@ class MacroprosDenoiser(nn.Module):
                     dropout_rate=dropout_rate,
                     time_emb_dims=time_emb_dims_exp,
                     apply_attention=apply_attention[level],
+                    condition=self.condition
                 )
 
                 in_channels = out_channels
@@ -109,28 +118,39 @@ class MacroprosDenoiser(nn.Module):
             nn.Conv3d(in_channels=in_channels, out_channels=output_channels, kernel_size=3, stride=1, padding="same"),
         )
 
-    def forward(self, x, t):
+    def forward(self, future, t, past=None):
+        """
+        future: correspond to future frames to be predicted
+        past: correspond to the past frames on which the condiction states
+        """
         # Time embeddings
         time_emb = self.time_embeddings(t)
 
-        h    = self.first(x)
+        # Past embeddings
+        if self.condition == "Past":
+            _,(past_encodings,__)= self.past_encoding(past)
+            past_encodings        = past_encodings[-1]
+        else:
+            past_encodings = None
+
+        h    = self.first(future)
         outs = [h]
 
         # Encoder
         for layer in self.encoder_blocks:
-            h = layer(h, time_emb)
+            h = layer(h, time_emb, past_encodings)
             outs.append(h)
 
         # Bottleneck
         for layer in self.bottleneck_blocks:
-            h = layer(h, time_emb)
+            h = layer(h, time_emb, past_encodings)
 
         # Decoder
         for layer in self.decoder_blocks:
             if isinstance(layer, ResnetBlock):
                 out = outs.pop()
                 h = torch.cat([h, out], dim=1)
-            h = layer(h, time_emb)
+            h = layer(h, time_emb, past_encodings)
 
         h = self.final(h)
 

@@ -25,20 +25,20 @@ class MacropropsDataset(Dataset):
         if self.transform:
             seq_all, stats = self.transform(seq_all)
 
-        self.X = seq_all[:,:,:,:,:cfg.DATASET.OBS_LEN]
-        self.Y = seq_all[:,:,:,:,cfg.DATASET.OBS_LEN:cfg.DATASET.OBS_LEN+cfg.DATASET.PRED_LEN]
+        self.PAST = seq_all[:,:,:,:,:cfg.DATASET.PAST_LEN]
+        self.FUTURE = seq_all[:,:,:,:,cfg.DATASET.PAST_LEN:cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN]
         self.stats = stats
 
     def __len__(self):
-        return len(self.X)
+        return len(self.FUTURE)
     
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        X_seq = self.X[idx]
-        Y_seq = self.Y[idx]
+        PAST_seq = self.PAST[idx]
+        FUTURE_seq = self.FUTURE[idx]
         # AR: I think we need to do the inverse transform here
-        return X_seq, Y_seq, self.stats
+        return PAST_seq, FUTURE_seq, self.stats
 
 def saveData(train_data, val_data, test_data, pickle_dir):
     logging.info("Saving training, validatio and testing dara ndarrays in pickle files...")
