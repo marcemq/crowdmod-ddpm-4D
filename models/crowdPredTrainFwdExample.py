@@ -28,12 +28,12 @@ def predTraining(cfg, filenames, show_losses_plot=False):
     # Get batched datasets ready to iterate
     batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
     # Take a batch of images
-    x_train, y_train, stats = next(iter(batched_train_data))
-    print(f'Shape of x_train data:{x_train.shape}')
-    print(f'Shape of y_train data:{y_train.shape}')
-    x_train, y_train = x_train.float(), y_train.float()
-    x_train, y_train = x_train.to(device=device), y_train.to(device=device)
-
+    past_train, future_train, stats = next(iter(batched_train_data))
+    print(f'Shape of past_train data:{past_train.shape}')
+    print(f'Shape of future_train data:{future_train.shape}')
+    past_train, future_train = past_train.float(), future_train.float()
+    past_train, future_train = past_train.to(device=device), future_train.to(device=device)
+    # past_train, future_train
     # Instantiate a forward sampler
     fwdSampler = ForwardSampler(timesteps=1000, scale=cfg.DIFFUSION.SCALE)
     # Keeping the results for visualization
@@ -44,7 +44,7 @@ def predTraining(cfg, filenames, show_losses_plot=False):
     specific_timesteps = [0, 10, 50, 250, 600, 800, 999]
     for timestep in specific_timesteps: 
         timestep = torch.as_tensor(timestep, dtype=torch.long)
-        x0s      = x_train
+        x0s      = future_train
         # Apply forward diffusion
         xts, _   = fwdSampler(x0s, timestep)
         # Apply inverse transform

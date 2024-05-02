@@ -34,8 +34,8 @@ class ResnetBlock(nn.Module):
         # Group 2 time embedding
         self.dense_1    = nn.Linear(in_features=time_emb_dims, out_features=self.out_channels)
         # TODO: review usage of condition here, is there a handle of actual frames?
-        if self.condition!="None":
-            self.dense_2 = nn.Linear(in_features=time_emb_dims, out_features=self.out_channels)
+        #if self.condition!="None":
+        #    self.dense_2 = nn.Linear(in_features=time_emb_dims, out_features=self.out_channels)
 
         # Group 3
         self.normalize_2= nn.GroupNorm(num_groups=8, num_channels=self.out_channels)
@@ -61,10 +61,10 @@ class ResnetBlock(nn.Module):
         # add in timestep embedding
         h += self.dense_1(self.activation(t))[:, :, None, None, None]
         # TODO: past frames here?
-        if self.condition!="None" and y is not None:
-            cond = self.dense_2(self.activation(y))
+        #if self.condition!="None" and y is not None:
+        #    cond = self.dense_2(self.activation(y))
             # Use broadcasting to add the condition
-            h += cond[:, :, None, None, None]
+        #    h += cond[:, :, None, None, None]
 
         # Group 3
         h = self.activation(self.normalize_2(h))

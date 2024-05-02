@@ -31,8 +31,8 @@ def train(cfg, filenames, show_losses_plot=False):
         "learning_rate": cfg.TRAIN.SOLVER.LR,
         "epochs": cfg.TRAIN.EPOCHS,
         "batch_size": cfg.DATASET.BATCH_SIZE,
-        "observation_len": cfg.DATASET.OBS_LEN,
-        "prediction_len": cfg.DATASET.PRED_LEN,
+        "past_len": cfg.DATASET.PAST_LEN,
+        "future_len": cfg.DATASET.FUTURE_LEN,
         "weight_decay": cfg.TRAIN.SOLVER.WEIGHT_DECAY,
         "solver_betas": cfg.TRAIN.SOLVER.BETAS,
         }

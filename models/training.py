@@ -15,6 +15,7 @@ def train_step(future:torch.Tensor,past:torch.Tensor, denoiser_model:nn.Module, 
     future_macroprops_noisy, eps_true = forwardsampler(future, t)
     with amp.autocast():
         # Our prediction for the denoised macropros sequence AR:beLOW is needed a permutation? lo we have LxHxW?
+        # TODO: eps_predicted debe de ser de la dimension de eps_true
         eps_predicted = denoiser_model(future_macroprops_noisy, t, past)
         # Deduce the loss
         loss          = F.mse_loss(eps_predicted, eps_true)

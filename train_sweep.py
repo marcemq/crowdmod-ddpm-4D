@@ -25,14 +25,16 @@ from functools import partial
 
 def train(cfg, filenames, show_losses_plot=False):
     config={
-        "architecture": "DDPM",
+        "architecture": "DDPM-4D",
         "dataset": cfg.DATASET.NAME,
-        "observation_len": cfg.DATASET.OBS_LEN,
-        "prediction_len": cfg.DATASET.PRED_LEN,
+        "learning_rate": cfg.TRAIN.SOLVER.LR,
+        "epochs": cfg.TRAIN.EPOCHS,
+        "past_len": cfg.DATASET.PAST_LEN,
+        "future_len": cfg.DATASET.FUTURE_LEN,
         "weight_decay": cfg.TRAIN.SOLVER.WEIGHT_DECAY,
         "solver_betas": cfg.TRAIN.SOLVER.BETAS,
         }
-    wandb.init(project="sweep_crowdmod_ddpm2D_final")
+    wandb.init(project="sweep_crowdmod_ddpm4D")
     # add more params config to wandb
     #wandb.config.update(config)
 
@@ -113,5 +115,5 @@ if __name__ == '__main__':
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ddpm2D_final")
+    sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ddpm4D")
     wandb.agent(sweep_id, function=functools.partial(train, cfg, filenames), count=50)

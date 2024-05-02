@@ -46,7 +46,8 @@ def generate_samples(cfg, filenames):
                                 base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
                                 apply_attention         = cfg.MODEL.APPLY_ATTENTION,
                                 dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                time_multiple           = cfg.MODEL.TIME_EMB_MULT)
+                                time_multiple           = cfg.MODEL.TIME_EMB_MULT,
+                                condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     scale_str = "{:.0e}".format(cfg.DIFFUSION.SCALE)
     model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, scale_str))

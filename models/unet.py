@@ -30,8 +30,8 @@ class MacropropsDenoiser(nn.Module):
 
         num_resolutions = len(base_channels_multiples)
         if self.condition == "Past":
-            # We need a way to emb the past frames
-            self.past_encoding  = nn.LSTM(2, past_emb_dims_exp, num_layers=2,batch_first=True) 
+            # TODO: We need a way to emb the past frames
+            self.past_encoding  = None
 
         # Encoder part of the UNet. Dimension reduction.
         self.encoder_blocks = nn.ModuleList()
@@ -121,19 +121,24 @@ class MacropropsDenoiser(nn.Module):
     def forward(self, future, t, past=None):
         """
         future: correspond to future frames to be predicted
-        past: correspond to the past frames on which the condiction states
+        past: correspond to the past frames on which the condition states
+        return a tensor of shape future TODO: review that this is true
         """
         # Time embeddings
         time_emb = self.time_embeddings(t)
-
+        x = None
+        _,_,_,_,past_len_frames = past.shape
         # Past embeddings
         if self.condition == "Past":
-            _,(past_encodings,__)= self.past_encoding(past)
-            past_encodings        = past_encodings[-1]
+            #_,(past_encodings,__)= self.past_encoding(past)
+            #past_encodings        = past_encodings[-1]
+            x = torch.cat([past, future], dim=4)
+            past_encodings = None
         else:
+            x = future
             past_encodings = None
 
-        h    = self.first(future)
+        h    = self.first(x)
         outs = [h]
 
         # Encoder
@@ -154,4 +159,6 @@ class MacropropsDenoiser(nn.Module):
 
         h = self.final(h)
 
+        if self.condition == "Past":
+            h = h[:,:,:,:,past_len_frames:]
         return h
