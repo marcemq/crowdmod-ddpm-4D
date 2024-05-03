@@ -91,7 +91,7 @@ def generate_samples(cfg, filenames):
             seq_images.append(seq)
 
         # Plot and see samples at different timesteps
-        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES, cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN, figsize=(8,3), facecolor='white')
+        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES, cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN, figsize=(13,7), facecolor='white')
 
         for i in range(cfg.DIFFUSION.NSAMPLES):
             one_seq_img = seq_images[i]
