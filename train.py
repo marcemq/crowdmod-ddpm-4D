@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset
 from models.diffusion.forward import ForwardSampler
-from models.unet import MacroprosDenoiser
+from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from models.training import train_one_epoch
 from torchsummary import summary
@@ -24,15 +24,15 @@ from functools import partial
 
 def train(cfg, filenames, show_losses_plot=False):
     wandb.init(
-        project="macroprops-predict",
+        project="macroprops-predict-4D",
         config={
-        "architecture": "DDPM",
+        "architecture": "DDPM-4D",
         "dataset": cfg.DATASET.NAME,
         "learning_rate": cfg.TRAIN.SOLVER.LR,
         "epochs": cfg.TRAIN.EPOCHS,
         "batch_size": cfg.DATASET.BATCH_SIZE,
-        "observation_len": cfg.DATASET.OBS_LEN,
-        "prediction_len": cfg.DATASET.PRED_LEN,
+        "past_len": cfg.DATASET.PAST_LEN,
+        "future_len": cfg.DATASET.FUTURE_LEN,
         "weight_decay": cfg.TRAIN.SOLVER.WEIGHT_DECAY,
         "solver_betas": cfg.TRAIN.SOLVER.BETAS,
         }
@@ -44,12 +44,13 @@ def train(cfg, filenames, show_losses_plot=False):
     batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacroprosDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
+    denoiser = MacropropsDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
                                 base_channels           = cfg.MODEL.BASE_CH,
                                 base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
                                 apply_attention         = cfg.MODEL.APPLY_ATTENTION,
                                 dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                time_multiple           = cfg.MODEL.TIME_EMB_MULT)
+                                time_multiple           = cfg.MODEL.TIME_EMB_MULT,
+                                condition               = cfg.MODEL.CONDITION)
     denoiser.to(device)
     #specific_timesteps = [250]
     #t = torch.as_tensor(specific_timesteps, dtype=torch.long)
@@ -71,7 +72,7 @@ def train(cfg, filenames, show_losses_plot=False):
 
         # One epoch of training
         epoch_loss = train_one_epoch(denoiser,diffusionmodel,batched_train_data,optimizer,device,epoch=epoch,total_epochs=cfg.TRAIN.EPOCHS)
-        wandb.log({"loss_2D": epoch_loss})
+        wandb.log({"loss": epoch_loss})
         if epoch_loss < best_loss:
             best_loss = epoch_loss
             # Save best checkpoints -> AR, shouldn't we save diffusionmodel too?? I think it also has weigths, isn't?

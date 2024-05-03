@@ -1,10 +1,11 @@
+import argparse
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import os, re
 from models.generate import generate_ddpm, generate_ddim
 
-from models.unet import MacroprosDenoiser
+from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from utils.dataset import getDataset
 from utils.myparser import getYamlConfig
@@ -38,15 +39,16 @@ def generate_samples(cfg, filenames):
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get batched datasets ready to iterate
-    batched_train_data, _, _ = getDataset(cfg, filenames)
+    batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacroprosDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
+    denoiser = MacropropsDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
                                 base_channels           = cfg.MODEL.BASE_CH,
                                 base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
                                 apply_attention         = cfg.MODEL.APPLY_ATTENTION,
                                 dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                time_multiple           = cfg.MODEL.TIME_EMB_MULT)
+                                time_multiple           = cfg.MODEL.TIME_EMB_MULT,
+                                condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     scale_str = "{:.0e}".format(cfg.DIFFUSION.SCALE)
     model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, scale_str))
@@ -58,43 +60,49 @@ def generate_samples(cfg, filenames):
     timesteps=cfg.DIFFUSION.TIMESTEPS
     diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS)
     diffusionmodel.to(device)
-    noisy_images = []
+    seq_images = []
     taus = 1
     for batch in batched_train_data:
-        x_train, y_train, stats = batch
+        past_train, future_train, stats = batch
+        past_train, future_train = past_train.float(), future_train.float()
+        past_train, future_train = past_train.to(device=device), future_train.to(device=device)
+        #x_train, y_train, stats = batch
+        random_past_idx = torch.randperm(past_train.shape[0])[:cfg.DIFFUSION.NSAMPLES]
+        random_past_samples = past_train[random_past_idx]
+
         if cfg.DIFFUSION.SAMPLER == "DDPM":
-            x, xnoisy_over_time  = generate_ddpm(denoiser, diffusionmodel, cfg, device) # AR review .cpu() call here
+            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device) # AR review .cpu() call here
             if cfg.DIFFUSION.GUIDANCE == "sparsity" or cfg.DIFFUSION.GUIDANCE == "none":
-                l1 = torch.mean(torch.abs(x[:,0,:,:])).cpu().detach().numpy()
+                l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
                 print('L1 norm {:.2f}'.format(l1))
         elif cfg.DIFFUSION.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.DIFFUSION.DDIM_DIVIDER)
             print(f'taus:{taus}')
-            x, xnoisy_over_time = generate_ddim(denoiser,taus,diffusionmodel,cfg,device) # AR review .cpu() call here
+            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples,taus,diffusionmodel,cfg,device) # AR review .cpu() call here
         else:
             print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
-        for i in range(len(xnoisy_over_time)):
-            xts      = xnoisy_over_time[i]
-            xts      = inverseTransform(xts, stats)
-            noisy_images.append(xts)
+        future_sample = xnoisy_over_time[999]
+        for i in range(len(random_past_idx)):
+            future_sample_iv = inverseTransform(future_sample[i], stats)
+            #past_sample_iv = inverseTransform(random_past_samples[i], stats)
+            past_sample_iv = random_past_samples[i]
+            seq = torch.cat([past_sample_iv, future_sample_iv], dim=3)
+            seq_images.append(seq)
 
         # Plot and see samples at different timesteps
-        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES//2, 2, figsize=(5, 8), facecolor='white')
+        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES, cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN, figsize=(13,7), facecolor='white')
+
+        for i in range(cfg.DIFFUSION.NSAMPLES):
+            one_seq_img = seq_images[i]
+            for j in range(cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN):
+                one_sample_img = one_seq_img[:,:,:,j]
+                one_sample_img_gray = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
+                ax[i,j].imshow(one_sample_img_gray.cpu(), cmap='gray')
+                ax[i,j].axis("off")
+                ax[i,j].grid(False)
         #fig.subplots_adjust(hspace=0.5)
         # Display the results row by row
-       # for i, (timestep, noisy_sample) in enumerate(zip(reversed(taus), noisy_images)):
-        for i in range(xnoisy_over_time[0].shape[0]):
-            one_noisy_sample = xnoisy_over_time[999][i]
-            one_noisy_sample_gray = torch.squeeze(one_noisy_sample[0:1,:,:], axis=0)
-            ax[i//2][i%2].imshow(one_noisy_sample_gray.cpu(), cmap='gray',vmin=0, vmax=3)
-            ax[i//2][i%2].axis("off")
-  
-       #     one_noisy_sample = noisy_sample[0]
-       #     one_noisy_sample_gray = torch.squeeze(one_noisy_sample[0:1,:,:], axis=0)
-       #     ax[i].imshow(one_noisy_sample_gray.cpu(), cmap='gray')
-       #     ax[i].set_title(f"t={timestep}", fontsize=10)
-       #     ax[i].grid(False)
 
         plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}", y=0.95)
         plt.axis("off")
@@ -104,7 +112,12 @@ def generate_samples(cfg, filenames):
         break
 
 if __name__ == '__main__':
-    cfg = getYamlConfig()
+    parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
+    parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
+    parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
+    args = parser.parse_args()
+
+    cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]

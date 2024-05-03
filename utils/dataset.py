@@ -15,7 +15,7 @@ class CustomTransform():
             stats[i, 0], stats[i, 1], stats[i, 2], stats[i, 3] = np.mean(tensor[:,i,:,:]), np.std(tensor[:,i,:,:]), np.min(tensor[:,i,:,:]), np.max(tensor[:,i,:,:])
         # density and var channels won't be normalized
         for channel in range(1, channels_to_normalize-1):
-            tensor[:,channel,:,:]=((tensor[:, channel, :, :] - stats[channel,2]) / (stats[channel,3] - stats[channel,2])) * 2 - 1
+            tensor[:,channel,:,:,:]=((tensor[:, channel, :, :] - stats[channel,2]) / (stats[channel,3] - stats[channel,2])) * 2 - 1
 
         return tensor, stats
 
@@ -25,22 +25,20 @@ class MacropropsDataset(Dataset):
         if self.transform:
             seq_all, stats = self.transform(seq_all)
 
-        self.X = seq_all[:,:,:,:,:cfg.DATASET.OBS_LEN]
-        self.X = np.squeeze(self.X, axis=-1)
-        self.Y = seq_all[:,:,:,:,cfg.DATASET.OBS_LEN:cfg.DATASET.OBS_LEN+cfg.DATASET.PRED_LEN]
-        self.Y = np.squeeze(self.Y, axis=-1)
+        self.PAST = seq_all[:,:,:,:,:cfg.DATASET.PAST_LEN]
+        self.FUTURE = seq_all[:,:,:,:,cfg.DATASET.PAST_LEN:cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN]
         self.stats = stats
 
     def __len__(self):
-        return len(self.X)
+        return len(self.FUTURE)
     
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        X_seq = self.X[idx]
-        Y_seq = self.Y[idx]
+        PAST_seq = self.PAST[idx]
+        FUTURE_seq = self.FUTURE[idx]
         # AR: I think we need to do the inverse transform here
-        return X_seq, Y_seq, self.stats
+        return PAST_seq, FUTURE_seq, self.stats
 
 def saveData(train_data, val_data, test_data, pickle_dir):
     logging.info("Saving training, validatio and testing dara ndarrays in pickle files...")

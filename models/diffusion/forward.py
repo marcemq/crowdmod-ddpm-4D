@@ -3,7 +3,7 @@ import torch.nn as nn
 
 def get_from_idx(element: torch.Tensor, idx: torch.Tensor):
     ele = element.gather(-1, idx)
-    return ele.reshape(-1, 1, 1, 1)
+    return ele.reshape(-1, 1, 1, 1, 1)
 
 # This class implements the forward diffusion process
 class ForwardSampler(nn.Module):
