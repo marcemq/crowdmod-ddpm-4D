@@ -7,7 +7,7 @@ from models.sparsityGuidance import sparsityGradient
 
 # This is how we will use the model once trained
 @torch.inference_mode()
-def generate_ddpm(denoiser_model:nn.Module, backward_sampler:DDPM, cfg, device,verbose=True):
+def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:DDPM, cfg, device,verbose=True):
     # Set the model in evaluation mode
     denoiser_model.eval()
     # Noise from a normal distribution
@@ -19,7 +19,7 @@ def generate_ddpm(denoiser_model:nn.Module, backward_sampler:DDPM, cfg, device,v
                           desc="Sampling :: ", position=0):
         t_tensor = torch.as_tensor(t, dtype=torch.long, device=device).reshape(-1).expand(xnoisy.shape[0])
         # Estimate the noise
-        eps_pred = denoiser_model(xnoisy, t_tensor)
+        eps_pred = denoiser_model(xnoisy, t_tensor, past)
         # Denoise with the sampler and the estimation of the noise
         xnoisy, sigma = backward_sampler.step(eps_pred, xnoisy, t)
         if cfg.DIFFUSION.GUIDANCE == "sparsity":
@@ -30,7 +30,7 @@ def generate_ddpm(denoiser_model:nn.Module, backward_sampler:DDPM, cfg, device,v
     return xnoisy, xnoisy_over_time
 
 @torch.inference_mode()
-def generate_ddim(denoiser_model:nn.Module, taus, backward_sampler:DDPM, cfg, device, verbose=True):
+def generate_ddim(denoiser_model:nn.Module, past:torch.Tensor, taus, backward_sampler:DDPM, cfg, device, verbose=True):
     # Set the model in evaluation mode
     denoiser_model.eval()
     # Noise from a normal distribution
@@ -46,7 +46,7 @@ def generate_ddim(denoiser_model:nn.Module, taus, backward_sampler:DDPM, cfg, de
         # Time vectors
         ts = torch.ones(xnoisy.shape[0], dtype=torch.long, device=device) * t
         # Estimate the noise
-        predicted_noise = denoiser_model(xnoisy, ts)
+        predicted_noise = denoiser_model(xnoisy, ts, past)
         # The betas, alphas etc.
         sqrt_alpha_bar_t_prev           = get_from_idx(backward_sampler.sqrt_alpha_bar, ts)
         sqrt_one_minus_alpha_bar_t_prev = get_from_idx(backward_sampler.sqrt_one_minus_alpha_bar, ts)
