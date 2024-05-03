@@ -65,6 +65,7 @@ def generate_samples(cfg, filenames):
     for batch in batched_train_data:
         past_train, future_train, stats = batch
         past_train, future_train = past_train.float(), future_train.float()
+        past_train, future_train = past_train.to(device=device), future_train.to(device=device)
         #x_train, y_train, stats = batch
         random_past_idx = torch.randperm(past_train.shape[0])[:cfg.DIFFUSION.NSAMPLES]
         random_past_samples = past_train[random_past_idx]
@@ -90,14 +91,14 @@ def generate_samples(cfg, filenames):
             seq_images.append(seq)
 
         # Plot and see samples at different timesteps
-        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES, cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN, figsize=(5, 8), facecolor='white')
+        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES, cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN, figsize=(8,3), facecolor='white')
 
         for i in range(cfg.DIFFUSION.NSAMPLES):
             one_seq_img = seq_images[i]
             for j in range(cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN):
                 one_sample_img = one_seq_img[:,:,:,j]
                 one_sample_img_gray = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
-                ax[i,j].imshow(one_sample_img_gray, cmap='gray')
+                ax[i,j].imshow(one_sample_img_gray.cpu(), cmap='gray')
                 ax[i,j].axis("off")
                 ax[i,j].grid(False)
         #fig.subplots_adjust(hspace=0.5)
