@@ -51,7 +51,7 @@ def generate_samples(cfg, filenames):
                                 condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     scale_str = "{:.0e}".format(cfg.DIFFUSION.SCALE)
-    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, scale_str))
+    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, scale_str, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
     print(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
@@ -84,31 +84,58 @@ def generate_samples(cfg, filenames):
 
         future_sample = xnoisy_over_time[999]
         for i in range(len(random_past_idx)):
-            future_sample_iv = inverseTransform(future_sample[i], stats)
+            # TODO: review if inverse transform is still needed
+            #future_sample_iv = inverseTransform(future_sample[i], stats)
+            future_sample_iv = future_sample[i]
             #past_sample_iv = inverseTransform(random_past_samples[i], stats)
             past_sample_iv = random_past_samples[i]
             seq = torch.cat([past_sample_iv, future_sample_iv], dim=3)
             seq_images.append(seq)
 
         # Plot and see samples at different timesteps
-        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES, cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN, figsize=(13,7), facecolor='white')
+        #fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES, cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN, figsize=(13,7), facecolor='white')
 
-        for i in range(cfg.DIFFUSION.NSAMPLES):
-            one_seq_img = seq_images[i]
-            for j in range(cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN):
-                one_sample_img = one_seq_img[:,:,:,j]
-                one_sample_img_gray = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
-                ax[i,j].imshow(one_sample_img_gray.cpu(), cmap='gray')
-                ax[i,j].axis("off")
-                ax[i,j].grid(False)
+        #for i in range(cfg.DIFFUSION.NSAMPLES):
+        #    one_seq_img = seq_images[i]
+        #    for j in range(cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN):
+        #        one_sample_img = one_seq_img[:,:,:,j]
+        #        one_sample_img_gray = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
+        #        ax[i,j].imshow(one_sample_img_gray.cpu(), cmap='gray')
+        #        ax[i,j].axis("off")
+        #        ax[i,j].grid(False)
         #fig.subplots_adjust(hspace=0.5)
         # Display the results row by row
 
+        nsamples, height, width = cfg.DIFFUSION.NSAMPLES, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS
+
+        # Create a big canvas to hold all the images
+        canvas_width = (width + 2) * (cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN) 
+        canvas_height = nsamples * (height + 2) 
+        canvas = torch.ones((canvas_height, canvas_width)) 
+
+        for i in range(nsamples):
+            for j in range(cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN):
+                # Calculate coordinates for current image position
+                x_start = j * (width + 2) + 1  # Add space for white lines
+                x_end = x_start + width
+                y_start = i * (height + 2) + 1  # Add space for white lines
+                y_end = y_start + height
+                
+                # Extract the current image
+                one_seq_img = seq_images[i]
+                one_sample_img = one_seq_img[:, :, :, j]
+                one_sample_img_gray = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
+                
+                # Fill the canvas with the current image
+                canvas[y_start:y_end, x_start:x_end] = one_sample_img_gray.cpu()
+
+
         plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}", y=0.95)
         plt.axis("off")
-        plt.show()
+        plt.show(canvas)
         match = re.search(r'E\d+_LR\de-\d+_S\de-\d', model_fullname)
-        fig.savefig(f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
+        #fig.savefig(f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
+        plt.savefig('big_canvas.png', bbox_inches='tight', pad_inches=0)
         break
 
 if __name__ == '__main__':
