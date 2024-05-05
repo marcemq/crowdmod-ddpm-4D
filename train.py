@@ -85,7 +85,7 @@ def train(cfg, filenames, show_losses_plot=False):
                 os.makedirs(cfg.MODEL.SAVE_DIR)
             lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
             scale_str = "{:.0e}".format(cfg.DIFFUSION.SCALE)
-            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, scale_str))
+            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, scale_str, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
             torch.save(checkpoint_dict, save_path)
             del checkpoint_dict
 
