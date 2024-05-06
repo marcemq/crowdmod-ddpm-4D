@@ -51,7 +51,7 @@ def generate_samples(cfg, filenames):
                                 condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     scale_str = "{:.0e}".format(cfg.DIFFUSION.SCALE)
-    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, scale_str))
+    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, scale_str, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
     print(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
@@ -69,6 +69,7 @@ def generate_samples(cfg, filenames):
         #x_train, y_train, stats = batch
         random_past_idx = torch.randperm(past_train.shape[0])[:cfg.DIFFUSION.NSAMPLES]
         random_past_samples = past_train[random_past_idx]
+        random_future_samples = future_train[random_past_idx]
 
         if cfg.DIFFUSION.SAMPLER == "DDPM":
             x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device) # AR review .cpu() call here
@@ -82,32 +83,40 @@ def generate_samples(cfg, filenames):
         else:
             print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
-        future_sample = xnoisy_over_time[999]
+        future_sample_pred = xnoisy_over_time[999]
         for i in range(len(random_past_idx)):
-            future_sample_iv = inverseTransform(future_sample[i], stats)
+            # TODO: review if inverse transform is still needed
+            #future_sample_pred_iv = inverseTransform(future_sample_pred[i], stats)
+            future_sample_pred_iv = future_sample_pred[i]
+            future_sample_gt_iv = random_future_samples[i]
             #past_sample_iv = inverseTransform(random_past_samples[i], stats)
             past_sample_iv = random_past_samples[i]
-            seq = torch.cat([past_sample_iv, future_sample_iv], dim=3)
-            seq_images.append(seq)
+            seq_pred = torch.cat([past_sample_iv, future_sample_pred_iv], dim=3)
+            seq_images.append(seq_pred)
+            seq_gt = torch.cat([past_sample_iv, future_sample_gt_iv], dim=3)
+            seq_images.append(seq_gt)
 
         # Plot and see samples at different timesteps
-        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES, cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN, figsize=(13,7), facecolor='white')
-
-        for i in range(cfg.DIFFUSION.NSAMPLES):
+        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES*2, cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN, figsize=(13,7), facecolor='white')
+        fig.subplots_adjust(hspace=0.3)
+        for i in range(cfg.DIFFUSION.NSAMPLES*2):
             one_seq_img = seq_images[i]
             for j in range(cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN):
+                if j==0:
+                    if (i+1)%2==0:
+                        ax[i,j].set_title(f" GT sequence-{i//2+1}", fontsize=9)
+                    else:
+                        ax[i,j].set_title(f"Pred sequence-{i//2+1}", fontsize=9)
                 one_sample_img = one_seq_img[:,:,:,j]
                 one_sample_img_gray = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
                 ax[i,j].imshow(one_sample_img_gray.cpu(), cmap='gray')
                 ax[i,j].axis("off")
                 ax[i,j].grid(False)
-        #fig.subplots_adjust(hspace=0.5)
-        # Display the results row by row
 
-        plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}", y=0.95)
+        plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}", y=0.95)
         plt.axis("off")
         plt.show()
-        match = re.search(r'E\d+_LR\de-\d+_S\de-\d', model_fullname)
+        match = re.search(r'E\d+_LR\de-\d+_S\de-\d+_PL\d+_FL\d', model_fullname)
         fig.savefig(f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
         break
 

@@ -50,7 +50,8 @@ def train(cfg, filenames, show_losses_plot=False):
                                 base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
                                 apply_attention         = cfg.MODEL.APPLY_ATTENTION,
                                 dropout_rate            = wandb.config.dropout_rate,
-                                time_multiple           = wandb.config.time_emb_mult)
+                                time_multiple           = wandb.config.time_emb_mult,
+                                condition               = cfg.MODEL.CONDITION)
     denoiser.to(device)
     #specific_timesteps = [250]
     #t = torch.as_tensor(specific_timesteps, dtype=torch.long)
@@ -72,7 +73,7 @@ def train(cfg, filenames, show_losses_plot=False):
 
         # One epoch of training
         epoch_loss = train_one_epoch(denoiser,diffusionmodel,batched_train_data,optimizer,device,epoch=epoch,total_epochs=wandb.config.epochs)
-        wandb.log({"loss_2D": epoch_loss})
+        wandb.log({"loss": epoch_loss})
         if epoch_loss < best_loss:
             best_loss = epoch_loss
             # Save best checkpoints -> AR, shouldn't we save diffusionmodel too?? I think it also has weigths, isn't?
@@ -85,12 +86,12 @@ def train(cfg, filenames, show_losses_plot=False):
                 os.makedirs(cfg.MODEL.SAVE_DIR)
             lr_str = "{:.0e}".format(wandb.config.learning_rate)
             scale_str = "{:.0e}".format(wandb.config.scale)
-            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(wandb.config.epochs, lr_str, scale_str))
+            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(wandb.config.epochs, lr_str, scale_str, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
             torch.save(checkpoint_dict, save_path)
             del checkpoint_dict
 
 sweep_configuration = {
-    "name": "sweep_crowdmod_ddpm_2D",
+    "name": "sweep_crowdmod_ddpm_4D",
     "method": "random",
     "metric": {"goal": "minimize", "name": "loss_2D"},
     "parameters": {
