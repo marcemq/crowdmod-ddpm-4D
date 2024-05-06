@@ -113,36 +113,11 @@ def generate_samples(cfg, filenames):
                 ax[i,j].axis("off")
                 ax[i,j].grid(False)
 
-        #nsamples, height, width = cfg.DIFFUSION.NSAMPLES, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS
-
-        # Create a big canvas to hold all the images
-        #canvas_width = (width + 2) * (cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN) 
-        #canvas_height = nsamples * (height + 2) 
-        #canvas = torch.ones((canvas_height, canvas_width)) 
-
-        #for i in range(nsamples):
-        #    for j in range(cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN):
-        #        # Calculate coordinates for current image position
-        #        x_start = j * (width + 2) + 1  # Add space for white lines
-        #        x_end = x_start + width
-        #        y_start = i * (height + 2) + 1  # Add space for white lines
-        #        y_end = y_start + height
-                
-                # Extract the current image
-        #        one_seq_img = seq_images[i]
-        #        one_sample_img = one_seq_img[:, :, :, j]
-        #        one_sample_img_gray = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
-                
-                # Fill the canvas with the current image
-        #        canvas[y_start:y_end, x_start:x_end] = one_sample_img_gray.cpu()
-
-
-        plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}", y=0.95)
+        plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}", y=0.95)
         plt.axis("off")
         plt.show()
         match = re.search(r'E\d+_LR\de-\d+_S\de-\d', model_fullname)
         fig.savefig(f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
-        #plt.savefig('big_canvas.png', bbox_inches='tight', pad_inches=0)
         break
 
 if __name__ == '__main__':
