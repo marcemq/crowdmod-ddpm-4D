@@ -86,8 +86,8 @@ def generate_samples(cfg, filenames):
         future_sample_pred = xnoisy_over_time[9]
         for i in range(len(random_past_idx)):
             # TODO: review if inverse transform is still needed
-            #future_sample_iv = inverseTransform(future_sample[i], stats)
-            future_sample_pred_iv = future_sample_pred[i]
+            future_sample_pred_iv = inverseTransform(future_sample_pred[i], stats)
+            #future_sample_pred_iv = future_sample_pred[i]
             future_sample_gt_iv = random_future_samples[i]
             #past_sample_iv = inverseTransform(random_past_samples[i], stats)
             past_sample_iv = random_past_samples[i]
@@ -103,10 +103,10 @@ def generate_samples(cfg, filenames):
             one_seq_img = seq_images[i]
             for j in range(cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN):
                 if j==0:
-                    if (i+1)%2==1:
-                        ax[i,j].set_title(f" GT sequence-{i//2+1}", fontsize=10)
+                    if (i+1)%2==0:
+                        ax[i,j].set_title(f" GT sequence-{i//2+1}", fontsize=9)
                     else:
-                        ax[i,j].set_title(f"Pred sequence-{i//2+1}", fontsize=10)
+                        ax[i,j].set_title(f"Pred sequence-{i//2+1}", fontsize=9)
                 one_sample_img = one_seq_img[:,:,:,j]
                 one_sample_img_gray = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
                 ax[i,j].imshow(one_sample_img_gray.cpu(), cmap='gray')
