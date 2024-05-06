@@ -116,7 +116,7 @@ def generate_samples(cfg, filenames):
         plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}", y=0.95)
         plt.axis("off")
         plt.show()
-        match = re.search(r'E\d+_LR\de-\d+_S\de-\d', model_fullname)
+        match = re.search(r'E\d+_LR\de-\d+_S\de-\d+_PL\d+_FL\d', model_fullname)
         fig.savefig(f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
         break
 
