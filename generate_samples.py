@@ -102,10 +102,11 @@ def generate_samples(cfg, filenames):
         for i in range(cfg.DIFFUSION.NSAMPLES*2):
             one_seq_img = seq_images[i]
             for j in range(cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN):
-                if j==0 and (i+1)//2==0:
-                    ax[i,j].set_title(f" Pred sequence-{i//2+1}", fontsize=10)
-                elif j==0 and (i+1)//2==1:
-                    ax[i,j].set_title(f"GT sequence-{i//2+1}", fontsize=10)
+                if j==0:
+                    if (i+1)%2==1:
+                        ax[i,j].set_title(f" GT sequence-{i//2+1}", fontsize=10)
+                    else:
+                        ax[i,j].set_title(f"Pred sequence-{i//2+1}", fontsize=10)
                 one_sample_img = one_seq_img[:,:,:,j]
                 one_sample_img_gray = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
                 ax[i,j].imshow(one_sample_img_gray.cpu(), cmap='gray')
