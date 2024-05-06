@@ -83,11 +83,11 @@ def generate_samples(cfg, filenames):
         else:
             print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
-        future_sample_pred = xnoisy_over_time[9]
+        future_sample_pred = xnoisy_over_time[999]
         for i in range(len(random_past_idx)):
             # TODO: review if inverse transform is still needed
-            future_sample_pred_iv = inverseTransform(future_sample_pred[i], stats)
-            #future_sample_pred_iv = future_sample_pred[i]
+            #future_sample_pred_iv = inverseTransform(future_sample_pred[i], stats)
+            future_sample_pred_iv = future_sample_pred[i]
             future_sample_gt_iv = random_future_samples[i]
             #past_sample_iv = inverseTransform(random_past_samples[i], stats)
             past_sample_iv = random_past_samples[i]
