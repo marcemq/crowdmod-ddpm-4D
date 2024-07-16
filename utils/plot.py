@@ -18,8 +18,7 @@ def drawMacroProps(crowd, info, maxRho, saveImg=False):
 
     for i in range(crowd.rows):
         for j in range(crowd.cols):
-            # BOTH: radi and center of circle needs to be within box of rho, below code does not achieve it u.u
-            center = (x[j,i]+crowd.mu_v[0,i,j], y[j,i]+crowd.mu_v[1,i,j])
+            center = (x[j,i]+crowd.mu_v[0,i,j], y[j,i]-crowd.mu_v[1,i,j])
             circle = plt.Circle(center, np.sqrt(crowd.sigma2_v[i,j]), fill=False, color='green')
             Q.axes.add_artist(circle)
     #plt.show()
