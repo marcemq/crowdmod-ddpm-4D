@@ -8,6 +8,7 @@ from models.generate import generate_ddpm, generate_ddim
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from utils.dataset import getDataset
+from utils.plot_sampled_mprops import plotDensity, plotAllMacroprops
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
 
@@ -34,7 +35,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
         plt.show()
     return grid_img
 
-def generate_samples(cfg, filenames):
+def generate_samples(cfg, filenames, plotMprop="Density", plotPast="Last2"):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -96,32 +97,18 @@ def generate_samples(cfg, filenames):
             seq_gt = torch.cat([past_sample_iv, future_sample_gt_iv], dim=3)
             seq_images.append(seq_gt)
 
-        # Plot and see samples at different timesteps
-        fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES*2, cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN, figsize=(13,7), facecolor='white')
-        fig.subplots_adjust(hspace=0.3)
-        for i in range(cfg.DIFFUSION.NSAMPLES*2):
-            one_seq_img = seq_images[i]
-            for j in range(cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN):
-                if j==0:
-                    if (i+1)%2==0:
-                        ax[i,j].set_title(f" GT sequence-{i//2+1}", fontsize=9)
-                    else:
-                        ax[i,j].set_title(f"Pred sequence-{i//2+1}", fontsize=9)
-                one_sample_img = one_seq_img[:,:,:,j]
-                one_sample_img_gray = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
-                ax[i,j].imshow(one_sample_img_gray.cpu(), cmap='gray')
-                ax[i,j].axis("off")
-                ax[i,j].grid(False)
-
-        plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}", y=0.95)
-        plt.axis("off")
-        plt.show()
         match = re.search(r'E\d+_LR\de-\d+_S\de-\d+_PL\d+_FL\d', model_fullname)
-        fig.savefig(f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
+        if plotMprop=="Density":
+            plotDensity(seq_images, cfg, match)
+        else:
+            plotAllMacroprops(seq_images, cfg, match, plotPast)
+
         break
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
+    parser = argparse.ArgumentParser(description="A script to sample crowd macroprops  from trained model.")
+    parser.add_argument('--plot-mprop', type=str, default='Density', help='Macroprops to be plotted')
+    parser.add_argument('--plot-past', type=str, default='Last2', help='Past macroprops to be plotted')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
     args = parser.parse_args()
@@ -130,5 +117,5 @@ if __name__ == '__main__':
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    generate_samples(cfg, filenames)
+    generate_samples(cfg, filenames, plotMprop=args.plot_mprop, plotPast=args.plot_past)
 
