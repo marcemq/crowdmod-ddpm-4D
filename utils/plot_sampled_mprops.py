@@ -18,7 +18,7 @@ def plotDensity(seq_images, cfg, match):
                     ax[i,j].set_title(f" GT sequence-{i//2+1}", fontsize=9)
                 else:
                     ax[i,j].set_title(f"Pred sequence-{i//2+1}", fontsize=9)
-            one_sample_img = one_seq_img[:,:,:,j]
+            one_sample_img = one_seq_img[:,:,:,j].cpu()
             one_sample_img_gray = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
             ax[i,j].imshow(one_sample_img_gray.cpu(), cmap='gray')
             ax[i,j].axis("off")
@@ -69,7 +69,7 @@ def plotAllMacroprops(seq_images, cfg, match, plotPast, velScale):
                 label = f"GT\nseq-{i // 2 + 1}" if (i + 1) % 2 == 0 else f"Pred\nseq-{i // 2 + 1}"
                 fig.text(0.11, 0.845 - i / (cfg.DIFFUSION.NSAMPLES * 2 + 4.6), label, fontsize=8, ha='center', va='center', rotation=90)
 
-            one_sample_img = one_seq_img[:,:,:,j]
+            one_sample_img = one_seq_img[:,:,:,j].cpu()
             rho = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
             mu_v = torch.squeeze(one_sample_img[1:3,:,:], axis=0)
             sigma2_v = torch.squeeze(one_sample_img[3:4,:,:], axis=0)

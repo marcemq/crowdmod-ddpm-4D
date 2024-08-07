@@ -85,8 +85,7 @@ def train(cfg, filenames, show_losses_plot=False):
                 # Create a new directory if it does not exist
                 os.makedirs(cfg.MODEL.SAVE_DIR)
             lr_str = "{:.0e}".format(wandb.config.learning_rate)
-            scale_str = "{:.0e}".format(wandb.config.scale)
-            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(wandb.config.epochs, lr_str, scale_str, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
+            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(wandb.config.epochs, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
             torch.save(checkpoint_dict, save_path)
             del checkpoint_dict
 
