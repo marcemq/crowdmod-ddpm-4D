@@ -55,7 +55,7 @@ def _get_rho_limits(cfg, seq_images, j_indexes):
 
     return rho_min, rho_max
 
-def plotAllMacroprops(seq_images, cfg, match, plotPast):
+def plotAllMacroprops(seq_images, cfg, match, plotPast, velScale):
     j_indexes = _get_j_indexes(cfg, plotPast)
     rho_min, rho_max = _get_rho_limits(cfg, seq_images, j_indexes)
 
@@ -75,13 +75,13 @@ def plotAllMacroprops(seq_images, cfg, match, plotPast):
             sigma2_v = torch.squeeze(one_sample_img[3:4,:,:], axis=0)
 
             axp = ax[i, ind].matshow(rho, cmap=plt.cm.Blues, vmin=rho_min, vmax=rho_max)
-            Q = ax[i, ind].quiver(mu_v[0,:,:], -mu_v[1,:,:], color='green', angles='xy',scale_units='xy', scale=1)
+            Q = ax[i, ind].quiver(mu_v[0,:,:], -mu_v[1,:,:], color='green', angles='xy',scale_units='xy', scale=velScale, minshaft=3.5, width=0.009, headwidth=5)
 
             x, y = np.mgrid[0:cfg.MACROPROPS.COLS, 0:cfg.MACROPROPS.ROWS]
             for ii in range(cfg.MACROPROPS.ROWS):
                 for jj in range(cfg.MACROPROPS.COLS):
                     center = (x[jj,ii]+mu_v[0,ii,jj], y[jj,ii]-mu_v[1,ii,jj])
-                    circle = plt.Circle(center, 2*np.sqrt(sigma2_v[ii,jj]), fill=False, color='green')
+                    circle = plt.Circle(center, 2*np.sqrt(sigma2_v[ii,jj]), fill=False, color='green', lw=0.7)
                     Q.axes.add_artist(circle)
 
             ax[i, ind].axis('off')
