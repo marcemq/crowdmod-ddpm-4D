@@ -96,7 +96,7 @@ def generate_samples(cfg, filenames, plotMprop="Density", plotPast="Last2", velS
             seq_gt = torch.cat([past_sample_iv, future_sample_gt_iv], dim=3)
             seq_images.append(seq_gt)
 
-        match = re.search(r'E\d+_LR\de-\d+_S\de-\d+_PL\d+_FL\d', model_fullname)
+        match = re.search(r'E\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d', model_fullname)
         if plotMprop=="Density":
             plotDensity(seq_images, cfg, match)
         else:
