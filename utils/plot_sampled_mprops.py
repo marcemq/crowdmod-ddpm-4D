@@ -24,7 +24,7 @@ def plotDensity(seq_images, cfg, match):
             ax[i,j].axis("off")
             ax[i,j].grid(False)
 
-    plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}", y=0.95)
+    plt.suptitle(f"Sampling density for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}", y=0.95)
     plt.axis("off")
     plt.show()
     fig.savefig(f"images/mpSampling_4Density_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
@@ -55,7 +55,17 @@ def _get_rho_limits(cfg, seq_images, j_indexes):
 
     return rho_min, rho_max
 
-def plotAllMacroprops(seq_images, cfg, match, plotPast, velScale, velVarScale):
+def plotMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velVarScale):
+    if plotMprop=="Density":
+        title = f"Sampling density for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
+        figName = f"images/mpSampling_4Density_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
+    elif plotMprop=="Uncertainty":
+        title = f"Sampling uncertainty for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
+        figName = f"images/mpSampling_4Uncertainty_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
+    else:
+        title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
+        figName= f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
+
     j_indexes = _get_j_indexes(cfg, plotPast)
     rho_min, rho_max = _get_rho_limits(cfg, seq_images, j_indexes)
 
@@ -74,15 +84,19 @@ def plotAllMacroprops(seq_images, cfg, match, plotPast, velScale, velVarScale):
             mu_v = torch.squeeze(one_sample_img[1:3,:,:], axis=0)
             sigma2_v = torch.squeeze(one_sample_img[3:4,:,:], axis=0)
 
+            # Plot density
             axp = ax[i, ind].matshow(rho, cmap=plt.cm.Blues, vmin=rho_min, vmax=rho_max)
-            Q = ax[i, ind].quiver(mu_v[0,:,:], -mu_v[1,:,:], color='green', angles='xy',scale_units='xy', scale=velScale, minshaft=3.5, width=0.009, headwidth=5)
-
-            x, y = np.mgrid[0:cfg.MACROPROPS.COLS, 0:cfg.MACROPROPS.ROWS]
-            for ii in range(cfg.MACROPROPS.ROWS):
-                for jj in range(cfg.MACROPROPS.COLS):
-                    center = (x[jj,ii]+mu_v[0,ii,jj], y[jj,ii]-mu_v[1,ii,jj])
-                    circle = plt.Circle(center, velVarScale*np.sqrt(sigma2_v[ii,jj]), fill=False, color='green', lw=0.7)
-                    Q.axes.add_artist(circle)
+            # Plot density and velocity vectors
+            if plotMprop=="Density&Vel":
+                Q = ax[i, ind].quiver(mu_v[0,:,:], -mu_v[1,:,:], color='green', angles='xy',scale_units='xy', scale=velScale, minshaft=3.5, width=0.009, headwidth=5)
+            # Plot density and velocity uncertainty
+            if plotMprop=="Uncertainty":
+                x, y = np.mgrid[0:cfg.MACROPROPS.COLS, 0:cfg.MACROPROPS.ROWS]
+                for ii in range(cfg.MACROPROPS.ROWS):
+                    for jj in range(cfg.MACROPROPS.COLS):
+                        center = (x[jj,ii]+mu_v[0,ii,jj], y[jj,ii]-mu_v[1,ii,jj])
+                        circle = plt.Circle(center, velVarScale*np.sqrt(sigma2_v[ii,jj]), fill=False, color='green', lw=0.7)
+                        Q.axes.add_artist(circle)
 
             ax[i, ind].axis('off')
             ax[i, ind].grid(False)
@@ -92,6 +106,6 @@ def plotAllMacroprops(seq_images, cfg, match, plotPast, velScale, velVarScale):
     cbar.set_label('Density rho', fontsize=9)
     cbar.ax.tick_params(labelsize=8)
 
-    plt.suptitle(f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}", y=0.95)
+    plt.suptitle(title, y=0.95)
     plt.axis("off")
-    fig.savefig(f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
+    fig.savefig(figName, format='svg', bbox_inches='tight')

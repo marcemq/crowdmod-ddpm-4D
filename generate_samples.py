@@ -8,7 +8,7 @@ from models.generate import generate_ddpm, generate_ddim
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from utils.dataset import getDataset
-from utils.plot_sampled_mprops import plotDensity, plotAllMacroprops
+from utils.plot_sampled_mprops import plotMacroprops
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
 
@@ -97,10 +97,7 @@ def generate_samples(cfg, filenames, plotMprop="Density", plotPast="Last2", velS
             seq_images.append(seq_gt)
 
         match = re.search(r'E\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d', model_fullname)
-        if plotMprop=="Density":
-            plotDensity(seq_images, cfg, match)
-        else:
-            plotAllMacroprops(seq_images, cfg, match, plotPast, velScale, velVarScale)
+        plotMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velVarScale)
 
         break
 
