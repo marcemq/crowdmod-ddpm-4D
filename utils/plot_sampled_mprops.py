@@ -55,7 +55,7 @@ def _get_rho_limits(cfg, seq_images, j_indexes):
 
     return rho_min, rho_max
 
-def plotAllMacroprops(seq_images, cfg, match, plotPast, velScale):
+def plotAllMacroprops(seq_images, cfg, match, plotPast, velScale, velVarScale):
     j_indexes = _get_j_indexes(cfg, plotPast)
     rho_min, rho_max = _get_rho_limits(cfg, seq_images, j_indexes)
 
@@ -81,7 +81,7 @@ def plotAllMacroprops(seq_images, cfg, match, plotPast, velScale):
             for ii in range(cfg.MACROPROPS.ROWS):
                 for jj in range(cfg.MACROPROPS.COLS):
                     center = (x[jj,ii]+mu_v[0,ii,jj], y[jj,ii]-mu_v[1,ii,jj])
-                    circle = plt.Circle(center, 2*np.sqrt(sigma2_v[ii,jj]), fill=False, color='green', lw=0.7)
+                    circle = plt.Circle(center, velVarScale*np.sqrt(sigma2_v[ii,jj]), fill=False, color='green', lw=0.7)
                     Q.axes.add_artist(circle)
 
             ax[i, ind].axis('off')

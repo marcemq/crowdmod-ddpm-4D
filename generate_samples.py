@@ -35,7 +35,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
         plt.show()
     return grid_img
 
-def generate_samples(cfg, filenames, plotMprop="Density", plotPast="Last2", velScale=0.5):
+def generate_samples(cfg, filenames, plotMprop="Density", plotPast="Last2", velScale=0.5, velVarScale=1):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -100,7 +100,7 @@ def generate_samples(cfg, filenames, plotMprop="Density", plotPast="Last2", velS
         if plotMprop=="Density":
             plotDensity(seq_images, cfg, match)
         else:
-            plotAllMacroprops(seq_images, cfg, match, plotPast, velScale)
+            plotAllMacroprops(seq_images, cfg, match, plotPast, velScale, velVarScale)
 
         break
 
@@ -109,6 +109,7 @@ if __name__ == '__main__':
     parser.add_argument('--plot-mprop', type=str, default='Density', help='Macroprops to be plotted')
     parser.add_argument('--plot-past', type=str, default='Last2', help='Past macroprops to be plotted')
     parser.add_argument('--vel-scale', type=float, default=0.5, help='Scale to be applied to velocity mprops vectors')
+    parser.add_argument('--vel-var-scale', type=int, default=1, help='Scale to be applied to velocity variance mprops vectors')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
     args = parser.parse_args()
@@ -117,7 +118,7 @@ if __name__ == '__main__':
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    generate_samples(cfg, filenames, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale)
+    generate_samples(cfg, filenames, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velVarScale=args.vel_var_scale)
 
 # execution example:
 # python3 generate_samples.py --plot-mprop="All" --plot-past="Last2" --vel-scale=0.25
