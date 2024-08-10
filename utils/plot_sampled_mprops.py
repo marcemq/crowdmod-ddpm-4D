@@ -58,10 +58,10 @@ def _get_rho_limits(cfg, seq_images, j_indexes):
 def plotMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUncScale):
     if plotMprop=="Density":
         title = f"Sampling density for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
-        figName = f"images/mpSampling_4Density_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
+        figName = f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_4Density_{match.group()}.svg"
     elif plotMprop=="Uncertainty":
         title = f"Sampling uncertainty for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
-        figName = f"images/mpSampling_4Uncertainty_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
+        figName = f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_4Uncertainty_{match.group()}.svg"
     else:
         title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
         figName= f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
