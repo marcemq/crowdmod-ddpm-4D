@@ -55,7 +55,7 @@ def _get_rho_limits(cfg, seq_images, j_indexes):
 
     return rho_min, rho_max
 
-def plotMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velVarScale):
+def plotMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUncScale):
     if plotMprop=="Density":
         title = f"Sampling density for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
         figName = f"images/mpSampling_4Density_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
@@ -94,9 +94,9 @@ def plotMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velVar
                 x, y = np.mgrid[0:cfg.MACROPROPS.COLS, 0:cfg.MACROPROPS.ROWS]
                 for ii in range(cfg.MACROPROPS.ROWS):
                     for jj in range(cfg.MACROPROPS.COLS):
-                        center = (x[jj,ii]+mu_v[0,ii,jj], y[jj,ii]-mu_v[1,ii,jj])
-                        circle = plt.Circle(center, velVarScale*np.sqrt(sigma2_v[ii,jj]), fill=False, color='green', lw=0.7)
-                        Q.axes.add_artist(circle)
+                        center = (x[jj,ii], y[jj,ii])
+                        circle = plt.Circle(center, velUncScale*np.sqrt(sigma2_v[ii,jj]), fill=False, color='green', lw=0.7)
+                        axp.axes.add_artist(circle)
 
             ax[i, ind].axis('off')
             ax[i, ind].grid(False)
