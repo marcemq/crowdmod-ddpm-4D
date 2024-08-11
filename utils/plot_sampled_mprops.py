@@ -6,29 +6,6 @@ from utils.plot import drawMacroProps
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
-def plotDensity(seq_images, cfg, match):
-    # Plot and see samples at different timesteps
-    fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES*2, cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN, figsize=(13,7), facecolor='white')
-    fig.subplots_adjust(hspace=0.3)
-    for i in range(cfg.DIFFUSION.NSAMPLES*2):
-        one_seq_img = seq_images[i]
-        for j in range(cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN):
-            if j==0:
-                if (i+1)%2==0:
-                    ax[i,j].set_title(f" GT sequence-{i//2+1}", fontsize=9)
-                else:
-                    ax[i,j].set_title(f"Pred sequence-{i//2+1}", fontsize=9)
-            one_sample_img = one_seq_img[:,:,:,j].cpu()
-            one_sample_img_gray = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
-            ax[i,j].imshow(one_sample_img_gray.cpu(), cmap='gray')
-            ax[i,j].axis("off")
-            ax[i,j].grid(False)
-
-    plt.suptitle(f"Sampling density for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}", y=0.95)
-    plt.axis("off")
-    plt.show()
-    fig.savefig(f"images/mpSampling_4Density_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg", format='svg', bbox_inches='tight')
-
 def _get_j_indexes(cfg, plotPast):
     past_indexes = list(range(cfg.DATASET.PAST_LEN))
     future_indexes = list(range(cfg.DATASET.PAST_LEN, cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN))
