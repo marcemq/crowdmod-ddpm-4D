@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib.animation import PillowWriter
 from utils.crowd import Crowd
 from utils.plot import drawMacroProps
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -12,10 +14,12 @@ def _get_j_indexes(cfg, plotPast):
 
     if plotPast == "Last2":
         j_indexes = past_indexes[-2:]
-    if plotPast == "Alternate":
+    elif plotPast == "Alternate":
         j_indexes = past_indexes[::2]
         if past_indexes[-1] not in j_indexes:
             j_indexes[-1] = past_indexes[-1]
+    else:
+        j_indexes = past_indexes
 
     j_indexes.extend(future_indexes)
     return j_indexes
@@ -32,7 +36,7 @@ def _get_rho_limits(cfg, seq_images, j_indexes):
 
     return rho_min, rho_max
 
-def plotMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUncScale):
+def plotStaticMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUncScale):
     if plotMprop=="Density":
         title = f"Sampling density for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
         figName = f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_4Density_{match.group()}.svg"
@@ -86,3 +90,13 @@ def plotMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUnc
     plt.suptitle(title, y=0.95)
     plt.axis("off")
     fig.savefig(figName, format='svg', bbox_inches='tight')
+
+def plotDynamiccMacroprops(seq_images, cfg, match, velScale, velUncScale):
+    title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
+    figName= f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
+
+    j_indexes = _get_j_indexes(cfg, plotPast="All")
+    rho_min, rho_max = _get_rho_limits(cfg, seq_images, j_indexes)
+
+    fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES*2, len(j_indexes), figsize=(10,8), facecolor='white')
+    fig.subplots_adjust(hspace=0.1, wspace=0.1)
