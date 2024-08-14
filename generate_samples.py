@@ -125,3 +125,4 @@ if __name__ == '__main__':
 # python3 generate_samples.py --plot-mprop="Density" --plot-past="Last2"
 # python3 generate_samples.py --plot-mprop="Density&Vel" --plot-past="Last2" --vel-scale=0.25
 # python3 generate_samples.py --plot-mprop="Uncertainty" --plot-past="Last2" --vel-unc-scale=3
+# python3 generate_samples.py --plot-type="Dynamic" --vel-scale=0.25 --vel-unc-scale=3
