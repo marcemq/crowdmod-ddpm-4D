@@ -8,7 +8,7 @@ from models.generate import generate_ddpm, generate_ddim
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from utils.dataset import getDataset
-from utils.plot_sampled_mprops import plotMacroprops
+from utils.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
 
@@ -35,7 +35,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
         plt.show()
     return grid_img
 
-def generate_samples(cfg, filenames, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1):
+def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -97,7 +97,10 @@ def generate_samples(cfg, filenames, plotMprop="Density", plotPast="Last2", velS
             seq_images.append(seq_gt)
 
         match = re.search(r'E\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d', model_fullname)
-        plotMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUncScale)
+        if plotType == "Static":
+            plotStaticMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUncScale)
+        elif plotType == "Dynamic":
+            plotDynamicMacroprops(seq_images, cfg, match, velScale, velUncScale)
 
         break
 
@@ -107,6 +110,7 @@ if __name__ == '__main__':
     parser.add_argument('--plot-past', type=str, default='Last2', help='Past macroprops to be plotted')
     parser.add_argument('--vel-scale', type=float, default=0.5, help='Scale to be applied to velocity mprops vectors')
     parser.add_argument('--vel-unc-scale', type=int, default=1, help='Scale to be applied to velocity uncertainty mprops vectors')
+    parser.add_argument('--plot-type', type=str, default='Static', help='Macroprops plot type can be static (.svg) or dinamic (.gif)')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
     args = parser.parse_args()
@@ -115,9 +119,10 @@ if __name__ == '__main__':
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    generate_samples(cfg, filenames, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale)
+    generate_samples(cfg, filenames, plotType=args.plot_type, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale)
 
 # execution example:
 # python3 generate_samples.py --plot-mprop="Density" --plot-past="Last2"
 # python3 generate_samples.py --plot-mprop="Density&Vel" --plot-past="Last2" --vel-scale=0.25
 # python3 generate_samples.py --plot-mprop="Uncertainty" --plot-past="Last2" --vel-unc-scale=3
+# python3 generate_samples.py --plot-type="Dynamic" --vel-scale=0.25 --vel-unc-scale=3

@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib.animation import PillowWriter
 from utils.crowd import Crowd
 from utils.plot import drawMacroProps
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -12,10 +14,12 @@ def _get_j_indexes(cfg, plotPast):
 
     if plotPast == "Last2":
         j_indexes = past_indexes[-2:]
-    if plotPast == "Alternate":
+    elif plotPast == "Alternate":
         j_indexes = past_indexes[::2]
         if past_indexes[-1] not in j_indexes:
             j_indexes[-1] = past_indexes[-1]
+    else:
+        j_indexes = past_indexes
 
     j_indexes.extend(future_indexes)
     return j_indexes
@@ -32,7 +36,7 @@ def _get_rho_limits(cfg, seq_images, j_indexes):
 
     return rho_min, rho_max
 
-def plotMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUncScale):
+def plotStaticMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUncScale):
     if plotMprop=="Density":
         title = f"Sampling density for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
         figName = f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_4Density_{match.group()}.svg"
@@ -86,3 +90,56 @@ def plotMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUnc
     plt.suptitle(title, y=0.95)
     plt.axis("off")
     fig.savefig(figName, format='svg', bbox_inches='tight')
+
+def plotDynamicMacroprops(seq_images, cfg, match, velScale, velUncScale):
+    j_indexes = _get_j_indexes(cfg, plotPast="All")
+    rho_min, rho_max = _get_rho_limits(cfg, seq_images, j_indexes)
+    title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
+    
+    # Iterate over each sequence to create a GIF for each
+    for i in range(cfg.DIFFUSION.NSAMPLES*2):
+        fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
+        fig.subplots_adjust(hspace=0.1, wspace=0.1)
+
+        # Set up the initial plot and color bar
+        one_seq_img = seq_images[i]
+        j = j_indexes[0]
+        one_sample_img = one_seq_img[:, :, :, j].cpu()
+        rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
+        mu_v = torch.squeeze(one_sample_img[1:3, :, :], axis=0)
+
+        # Initial plot and color bar
+        axp = ax.matshow(rho, cmap=plt.cm.Blues, vmin=rho_min, vmax=rho_max)
+        Q = ax.quiver(mu_v[0, :, :], -mu_v[1, :, :], color='green', angles='xy', scale_units='xy', scale=velScale, minshaft=3.5, width=0.009, headwidth=5)
+        # color bar setup
+        cbar = fig.colorbar(axp, ax=ax, orientation='vertical', fraction=0.015)
+        cbar.set_label('Density rho', fontsize=11)
+        cbar.ax.tick_params(labelsize=10)
+
+        plt.title(title, fontsize=12)
+        frame_text = ax.text(0.5, -0.15, '', transform=ax.transAxes, ha='center', fontsize=11, fontweight='bold')
+
+        def update(frame):
+            j = j_indexes[frame]
+            one_sample_img = one_seq_img[:, :, :, j].cpu()
+            rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
+            mu_v = torch.squeeze(one_sample_img[1:3, :, :], axis=0)
+            # Update the plot without clearing the axis
+            axp.set_array(rho)
+            Q.set_UVC(mu_v[0, :, :], -mu_v[1, :, :])
+            # Update the frame number text and color accordingly
+            if (i + 1) % 2 == 0:
+                frame_text.set_color('black')
+            else:
+                if frame < cfg.DATASET.PAST_LEN:
+                    frame_text.set_color('black')
+                else:
+                    frame_text.set_color('blue')
+            frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)}')
+
+        # Set up animation for the current sequence
+        ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
+        # Save each sequence as a separate GIF
+        gif_name = f"images/mprops_GT_seq_{i // 2 + 1}.gif" if (i + 1) % 2 == 0 else f"images/mprops_seq_{i // 2 + 1}.gif"
+        ani.save(gif_name, writer=PillowWriter(fps=2))
+        plt.close(fig)
