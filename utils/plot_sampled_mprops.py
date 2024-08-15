@@ -127,14 +127,19 @@ def plotDynamicMacroprops(seq_images, cfg, match, velScale, velUncScale):
             # Update the plot without clearing the axis
             axp.set_array(rho)
             Q.set_UVC(mu_v[0, :, :], -mu_v[1, :, :])
-            # Update the frame number text
+            # Update the frame number text and color accordingly
+            if (i + 1) % 2 == 0:
+                frame_text.set_color('black')
+            else:
+                if frame < cfg.DATASET.PAST_LEN:
+                    frame_text.set_color('black')
+                else:
+                    frame_text.set_color('blue')
             frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)}')
 
         # Set up animation for the current sequence
         ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
-
         # Save each sequence as a separate GIF
         gif_name = f"images/mprops_GT_seq_{i // 2 + 1}.gif" if (i + 1) % 2 == 0 else f"images/mprops_seq_{i // 2 + 1}.gif"
         ani.save(gif_name, writer=PillowWriter(fps=2))
-
-        plt.close(fig)  # Close the figure to avoid display overlap
+        plt.close(fig)
