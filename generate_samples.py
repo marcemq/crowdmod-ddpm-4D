@@ -60,7 +60,7 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
     timesteps=cfg.DIFFUSION.TIMESTEPS
     diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS)
     diffusionmodel.to(device)
-    seq_images = []
+    seq_frames = []
     taus = 1
     for batch in batched_train_data:
         past_train, future_train, stats = batch
@@ -92,15 +92,15 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
             #past_sample_iv = inverseTransform(random_past_samples[i], stats)
             past_sample_iv = random_past_samples[i]
             seq_pred = torch.cat([past_sample_iv, future_sample_pred_iv], dim=3)
-            seq_images.append(seq_pred)
+            seq_frames.append(seq_pred)
             seq_gt = torch.cat([past_sample_iv, future_sample_gt_iv], dim=3)
-            seq_images.append(seq_gt)
+            seq_frames.append(seq_gt)
 
         match = re.search(r'E\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d', model_fullname)
         if plotType == "Static":
-            plotStaticMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUncScale)
+            plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale)
         elif plotType == "Dynamic":
-            plotDynamicMacroprops(seq_images, cfg, match, velScale, velUncScale)
+            plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale)
 
         break
 
