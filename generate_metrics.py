@@ -32,7 +32,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
     denoiser.to(device)
     match = re.search(r'E\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d', model_fullname)
 
-    # Instantiate the diffusion model 
+    # Instantiate the diffusion model
     timesteps=cfg.DIFFUSION.TIMESTEPS
     diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS)
     diffusionmodel.to(device)

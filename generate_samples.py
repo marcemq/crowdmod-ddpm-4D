@@ -75,7 +75,6 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
 
         random_past_samples = past_train[random_past_idx]
         random_future_samples = future_train[random_past_idx]
-        print(f'random_past_samples shape {random_past_samples.shape}')
         if cfg.DIFFUSION.SAMPLER == "DDPM":
             x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device) # AR review .cpu() call here
             if cfg.DIFFUSION.GUIDANCE == "sparsity" or cfg.DIFFUSION.GUIDANCE == "none":
@@ -89,7 +88,6 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
             print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
         future_sample_pred = xnoisy_over_time[cfg.DIFFUSION.TIMESTEPS]
-        print(f'future_sample_pred {future_sample_pred.shape}')
         for i in range(len(random_past_idx)):
             # TODO: review if inverse transform is still needed
             #future_sample_pred_iv = inverseTransform(future_sample_pred[i], stats)
