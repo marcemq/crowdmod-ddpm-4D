@@ -19,3 +19,15 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list):
         mprops_nsamples_psnr[i] = (psnr_rho/pred_len, psnr_vx/pred_len, psnr_vy/pred_len, psnr_unc/pred_len)
 
     return mprops_nsamples_psnr
+
+def ssim_mprops_seq(gt_seq_list, pred_seq_list):
+    nsamples = len(pred_seq_list)
+    _, _, _, pred_len = pred_seq_list[0].shape
+    mprops_nsamples_ssim = np.zeros((nsamples, 4))
+    return mprops_nsamples_ssim
+
+def lpips_mprops_seq(gt_seq_list, pred_seq_list):
+    nsamples = len(pred_seq_list)
+    _, _, _, pred_len = pred_seq_list[0].shape
+    mprops_nsamples_lpips = np.zeros((nsamples, 4))
+    return mprops_nsamples_lpips

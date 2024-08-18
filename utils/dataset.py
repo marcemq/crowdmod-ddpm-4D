@@ -132,7 +132,7 @@ def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False, test_data
         BATCH_SIZE = cfg.DATASET.BATCH_SIZE
 
     # Load the dataset and perform the split
-    tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, train_data_only)
+    tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, train_data_only, test_data_only)
     # Transfor set
     custom_transform = CustomTransform()
     train_data, val_data, test_data = None, None, None
