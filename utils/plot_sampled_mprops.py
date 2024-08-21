@@ -5,6 +5,7 @@ import matplotlib.animation as animation
 from matplotlib.animation import PillowWriter
 from utils.crowd import Crowd
 from utils.plot import drawMacroProps
+from utils.computeMetrics import psnr_mprops_seq
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
@@ -24,11 +25,11 @@ def _get_j_indexes(cfg, plotPast):
     j_indexes.extend(future_indexes)
     return j_indexes
 
-def _get_rho_limits(cfg, seq_images, j_indexes):
+def _get_rho_limits(cfg, seq_frames, j_indexes):
     rho_min, rho_max = 0, float('-inf')  # Set the color limits here
 
     for i in range(cfg.DIFFUSION.NSAMPLES * 2):
-        one_seq_img = seq_images[i]
+        one_seq_img = seq_frames[i]
         for j in j_indexes:
             one_sample_img = one_seq_img[:, :, :, j]
             rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
@@ -36,7 +37,17 @@ def _get_rho_limits(cfg, seq_images, j_indexes):
 
     return rho_min, rho_max
 
-def plotStaticMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUncScale):
+def _computePSNR(seq_frames, cfg, match):
+    pred_frames_only = [seq[:, :, :, -cfg.DATASET.FUTURE_LEN:] for seq in seq_frames]
+
+    pred_seq_list = [pred_frames_only[i] for i in range(0, len(pred_frames_only), 2)]
+    gt_seq_list = [pred_frames_only[i] for i in range(1, len(pred_frames_only), 2)]
+
+    mprops_nsamples_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list)
+    psnr_file_name = f"metrics/mpSampling_PSNR_{match.group()}.csv"
+    np.savetxt(psnr_file_name, mprops_nsamples_psnr, delimiter=",", header="rho, vx, vy, unc", comments="")
+
+def plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale):
     if plotMprop=="Density":
         title = f"Sampling density for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
         figName = f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_4Density_{match.group()}.svg"
@@ -47,14 +58,17 @@ def plotStaticMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, 
         title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
         figName= f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
 
+    # Compute and save macroprops of provided sequences
+    _computePSNR(seq_frames, cfg, match)
+
     j_indexes = _get_j_indexes(cfg, plotPast)
-    rho_min, rho_max = _get_rho_limits(cfg, seq_images, j_indexes)
+    rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
 
     fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES*2, len(j_indexes), figsize=(10,8), facecolor='white')
     fig.subplots_adjust(hspace=0.1, wspace=0.1)
 
     for i in range(cfg.DIFFUSION.NSAMPLES*2):
-        one_seq_img = seq_images[i]
+        one_seq_img = seq_frames[i]
         for ind, j in enumerate(j_indexes):
             if ind == 0:
                 label = f"GT\nseq-{i // 2 + 1}" if (i + 1) % 2 == 0 else f"Pred\nseq-{i // 2 + 1}"
@@ -91,18 +105,21 @@ def plotStaticMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, 
     plt.axis("off")
     fig.savefig(figName, format='svg', bbox_inches='tight')
 
-def plotDynamicMacroprops(seq_images, cfg, match, velScale, velUncScale):
+def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
     j_indexes = _get_j_indexes(cfg, plotPast="All")
-    rho_min, rho_max = _get_rho_limits(cfg, seq_images, j_indexes)
+    rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
     title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
-    
+
+    # Compute and save macroprops of provided sequences
+    _computePSNR(seq_frames, cfg, match)
+
     # Iterate over each sequence to create a GIF for each
     for i in range(cfg.DIFFUSION.NSAMPLES*2):
         fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
         fig.subplots_adjust(hspace=0.1, wspace=0.1)
 
         # Set up the initial plot and color bar
-        one_seq_img = seq_images[i]
+        one_seq_img = seq_frames[i]
         j = j_indexes[0]
         one_sample_img = one_seq_img[:, :, :, j].cpu()
         rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)

@@ -35,7 +35,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
         plt.show()
     return grid_img
 
-def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1):
+def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1, samePastSeq=False):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -60,7 +60,7 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
     timesteps=cfg.DIFFUSION.TIMESTEPS
     diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS)
     diffusionmodel.to(device)
-    seq_images = []
+    seq_frames = []
     taus = 1
     for batch in batched_train_data:
         past_train, future_train, stats = batch
@@ -68,9 +68,13 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
         past_train, future_train = past_train.to(device=device), future_train.to(device=device)
         #x_train, y_train, stats = batch
         random_past_idx = torch.randperm(past_train.shape[0])[:cfg.DIFFUSION.NSAMPLES]
+        # Predict different sequences for the same past sequence
+        if samePastSeq:
+            fixed_past_idx = random_past_idx[0]
+            random_past_idx.fill_(fixed_past_idx)
+
         random_past_samples = past_train[random_past_idx]
         random_future_samples = future_train[random_past_idx]
-
         if cfg.DIFFUSION.SAMPLER == "DDPM":
             x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device) # AR review .cpu() call here
             if cfg.DIFFUSION.GUIDANCE == "sparsity" or cfg.DIFFUSION.GUIDANCE == "none":
@@ -92,15 +96,15 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
             #past_sample_iv = inverseTransform(random_past_samples[i], stats)
             past_sample_iv = random_past_samples[i]
             seq_pred = torch.cat([past_sample_iv, future_sample_pred_iv], dim=3)
-            seq_images.append(seq_pred)
+            seq_frames.append(seq_pred)
             seq_gt = torch.cat([past_sample_iv, future_sample_gt_iv], dim=3)
-            seq_images.append(seq_gt)
+            seq_frames.append(seq_gt)
 
         match = re.search(r'E\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d', model_fullname)
         if plotType == "Static":
-            plotStaticMacroprops(seq_images, cfg, match, plotMprop, plotPast, velScale, velUncScale)
+            plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale)
         elif plotType == "Dynamic":
-            plotDynamicMacroprops(seq_images, cfg, match, velScale, velUncScale)
+            plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale)
 
         break
 
@@ -111,6 +115,7 @@ if __name__ == '__main__':
     parser.add_argument('--vel-scale', type=float, default=0.5, help='Scale to be applied to velocity mprops vectors')
     parser.add_argument('--vel-unc-scale', type=int, default=1, help='Scale to be applied to velocity uncertainty mprops vectors')
     parser.add_argument('--plot-type', type=str, default='Static', help='Macroprops plot type can be static (.svg) or dinamic (.gif)')
+    parser.add_argument('--same-past-seq', type=bool, default=False, help='Use the same past sequence to predict different mprops from it.')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
     args = parser.parse_args()
@@ -119,10 +124,11 @@ if __name__ == '__main__':
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    generate_samples(cfg, filenames, plotType=args.plot_type, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale)
+    generate_samples(cfg, filenames, plotType=args.plot_type, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, samePastSeq=args.same_past_seq)
 
 # execution example:
 # python3 generate_samples.py --plot-mprop="Density" --plot-past="Last2"
 # python3 generate_samples.py --plot-mprop="Density&Vel" --plot-past="Last2" --vel-scale=0.25
 # python3 generate_samples.py --plot-mprop="Uncertainty" --plot-past="Last2" --vel-unc-scale=3
 # python3 generate_samples.py --plot-type="Dynamic" --vel-scale=0.25 --vel-unc-scale=3
+# python3 generate_samples.py --plot-mprop="Density" --plot-past="Last2" --same-past-seq=True

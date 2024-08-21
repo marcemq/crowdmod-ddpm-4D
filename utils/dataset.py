@@ -84,7 +84,7 @@ def getMacropropsFromFilenames(filenames):
 
     return data, stats
 
-def dataHelper(cfg, filenames, train_data_only=False):
+def dataHelper(cfg, filenames, train_data_only=False, test_data_only=False):
     "Compute macroprops sequences and split data by filecount defined at config file."
     if not cfg.PICKLE.USE_PICKLE:
         logging.info("Read macroproperties data to define train, validation and test sets.")
@@ -94,11 +94,14 @@ def dataHelper(cfg, filenames, train_data_only=False):
         val_filenames = filenames[cfg.DATASET.TRAIN_FILE_COUNT:cfg.DATASET.TRAIN_FILE_COUNT+cfg.DATASET.VAL_FILE_COUNT]
         test_filenames = filenames[cfg.DATASET.TRAIN_FILE_COUNT+cfg.DATASET.VAL_FILE_COUNT:cfg.DATASET.TRAIN_FILE_COUNT+cfg.DATASET.VAL_FILE_COUNT+cfg.DATASET.TEST_FILE_COUNT]
 
-        train_data, train_stats = getMacropropsFromFilenames(train_filenames)
+        train_data, val_data, test_data, train_stats, val_stats, test_stats = None, None, None, None, None, None
+
         if train_data_only:
-            val_data, val_stats = None, None
-            test_data, test_stats = None, None
+            train_data, train_stats = getMacropropsFromFilenames(train_filenames)
+        elif test_data_only:
+            test_data, test_stats = getMacropropsFromFilenames(test_filenames)
         else:
+            train_data, train_stats = getMacropropsFromFilenames(train_filenames)
             val_data, val_stats = getMacropropsFromFilenames(val_filenames)
             test_data, test_stats = getMacropropsFromFilenames(test_filenames)
         #saveData(train_data, val_data, test_data, cfg.PICKLE.PICKLE_DIR)
@@ -113,12 +116,14 @@ def dataHelper(cfg, filenames, train_data_only=False):
 
     if train_data_only:
         logging.info("In dataHelper func, shape of train_data:{} from files".format(train_data.shape))
+    elif test_data_only:
+        logging.info("In dataHelper func, shape of test_data:{} from files".format(test_data.shape))
     else:
         logging.info("In dataHelper func, shape of train_data:{}, val_data:{}, test_data:{} from files".format(train_data.shape, val_data.shape, test_data.shape))
 
     return train_data, val_data, test_data, train_stats, val_stats, test_stats
 
-def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False):
+def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False, test_data_only=False):
     if 'merge_from_file' in cfg.DATASET.params:
         del cfg.DATASET.params['merge_from_file']
     if 'merge_from_dict' in cfg.DATASET.params:
@@ -127,22 +132,29 @@ def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False):
         BATCH_SIZE = cfg.DATASET.BATCH_SIZE
 
     # Load the dataset and perform the split
-    tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, train_data_only)
+    tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, train_data_only, test_data_only)
     # Transfor set
     custom_transform = CustomTransform()
-    # Torch dataset
-    train_data= MacropropsDataset(tmp_train_data, cfg, transform=custom_transform)
-    # Form batches
-    batched_train_data = DataLoader(train_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
+    train_data, val_data, test_data = None, None, None
+    batched_train_data, batched_val_data, batched_test_data = None, None, None
 
     if train_data_only:
-        batched_val_data = None
-        batched_test_data = None
+        # Torch dataset
+        train_data= MacropropsDataset(tmp_train_data, cfg, transform=custom_transform)
+        # Form batches
+        batched_train_data = DataLoader(train_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
+    elif test_data_only:
+        # Torch dataset
+        test_data = MacropropsDataset(tmp_test_data, cfg, transform=custom_transform)
+        # Form batches
+        batched_test_data  = DataLoader(test_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
     else:
         # Torch dataset
+        train_data= MacropropsDataset(tmp_train_data, cfg, transform=custom_transform)
         val_data  = MacropropsDataset(tmp_val_data, cfg, transform=custom_transform)
         test_data = MacropropsDataset(tmp_test_data, cfg, transform=custom_transform)
         # Form batches
+        batched_train_data = DataLoader(train_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
         batched_val_data   = DataLoader(val_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
         batched_test_data  = DataLoader(test_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
 
