@@ -72,15 +72,15 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
 
         if metric in ['PSNR', 'All']:
             mprops_nsamples_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list)
-            psnr_file_name = f"metrics/mpSampling_PSNR_{match.group()}.csv"
+            psnr_file_name = f"metrics/mpSampling_PSNR{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
             np.savetxt(psnr_file_name, mprops_nsamples_psnr, delimiter=",", header="rho,vx,vy,unc", comments="")
         if metric in ['SSIM', 'All']:
             mprops_nsamples_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list)
-            ssim_file_name = f"metrics/mpSampling_SSIM_{match.group()}.csv"
+            ssim_file_name = f"metrics/mpSampling_SSIM{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
             np.savetxt(ssim_file_name, mprops_nsamples_ssim, delimiter=",", header="rho,vx,vy,unc", comments="")
         if metric in ['LPIPS', 'All']:
             mprops_nsamples_lpips = lpips_mprops_seq(gt_seq_list, pred_seq_list)
-            lpips_file_name = f"metrics/mpSampling_LPIPS_{match.group()}.csv"
+            lpips_file_name = f"metrics/mpSampling_LPIPS{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
             np.savetxt(lpips_file_name, mprops_nsamples_lpips, delimiter=",", header="rho,vx,vy,unc", comments="")
         break
 
