@@ -2,7 +2,7 @@ import numpy as np
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
 
-def psnr_mprops_seq(gt_seq_list, pred_seq_list):
+def psnr_mprops_seq(gt_seq_list, pred_seq_list, pred_mprops_factor):
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
     mprops_nsamples_psnr = np.zeros((nsamples, 4))
@@ -12,10 +12,10 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list):
         one_gt_seq =  gt_seq_list[i].cpu().numpy()
 
         # Calculate data ranges for each macroprop
-        rho_range = int(np.ceil(one_gt_seq[0].max() - one_gt_seq[0].min()))
-        vx_range  = int(np.ceil(one_gt_seq[1].max() - one_gt_seq[1].min()))
-        vy_range  = int(np.ceil(one_gt_seq[2].max() - one_gt_seq[2].min()))
-        unc_range = int(np.ceil(one_gt_seq[3].max() - one_gt_seq[3].min()))
+        rho_range = int(pred_mprops_factor[0] * (one_gt_seq[0].max() - one_gt_seq[0].min()))
+        vx_range  = int(pred_mprops_factor[1] * (one_gt_seq[1].max() - one_gt_seq[1].min()))
+        vy_range  = int(pred_mprops_factor[2] * (one_gt_seq[2].max() - one_gt_seq[2].min()))
+        unc_range = int(pred_mprops_factor[3] * (one_gt_seq[3].max() - one_gt_seq[3].min()))
 
         psnr_rho, psnr_vx, psnr_vy, psnr_unc = 0, 0, 0, 0
         for j in range(pred_len):
@@ -28,7 +28,7 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list):
 
     return mprops_nsamples_psnr
 
-def ssim_mprops_seq(gt_seq_list, pred_seq_list):
+def ssim_mprops_seq(gt_seq_list, pred_seq_list, pred_mprops_factor):
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
     mprops_nsamples_ssim = np.zeros((nsamples, 4))
@@ -39,10 +39,10 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list):
         ssim_rho, ssim_vx, ssim_vy, ssim_unc = 0, 0, 0, 0
 
          # Calculate data ranges for each macroprop
-        rho_range = int(np.ceil(one_gt_seq[0].max() - one_gt_seq[0].min()))
-        vx_range  = int(np.ceil(one_gt_seq[1].max() - one_gt_seq[1].min()))
-        vy_range  = int(np.ceil(one_gt_seq[2].max() - one_gt_seq[2].min()))
-        unc_range = int(np.ceil(one_gt_seq[3].max() - one_gt_seq[3].min()))
+        rho_range = int(pred_mprops_factor[0] * (one_gt_seq[0].max() - one_gt_seq[0].min()))
+        vx_range  = int(pred_mprops_factor[1] * (one_gt_seq[1].max() - one_gt_seq[1].min()))
+        vy_range  = int(pred_mprops_factor[2] *(one_gt_seq[2].max() - one_gt_seq[2].min()))
+        unc_range = int(pred_mprops_factor[3] *(one_gt_seq[3].max() - one_gt_seq[3].min()))
 
         for j in range(pred_len):
             ssim_rho += ssim(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
