@@ -12,7 +12,7 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor):
         one_gt_seq =  gt_seq_list[i].cpu().numpy()
 
         mprops_factor = np.array(mprops_factor)
-        one_pred_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
+        one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
         one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
         # Calculate data ranges for each macroprop
         rho_range = (one_gt_seq[0].max() - one_gt_seq[0].min())
@@ -41,7 +41,7 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor):
         one_gt_seq = gt_seq_list[i].cpu().numpy()
 
         mprops_factor = np.array(mprops_factor)
-        one_pred_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
+        one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
         one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
          # Calculate data ranges for each macroprop
         rho_range = (one_gt_seq[0].max() - one_gt_seq[0].min())
