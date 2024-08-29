@@ -11,6 +11,10 @@ from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, lpips_mprops_
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
+def save_metric_data(cfg, match, data, metric):
+    file_name = f"metrics/mpSampling_{metric}{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
+    np.savetxt(file_name, data, delimiter=",", header="rho,vx,vy,unc", comments="")
+
 def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
     torch.manual_seed(42)
     # Setting the device to work with
@@ -71,17 +75,16 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
             gt_seq_list.append(random_future_samples[i])
 
         if metric in ['PSNR', 'All']:
-            mprops_nsamples_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list)
-            psnr_file_name = f"metrics/mpSampling_PSNR{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
-            np.savetxt(psnr_file_name, mprops_nsamples_psnr, delimiter=",", header="rho,vx,vy,unc", comments="")
+            mprops_nsamples_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+            save_metric_data(cfg, match, mprops_nsamples_psnr, "PSNR")
+            save_metric_data(cfg, match, mprops_max_psnr, "MAX-PSNR")
         if metric in ['SSIM', 'All']:
-            mprops_nsamples_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list)
-            ssim_file_name = f"metrics/mpSampling_SSIM{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
-            np.savetxt(ssim_file_name, mprops_nsamples_ssim, delimiter=",", header="rho,vx,vy,unc", comments="")
+            mprops_nsamples_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq)
+            save_metric_data(cfg, match, mprops_nsamples_ssim, "SSIM")
+            save_metric_data(cfg, match, mprops_max_ssim, "MAX-SSIM")
         if metric in ['LPIPS', 'All']:
-            mprops_nsamples_lpips = lpips_mprops_seq(gt_seq_list, pred_seq_list)
-            lpips_file_name = f"metrics/mpSampling_LPIPS{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
-            np.savetxt(lpips_file_name, mprops_nsamples_lpips, delimiter=",", header="rho,vx,vy,unc", comments="")
+            mprops_nsamples_lpips = lpips_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR)
+            save_metric_data(cfg, match, mprops_nsamples_lpips, "LPIPS")
         break
 
 if __name__ == '__main__':
