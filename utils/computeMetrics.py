@@ -3,7 +3,12 @@ from skimage.metrics import structural_similarity as ssim
 
 def my_psnr(y_gt, y_hat, data_range, eps):
     err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
-    data_range = float(data_range)  # prevent overflow for small integer types
+    # prevent overflow for small integer types
+    if data_range < eps:
+        data_range = float(eps)  
+    else:
+        data_range = float(data_range)
+
     if err < eps:
         psnr = 10 * np.log10((data_range**2) / eps)
     else:
@@ -13,8 +18,8 @@ def my_psnr(y_gt, y_hat, data_range, eps):
 def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, eps):
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
-    mprops_nsamples_psnr = np.zeros((nsamples, 3))
-    mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, 3))
+    mprops_nsamples_psnr = np.zeros((nsamples, 4))
+    mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, 4))
 
     for i in range(nsamples):
         one_pred_seq =  pred_seq_list[i].cpu().numpy()
@@ -24,18 +29,20 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
         one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
         one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
         # Calculate data ranges for each macroprop
-        rho_range = int(one_gt_seq[0].max() - one_gt_seq[0].min())
-        vx_range  = int(one_gt_seq[1].max() - one_gt_seq[1].min())
-        vy_range  = int(one_gt_seq[2].max() - one_gt_seq[2].min())
+        rho_range = one_gt_seq[0].max() - one_gt_seq[0].min()
+        vx_range  = one_gt_seq[1].max() - one_gt_seq[1].min()
+        vy_range  = one_gt_seq[2].max() - one_gt_seq[2].min()
+        unc_range  = one_gt_seq[3].max() - one_gt_seq[3].min()
 
-        psnr_rho, psnr_vx, psnr_vy = 0, 0, 0
+        psnr_rho, psnr_vx, psnr_vy, psnr_unc = 0, 0, 0, 0
         for j in range(pred_len):
             psnr_rho += my_psnr(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range, eps=eps)
             psnr_vx  += my_psnr(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range, eps=eps)
             psnr_vy  += my_psnr(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range, eps=eps)
+            psnr_unc  += my_psnr(one_gt_seq[3, :, :, j], one_pred_seq[3, :, :, j], data_range=unc_range, eps=eps)
 
         # Average PSNR across frames, except for unc channel
-        mprops_nsamples_psnr[i] = (psnr_rho/pred_len, psnr_vx/pred_len, psnr_vy/pred_len)
+        mprops_nsamples_psnr[i] = (psnr_rho/pred_len, psnr_vx/pred_len, psnr_vy/pred_len, psnr_unc/pred_len)
 
     # Compute the MAX PSNR by repeteaded seqs on each macroprops
     for i in range(0, nsamples, chunkRepdPastSeq):
@@ -43,7 +50,8 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
         max_rho = psnr_chunk[:,0].max()
         max_vx  = psnr_chunk[:,1].max()
         max_vy  = psnr_chunk[:,2].max()
-        mprops_max_psnr[i // chunkRepdPastSeq] = (max_rho, max_vx, max_vy)
+        max_unc  = psnr_chunk[:,3].max()
+        mprops_max_psnr[i // chunkRepdPastSeq] = (max_rho, max_vx, max_vy, max_unc)
 
     return mprops_nsamples_psnr, mprops_max_psnr
 
