@@ -6,9 +6,7 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
     mprops_nsamples_psnr = np.zeros((nsamples, 3))
-
-    max_psnr_seqs = nsamples//chunkRepdPastSeq
-    mprops_max_psnr = np.zeros((max_psnr_seqs, 3))
+    mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, 3))
 
     for i in range(nsamples):
         one_pred_seq =  pred_seq_list[i].cpu().numpy()
@@ -37,7 +35,7 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
         max_rho = psnr_chunk[:,0].max()
         max_vx  = psnr_chunk[:,1].max()
         max_vy  = psnr_chunk[:,2].max()
-        mprops_max_psnr[i] = (max_rho, max_vx, max_vy)
+        mprops_max_psnr[i // chunkRepdPastSeq] = (max_rho, max_vx, max_vy)
 
     return mprops_nsamples_psnr, mprops_max_psnr
 
@@ -45,9 +43,7 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
     mprops_nsamples_ssim = np.zeros((nsamples, 3))
-
-    max_ssim_seqs = nsamples//chunkRepdPastSeq
-    mprops_max_ssim = np.zeros((max_ssim_seqs, 3))
+    mprops_max_ssim = np.zeros((nsamples//chunkRepdPastSeq, 3))
 
     for i in range(nsamples):
         one_pred_seq = pred_seq_list[i].cpu().numpy()
@@ -68,7 +64,7 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
             ssim_vy  += ssim(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range)
 
         # Average SSIM across frames, except for unc channel
-        mprops_nsamples_ssim[i] = (ssim_rho/pred_len, ssim_vx/pred_len, ssim_vy/pred_len)
+        mprops_nsamples_ssim[i // chunkRepdPastSeq] = (ssim_rho/pred_len, ssim_vx/pred_len, ssim_vy/pred_len)
 
     # Compute the MAX SSIM by repeteaded seqs on each macroprops
     for i in range(0, nsamples, chunkRepdPastSeq):
