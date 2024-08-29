@@ -22,7 +22,7 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
         vx_range  = int(one_gt_seq[1].max() - one_gt_seq[1].min())
         vy_range  = int(one_gt_seq[2].max() - one_gt_seq[2].min())
 
-        psnr_rho, psnr_vx, psnr_vy, psnr_unc = 0, 0, 0, 0
+        psnr_rho, psnr_vx, psnr_vy = 0, 0, 0
         for j in range(pred_len):
             psnr_rho += psnr(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
             psnr_vx  += psnr(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range)
@@ -61,7 +61,7 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
         vx_range  = int(one_gt_seq[1].max() - one_gt_seq[1].min())
         vy_range  = int(one_gt_seq[2].max() - one_gt_seq[2].min())
 
-        ssim_rho, ssim_vx, ssim_vy, ssim_unc = 0, 0, 0, 0
+        ssim_rho, ssim_vx, ssim_vy = 0, 0, 0
         for j in range(pred_len):
             ssim_rho += ssim(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
             ssim_vx  += ssim(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range)
