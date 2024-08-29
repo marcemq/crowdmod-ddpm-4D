@@ -72,7 +72,7 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
             ssim_vy  += ssim(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range)
 
         # Average SSIM across frames, except for unc channel
-        mprops_nsamples_ssim[i // chunkRepdPastSeq] = (ssim_rho/pred_len, ssim_vx/pred_len, ssim_vy/pred_len)
+        mprops_nsamples_ssim[i] = (ssim_rho/pred_len, ssim_vx/pred_len, ssim_vy/pred_len)
 
     # Compute the MAX SSIM by repeteaded seqs on each macroprops
     for i in range(0, nsamples, chunkRepdPastSeq):
@@ -80,7 +80,7 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
         max_rho = ssim_chunk[:, 0].max()
         max_vx  = ssim_chunk[:, 1].max()
         max_vy  = ssim_chunk[:, 2].max()
-        mprops_max_ssim[i] = (max_rho, max_vx, max_vy)
+        mprops_max_ssim[i // chunkRepdPastSeq] = (max_rho, max_vx, max_vy)
 
     return mprops_nsamples_ssim, mprops_max_ssim
 
