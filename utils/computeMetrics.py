@@ -32,11 +32,11 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
         mprops_nsamples_psnr[i] = (psnr_rho/pred_len, psnr_vx/pred_len, psnr_vy/pred_len)
 
     # Compute the MAX PSNR by repeteaded seqs on each macroprops
-    for i in range(nsamples, chunkRepdPastSeq):
+    for i in range(0, nsamples, chunkRepdPastSeq):
         psnr_chunk = mprops_nsamples_psnr[i:i+chunkRepdPastSeq]
-        max_rho = psnr_chunk[0].max()
-        max_vx  = psnr_chunk[1].max()
-        max_vy  = psnr_chunk[2].max()
+        max_rho = psnr_chunk[:,0].max()
+        max_vx  = psnr_chunk[:,1].max()
+        max_vy  = psnr_chunk[:,2].max()
         mprops_max_psnr[i] = (max_rho, max_vx, max_vy)
 
     return mprops_nsamples_psnr, mprops_max_psnr
@@ -71,11 +71,11 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
         mprops_nsamples_ssim[i] = (ssim_rho/pred_len, ssim_vx/pred_len, ssim_vy/pred_len)
 
     # Compute the MAX SSIM by repeteaded seqs on each macroprops
-    for i in range(nsamples, chunkRepdPastSeq):
+    for i in range(0, nsamples, chunkRepdPastSeq):
         ssim_chunk = mprops_nsamples_ssim[i:i+chunkRepdPastSeq]
-        max_rho = ssim_chunk[0].max()
-        max_vx  = ssim_chunk[1].max()
-        max_vy  = ssim_chunk[2].max()
+        max_rho = ssim_chunk[:, 0].max()
+        max_vx  = ssim_chunk[:, 1].max()
+        max_vy  = ssim_chunk[:, 2].max()
         mprops_max_ssim[i] = (max_rho, max_vx, max_vy)
 
     return mprops_nsamples_ssim, mprops_max_ssim
