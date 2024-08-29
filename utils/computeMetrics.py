@@ -1,6 +1,14 @@
 import numpy as np
-from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
+
+def my_psnr(y_gt, y_hat, data_range, eps):
+    err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
+    data_range = float(data_range)  # prevent overflow for small integer types
+    if err < eps:
+        psnr = 10 * np.log10((data_range**2) / eps)
+    else:
+        psnr = 10 * np.log10((data_range**2) / err)
+    return psnr
 
 def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq):
     nsamples = len(pred_seq_list)
@@ -22,9 +30,9 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
 
         psnr_rho, psnr_vx, psnr_vy = 0, 0, 0
         for j in range(pred_len):
-            psnr_rho += psnr(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
-            psnr_vx  += psnr(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range)
-            psnr_vy  += psnr(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range)
+            psnr_rho += my_psnr(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
+            psnr_vx  += my_psnr(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range)
+            psnr_vy  += my_psnr(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range)
 
         # Average PSNR across frames, except for unc channel
         mprops_nsamples_psnr[i] = (psnr_rho/pred_len, psnr_vx/pred_len, psnr_vy/pred_len)
