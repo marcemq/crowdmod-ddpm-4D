@@ -75,7 +75,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
             gt_seq_list.append(random_future_samples[i])
 
         if metric in ['PSNR', 'All']:
-            mprops_nsamples_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq)
+            mprops_nsamples_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
             save_metric_data(cfg, match, mprops_nsamples_psnr, "PSNR")
             save_metric_data(cfg, match, mprops_max_psnr, "MAX-PSNR")
         if metric in ['SSIM', 'All']:
