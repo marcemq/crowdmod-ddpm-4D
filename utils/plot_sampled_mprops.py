@@ -3,10 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.animation import PillowWriter
-from utils.crowd import Crowd
-from utils.plot import drawMacroProps
-from utils.computeMetrics import psnr_mprops_seq
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 def _get_j_indexes(cfg, plotPast):
@@ -37,16 +33,6 @@ def _get_rho_limits(cfg, seq_frames, j_indexes):
 
     return rho_min, rho_max
 
-def _computePSNR(seq_frames, cfg, match):
-    pred_frames_only = [seq[:, :, :, -cfg.DATASET.FUTURE_LEN:] for seq in seq_frames]
-
-    pred_seq_list = [pred_frames_only[i] for i in range(0, len(pred_frames_only), 2)]
-    gt_seq_list = [pred_frames_only[i] for i in range(1, len(pred_frames_only), 2)]
-
-    mprops_nsamples_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list)
-    psnr_file_name = f"metrics/mpSampling_PSNR_{match.group()}.csv"
-    np.savetxt(psnr_file_name, mprops_nsamples_psnr, delimiter=",", header="rho, vx, vy, unc", comments="")
-
 def plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale):
     if plotMprop=="Density":
         title = f"Sampling density for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
@@ -57,9 +43,6 @@ def plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, 
     else:
         title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
         figName= f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
-
-    # Compute and save macroprops of provided sequences
-    _computePSNR(seq_frames, cfg, match)
 
     j_indexes = _get_j_indexes(cfg, plotPast)
     rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
@@ -109,9 +92,6 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
     j_indexes = _get_j_indexes(cfg, plotPast="All")
     rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
     title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
-
-    # Compute and save macroprops of provided sequences
-    _computePSNR(seq_frames, cfg, match)
 
     # Iterate over each sequence to create a GIF for each
     for i in range(cfg.DIFFUSION.NSAMPLES*2):

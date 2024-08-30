@@ -40,7 +40,7 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get batched datasets ready to iterate
-    batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
+    _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
@@ -62,19 +62,19 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
     diffusionmodel.to(device)
     seq_frames = []
     taus = 1
-    for batch in batched_train_data:
-        past_train, future_train, stats = batch
-        past_train, future_train = past_train.float(), future_train.float()
-        past_train, future_train = past_train.to(device=device), future_train.to(device=device)
+    for batch in batched_test_data:
+        past_test, future_test, stats = batch
+        past_test, future_test = past_test.float(), future_test.float()
+        past_test, future_test = past_test.to(device=device), future_test.to(device=device)
         #x_train, y_train, stats = batch
-        random_past_idx = torch.randperm(past_train.shape[0])[:cfg.DIFFUSION.NSAMPLES]
+        random_past_idx = torch.randperm(past_test.shape[0])[:cfg.DIFFUSION.NSAMPLES]
         # Predict different sequences for the same past sequence
         if samePastSeq:
             fixed_past_idx = random_past_idx[0]
             random_past_idx.fill_(fixed_past_idx)
 
-        random_past_samples = past_train[random_past_idx]
-        random_future_samples = future_train[random_past_idx]
+        random_past_samples = past_test[random_past_idx]
+        random_future_samples = future_test[random_past_idx]
         if cfg.DIFFUSION.SAMPLER == "DDPM":
             x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device) # AR review .cpu() call here
             if cfg.DIFFUSION.GUIDANCE == "sparsity" or cfg.DIFFUSION.GUIDANCE == "none":
