@@ -64,8 +64,10 @@ def train(cfg, filenames, show_losses_plot=False):
     diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS, scale=cfg.DIFFUSION.SCALE)
     diffusionmodel.to(device)
 
-    # Training loop
+
     best_loss      = 1e6
+    consecutive_nan_count = 0
+    # Training loop
     for epoch in range(1,cfg.TRAIN.EPOCHS + 1):
         torch.cuda.empty_cache()
         gc.collect()
@@ -73,6 +75,13 @@ def train(cfg, filenames, show_losses_plot=False):
         # One epoch of training
         epoch_loss = train_one_epoch(denoiser,diffusionmodel,batched_train_data,optimizer,device,epoch=epoch,total_epochs=cfg.TRAIN.EPOCHS)
         wandb.log({"loss": epoch_loss})
+        # Check for consecutives nans
+        if torch.isnan(epoch_loss):
+            consecutive_nan_count += 1
+            if consecutive_nan_count >=3:
+                wandb.finish()
+                break
+
         if epoch_loss < best_loss:
             best_loss = epoch_loss
             # Save best checkpoints -> AR, shouldn't we save diffusionmodel too?? I think it also has weigths, isn't?
