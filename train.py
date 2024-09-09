@@ -8,6 +8,7 @@ import logging
 import torch
 import sys
 import wandb
+import numpy as np
 from torchvision.utils import make_grid
 import torch.optim as optim
 import gc,logging,os
@@ -76,7 +77,7 @@ def train(cfg, filenames, show_losses_plot=False):
         epoch_loss = train_one_epoch(denoiser,diffusionmodel,batched_train_data,optimizer,device,epoch=epoch,total_epochs=cfg.TRAIN.EPOCHS)
         wandb.log({"loss": epoch_loss})
         # Check for consecutives nans
-        if torch.isnan(epoch_loss):
+        if np.isnan(epoch_loss):
             consecutive_nan_count += 1
             if consecutive_nan_count >=3:
                 wandb.finish()
