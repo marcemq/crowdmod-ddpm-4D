@@ -1,0 +1,67 @@
+DATA_AGGREGATION:
+  TXT_DATA_DIR: '/home/bryan/Documentos/Seminario/coolName2/txtFiles/'
+  CSV_DATA_DIR: '/home/bryan/Documentos/Seminario/coolName2/csvFiles/'
+  RAW_DATA_DIR: '/home/bryan/Documentos/Seminario/coolName2/preprocessCsv/'
+  AGG_DATA_DIR: '/home/bryan/Documentos/Seminario/coolName2/preprocessCsv/'
+PICKLE:
+  PICKLE_DIR: '/home/est_licenciatura_bryan.calderon/coolName2/pickle/'
+  USE_PICKLE: False
+MACROPROPS:
+  # Grid size
+  ROWS: 8
+  COLS: 12
+  # Grid resolution
+  DX: 1.0
+  DY: 1.0
+  # Section of ATC mall: central square [-25,10], east corridor [10,-20], init mall [12, -15]
+  LU:
+    - 0
+    - 8
+  # EPSILON value to avoid division by cero
+  EPS: 0.000001
+  OVERLAP: True
+  WINDOWSIZE: 1
+  THETA: 0
+  TIME_RES: 0.4
+DATASET:
+  NAME: "ETH-UCY-4D"
+  SEQ_LEN: 8
+  PAST_LEN: 5
+  FUTURE_LEN: 3
+  TRAIN_FILE_COUNT: 5
+  VAL_FILE_COUNT: 1
+  TEST_FILE_COUNT: 1
+  BATCH_SIZE: 128
+  params:
+    shuffle: True
+    num_workers: 6
+MODEL:
+  CONDITION: "Past"
+  CONDITION_HANDLING: "embed"
+  NUM_RES_BLOCKS: 1
+  BASE_CH: 32  # 64, 128, 256, 512
+  BASE_CH_MULT: [1, 2, 4] # 32, 16, 8, 4
+  APPLY_ATTENTION: [False, False, True, False]
+  DROPOUT_RATE: 0.1
+  TIME_EMB_MULT: 4 # 128
+  SAVE_DIR: "saved_models/"
+  MODEL_NAME: "UNet_Macroprops4D_E{}_LR{}_TFC{}_PL{}_FL{}.pth"
+  RETRAIN: False
+  MIN_RHO_4_PRED: 20
+DIFFUSION:
+  SAMPLER: "DDPM"
+  TIMESTEPS: 1000  # Define canonical number of diffusion timesteps
+  SCALE: 0.5       # Define scale for betas in model
+  DDIM_DIVIDER: 90 # Define number of timesteps to divide by
+  NSAMPLES: 4   # Define number of samples: how many samples do we want -> preds
+  GUIDANCE: 'sparsity'
+  #GUIDANCE: 'none'
+TRAIN:
+  INITIAL_LR: 0.0005
+  EPOCHS: 150
+  SOLVER:
+    LR: 0.00005
+    WEIGHT_DECAY: 0.003
+    BETAS:
+      - 0.5
+      - 0.999
