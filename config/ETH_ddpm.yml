@@ -1,10 +1,8 @@
 DATA_AGGREGATION:
-  TXT_DATA_DIR: '/home/bryan/Documentos/Seminario/coolName2/txtFiles/'
-  CSV_DATA_DIR: '/home/bryan/Documentos/Seminario/coolName2/csvFiles/'
-  RAW_DATA_DIR: '/home/bryan/Documentos/Seminario/coolName2/preprocessCsv/'
-  AGG_DATA_DIR: '/home/bryan/Documentos/Seminario/coolName2/preprocessCsv/'
+  RAW_DATA_DIR: 'datasets/ETH/rawData/'
+  AGG_DATA_DIR: 'datasets/ETH/aggData/'
 PICKLE:
-  PICKLE_DIR: '/home/est_licenciatura_bryan.calderon/coolName2/pickle/'
+  PICKLE_DIR: 'datasets/ETH/pickle/'
   USE_PICKLE: False
 MACROPROPS:
   # Grid size
@@ -13,7 +11,6 @@ MACROPROPS:
   # Grid resolution
   DX: 1.0
   DY: 1.0
-  # Section of ATC mall: central square [-25,10], east corridor [10,-20], init mall [12, -15]
   LU:
     - 0
     - 8
@@ -22,7 +19,7 @@ MACROPROPS:
   OVERLAP: True
   WINDOWSIZE: 1
   THETA: 0
-  TIME_RES: 0.4
+  TIME_RES: 0.4 #Frames for second are 2.5
 DATASET:
   NAME: "ETH-UCY-4D"
   SEQ_LEN: 8
@@ -31,7 +28,7 @@ DATASET:
   TRAIN_FILE_COUNT: 5
   VAL_FILE_COUNT: 1
   TEST_FILE_COUNT: 1
-  BATCH_SIZE: 128
+  BATCH_SIZE: 64
   params:
     shuffle: True
     num_workers: 6
@@ -45,7 +42,7 @@ MODEL:
   DROPOUT_RATE: 0.1
   TIME_EMB_MULT: 4 # 128
   SAVE_DIR: "saved_models/"
-  MODEL_NAME: "UNet_Macroprops4D_E{}_LR{}_TFC{}_PL{}_FL{}.pth"
+  MODEL_NAME: "UNet_ETH_Macroprops4D_ETH_E{}_LR{}_TFC{}_PL{}_FL{}.pth"
   RETRAIN: False
   MIN_RHO_4_PRED: 20
 DIFFUSION:
