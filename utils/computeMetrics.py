@@ -1,5 +1,6 @@
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
+from sklearn.metrics import mean_squared_error
 from utils.motionFeatureExtractor import MotionFeatureExtractor
 
 def my_psnr(y_gt, y_hat, data_range, eps):
@@ -92,9 +93,26 @@ def lpips_mprops_seq(gt_seq_list, pred_seq_list):
     return mprops_nsamples_lpips
 
 def motion_dist_metric(gt_seq_list, pred_seq_list, f, k):
-    extractor = MotionFeatureExtractor(nsamples=len(pred_seq_list), one_seq_example=pred_seq_list[0] , f=f, k=k)
-    motion_feature_2D = extractor.motion_feature_2D_hist(pred_seq_list)
-    motion_feature_1D = extractor.motion_feature_1D_hist(pred_seq_list)
+    mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k)
+    mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k)
 
-    print("2D Motion Feature Shape for predicted seqs:", motion_feature_2D.shape)
-    print("1D Motion Feature Shape for predicted seqs:", motion_feature_1D.shape)
+    mf_2D_pred = mf_extractor_pred.motion_feature_2D_hist()
+    mf_1D_pred = mf_extractor_pred.motion_feature_1D_hist()
+    mf_2D_gt = mf_extractor_gt.motion_feature_2D_hist()
+    mf_1D_gt = mf_extractor_gt.motion_feature_1D_hist()
+
+    print("2D Motion Feature Shape for predicted seqs:", mf_2D_pred.shape)
+    print("1D Motion Feature Shape for predicted seqs:", mf_1D_pred.shape)
+
+    mse_2D_list = []
+    mse_1D_list = []
+
+    for sample in range(len(pred_seq_list)):
+        mse_2D = mean_squared_error(mf_2D_gt[sample], mf_2D_pred[sample])
+        mse_1D = mean_squared_error(mf_1D_gt[sample], mf_1D_pred[sample])
+
+        mse_2D_list.append(mse_2D)
+        mse_1D_list.append(mse_1D)
+
+    print (f'mse 2D:{mse_2D_list}')
+    print (f'mse 1D:{mse_1D_list}')

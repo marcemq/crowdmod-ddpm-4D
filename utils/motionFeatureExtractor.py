@@ -2,15 +2,18 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
-    def __init__(self, nsamples, one_seq_example, f, k, num_magnitude_bins=9, num_angle_bins=8):
+    def __init__(self, seq_list, f, k, num_magnitude_bins=9, num_angle_bins=8):
         self.f = f
         self.k = k
-        self.nsamples = nsamples
-        self._, self.r, self.c, self.F = one_seq_example.shape
-        self.N = self.r * self.c,
+        self.nsamples = len(seq_list)
+        self.seq_list = seq_list
+        self._, self.r, self.c, self.F = seq_list[0].shape
+        self.N = self.r * self.c
         self.num_magnitude_bins = num_magnitude_bins
         self.num_angle_bins = num_angle_bins
         self.scaler = MinMaxScaler(feature_range=(0, 255))
+        self.mag_rho, self.angle_phi = self.compute_norm_angle_4samples()
+        self.mag_rho_transf =  self.mag_rho_transform()
 
     def get_vel_vector_field(self, one_seq):
         v_x = one_seq[1, :, :, :]  # Shape (r, c, F)
@@ -22,42 +25,43 @@ class MotionFeatureExtractor:
         U = np.stack((v_x_flat, v_y_flat), axis=-1)  # Shape (F, N, 2)
         return U
 
-    def compute_norm_angle_4samples(self, seq_list):
+    def compute_norm_angle_4samples(self):
         """
         Computes the magnitude and angle for each key point in the vector field U.
         """
         mag_rho = np.zeros((self.nsamples, self.F, self.N))
         angle_phi = np.zeros((self.nsamples, self.F, self.N))
-
+        #total_clipped = 0
         for sample in range(self.nsamples):
-            one_pred_seq = seq_list[sample].cpu().numpy()
+            one_pred_seq = self.seq_list[sample].cpu().numpy()
             U = self.get_vel_vector_field(one_pred_seq)
             mag_rho[sample] = np.sqrt(U[..., 0]**2 + U[..., 1]**2)  # Shape (F, N)
-            angle_phi[sample] = np.abs(np.arctanh(U[..., 0] / U[..., 1])) # Shape (F, N)
-
+            original_ratio = U[..., 0] / U[..., 1]
+            safe_ratio = np.clip(U[..., 0] / U[..., 1], -0.9999, 0.9999)
+            # Count how many entries were clipped
+            #clipped_entries = np.sum((original_ratio < -0.9999) | (original_ratio > 0.9999))
+            #total_clipped += clipped_entries  # Accumulate the count
+            angle_phi[sample] = np.abs(np.arctanh(safe_ratio)) # Shape (F, N)
+        #print(f"Total clipped entries: {total_clipped}")
         return mag_rho, angle_phi
 
-    def mag_rho_transform(self, mag_rho):
+    def mag_rho_transform(self):
         mag_rho_transf = np.zeros((self.nsamples, self.F, self.N))
-
         for sample in range(self.nsamples):
-            mag_rho_clipped = np.clip(mag_rho[sample], 0, 255)
+            mag_rho_clipped = np.clip(self.mag_rho[sample], 0, 255)
             mag_rho_normalized = self.scaler.fit_transform(mag_rho_clipped).reshape(self.F, self.N)
             mag_rho_log = np.log2(mag_rho_normalized + 1)
             mag_rho_transf[sample] = mag_rho_log
 
         return mag_rho_transf
 
-    def motion_feature_2D_hist(self, seq_list):
-        mag_rho, angle_phi = self.compute_norm_angle_4samples(seq_list)
-        mag_rho_transf =  self.mag_rho_transform(mag_rho)
+    def motion_feature_2D_hist(self):
         all_motion_feature_vectors = []
-
         for sample in range(self.nsamples):
             motion_feature_vector = []
             # Reshape each frame's data back into a (r, c) grid
-            mag_rho_reshaped = mag_rho_transf[sample].reshape(self.F, self.r, self.c)
-            angle_phi_reshaped = angle_phi[sample].reshape(self.F, self.r, self.c)
+            mag_rho_reshaped = self.mag_rho_transf[sample].reshape(self.F, self.r, self.c)
+            angle_phi_reshaped = self.angle_phi[sample].reshape(self.F, self.r, self.c)
             for i in range(0, self.F, self.f):  # Temporal volumes of size f
                 for row in range(0, self.r, self.k):  # Spatial rows (k x k blocks)
                     for col in range(0, self.c, self.k):  # Spatial columns (k x k blocks)
@@ -77,16 +81,13 @@ class MotionFeatureExtractor:
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors)
 
-    def motion_feature_1D_hist(self, seq_list):
-        mag_rho, angle_phi = self.compute_norm_angle_4samples(seq_list)
-        mag_rho_transf =  self.mag_rho_transform(mag_rho)
+    def motion_feature_1D_hist(self):
         all_motion_feature_vectors = []
-
         for sample in range(self.nsamples):
             motion_feature_vector = []
             # Reshape each frame's data back into a (r, c) grid
-            mag_rho_reshaped = mag_rho_transf[sample].reshape(self.F, self.r, self.c)
-            angle_phi_reshaped = angle_phi[sample].reshape(self.F, self.r, self.c)
+            mag_rho_reshaped = self.mag_rho_transf[sample].reshape(self.F, self.r, self.c)
+            angle_phi_reshaped = self.angle_phi[sample].reshape(self.F, self.r, self.c)
             for i in range(0, self.F, self.f):  # Temporal volumes of size f
                 for row in range(0, self.r, self.k):  # Spatial rows (k x k blocks)
                     for col in range(0, self.c, self.k):  # Spatial columns (k x k blocks)
