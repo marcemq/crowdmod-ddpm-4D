@@ -12,7 +12,7 @@ from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
 def save_metric_data(cfg, match, data, metric, header="rho,vx,vy,unc"):
-    file_name = f"metrics/mpSampling_{metric}{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
+    file_name = f"metrics/mpSampling_{metric}_NS{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
     np.savetxt(file_name, data, delimiter=",", header=header, comments="")
 
 def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
