@@ -92,7 +92,7 @@ def lpips_mprops_seq(gt_seq_list, pred_seq_list):
     mprops_nsamples_lpips = np.zeros((nsamples, 4))
     return mprops_nsamples_lpips
 
-def motion_dist_metric(gt_seq_list, pred_seq_list, f, k):
+def motion_feature_metric(gt_seq_list, pred_seq_list, f, k):
     mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k)
     mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k)
 
@@ -104,15 +104,11 @@ def motion_dist_metric(gt_seq_list, pred_seq_list, f, k):
     print("2D Motion Feature Shape for predicted seqs:", mf_2D_pred.shape)
     print("1D Motion Feature Shape for predicted seqs:", mf_1D_pred.shape)
 
-    mse_2D_list = []
-    mse_1D_list = []
+    motion_feat_mse = np.zeros((len(pred_seq_list), 2))
 
     for sample in range(len(pred_seq_list)):
         mse_2D = mean_squared_error(mf_2D_gt[sample], mf_2D_pred[sample])
         mse_1D = mean_squared_error(mf_1D_gt[sample], mf_1D_pred[sample])
+        motion_feat_mse[sample] = (mse_2D, mse_1D)
 
-        mse_2D_list.append(mse_2D)
-        mse_1D_list.append(mse_1D)
-
-    print (f'mse 2D:{mse_2D_list}')
-    print (f'mse 1D:{mse_1D_list}')
+    return motion_feat_mse
