@@ -96,5 +96,5 @@ def motion_dist_metric(gt_seq_list, pred_seq_list, f, k):
     motion_feature_2D = extractor.motion_feature_2D_hist(pred_seq_list)
     motion_feature_1D = extractor.motion_feature_1D_hist(pred_seq_list)
 
-    print("2D Motion Feature Shape:", motion_feature_2D.shape)
-    print("1D Motion Feature Shape:", motion_feature_1D.shape)
+    print("2D Motion Feature Shape for predicted seqs:", motion_feature_2D.shape)
+    print("1D Motion Feature Shape for predicted seqs:", motion_feature_1D.shape)
