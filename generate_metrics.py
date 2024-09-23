@@ -7,7 +7,7 @@ from models.generate import generate_ddpm, generate_ddim
 
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset
-from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, lpips_mprops_seq
+from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, lpips_mprops_seq, motion_dist_metric
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
@@ -85,6 +85,8 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
         if metric in ['LPIPS', 'All']:
             mprops_nsamples_lpips = lpips_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR)
             save_metric_data(cfg, match, mprops_nsamples_lpips, "LPIPS")
+        if metric in ['MOTION_FEAT', 'All']:
+            motion_dist_metric(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k)
         break
 
 if __name__ == '__main__':

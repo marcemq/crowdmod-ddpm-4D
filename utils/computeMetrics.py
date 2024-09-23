@@ -1,5 +1,6 @@
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
+from utils.motionFeatureExtractor import MotionFeatureExtractor
 
 def my_psnr(y_gt, y_hat, data_range, eps):
     err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
@@ -89,3 +90,11 @@ def lpips_mprops_seq(gt_seq_list, pred_seq_list):
     _, _, _, pred_len = pred_seq_list[0].shape
     mprops_nsamples_lpips = np.zeros((nsamples, 4))
     return mprops_nsamples_lpips
+
+def motion_dist_metric(gt_seq_list, pred_seq_list, f, k):
+    extractor = MotionFeatureExtractor(nsamples=len(pred_seq_list), one_seq_example=pred_seq_list[0] , f=f, k=k)
+    motion_feature_2D = extractor.motion_feature_2D_hist(pred_seq_list)
+    motion_feature_1D = extractor.motion_feature_1D_hist(pred_seq_list)
+
+    print("2D Motion Feature Shape:", motion_feature_2D.shape)
+    print("1D Motion Feature Shape:", motion_feature_1D.shape)

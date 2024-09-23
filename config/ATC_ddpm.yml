@@ -52,7 +52,11 @@ DIFFUSION:
   NSAMPLES: 100   # Define number of samples: how many samples do we want -> preds
   PRED_MPROPS_FACTOR: [1, 100, 100, 1000000]
   GUIDANCE: 'sparsity'
-  #GUIDANCE: 'none'
+METRICS:
+  MOTION_FEATURE:
+    f: 1    # Number of frames of each volume
+    k: 4    # Spatial dimensions of each volume, valid for ATC grid
+    s: 1
 TRAIN:
   INITIAL_LR: 0.0005
   EPOCHS: 300
