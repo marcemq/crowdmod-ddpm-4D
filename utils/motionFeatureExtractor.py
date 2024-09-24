@@ -36,13 +36,7 @@ class MotionFeatureExtractor:
             one_pred_seq = self.seq_list[sample].cpu().numpy()
             U = self.get_vel_vector_field(one_pred_seq)
             mag_rho[sample] = np.sqrt(U[..., 0]**2 + U[..., 1]**2)  # Shape (F, N)
-            original_ratio = U[..., 0] / U[..., 1]
-            safe_ratio = np.clip(U[..., 0] / U[..., 1], -0.9999, 0.9999)
-            # Count how many entries were clipped
-            #clipped_entries = np.sum((original_ratio < -0.9999) | (original_ratio > 0.9999))
-            #total_clipped += clipped_entries  # Accumulate the count
-            angle_phi[sample] = np.abs(np.arctanh(safe_ratio)) # Shape (F, N)
-        #print(f"Total clipped entries: {total_clipped}")
+            angle_phi[sample] = np.abs(np.arctan2(U[..., 1], U[..., 0]))
         return mag_rho, angle_phi
 
     def mag_rho_transform(self):
@@ -68,11 +62,8 @@ class MotionFeatureExtractor:
                         # Extract a sub-volume of size (f, k, k)
                         mag_volume = mag_rho_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
                         angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
-                        # Quantize magnitudes and angles
-                        mag_bins = np.digitize(mag_volume, np.linspace(0, 255, self.num_magnitude_bins+1)) - 1
-                        angle_bins = np.digitize(angle_volume, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
                         # Compute 2D histogram (quantized magnitude vs angle)
-                        hist_2D, _, _ = np.histogram2d(mag_bins, angle_bins, bins=[self.num_magnitude_bins, self.num_angle_bins])
+                        hist_2D, _, _ = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 255], [0, 2*np.pi]])
                         # Flatten and add to the motion feature vector
                         motion_feature_vector.append(hist_2D.flatten())
             # Concatenate histograms from all volumes into a single vector
