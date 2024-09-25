@@ -51,9 +51,8 @@ class MotionFeatureExtractor:
             # Count clipped values to have a sense of information loss
             clipped_values = np.sum((mag_rho_sample < 0) | (mag_rho_sample > 255))
             total_clipped += clipped_values
-            if clipped_values>0:
-                print(f"clipped values:{clipped_values} at sample:{sample}")
         print(f'Total clipped values at mag_rho_transform:{total_clipped}')
+
         return mag_rho_transf
 
     def motion_feature_2D_hist(self):
@@ -98,7 +97,7 @@ class MotionFeatureExtractor:
                         hist_1D = np.zeros(self.num_angle_bins)
                         # Sum magnitudes into the corresponding angle bins
                         for bin_idx in range(self.num_angle_bins):
-                            hist_1D[bin_idx] = np.sum(mag_volume[angle_bins == bin_idx])
+                            hist_1D[bin_idx] = np.sum(np.sqrt(mag_volume[angle_bins == bin_idx]))
                         # Append this histogram to the motion feature vector
                         motion_feature_vector.append(hist_1D)
             # Concatenate histograms from all volumes into a single vector
