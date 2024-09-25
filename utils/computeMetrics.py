@@ -92,14 +92,21 @@ def lpips_mprops_seq(gt_seq_list, pred_seq_list):
     mprops_nsamples_lpips = np.zeros((nsamples, 4))
     return mprops_nsamples_lpips
 
-def motion_feature_metric(gt_seq_list, pred_seq_list, f, k, gamma):
+def _save_mag_rho_data(all_mag_rho_vol, nameToUse):
+    file_name = f"metrics/all_mah_rho_{nameToUse}.csv"
+    np.savetxt(file_name, all_mag_rho_vol, delimiter=",", comments="")
+
+def motion_feature_metric(gt_seq_list, pred_seq_list, f, k, gamma, mag_rho_flag=True):
     mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k, gamma=gamma)
     mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k, gamma=gamma)
 
     mf_2D_pred = mf_extractor_pred.motion_feature_2D_hist()
-    mf_1D_pred = mf_extractor_pred.motion_feature_1D_hist()
     mf_2D_gt = mf_extractor_gt.motion_feature_2D_hist()
-    mf_1D_gt = mf_extractor_gt.motion_feature_1D_hist()
+    mf_1D_pred, all_mag_rho_vol_pred = mf_extractor_pred.motion_feature_1D_hist()
+    mf_1D_gt, all_mag_rho_vol_gt = mf_extractor_gt.motion_feature_1D_hist()
+    if mag_rho_flag:
+        _save_mag_rho_data(all_mag_rho_vol_pred, "PRED")
+        _save_mag_rho_data(all_mag_rho_vol_gt, "GT")
 
     print("2D Motion Feature Shape for predicted seqs:", mf_2D_pred.shape)
     print("1D Motion Feature Shape for predicted seqs:", mf_1D_pred.shape)

@@ -81,6 +81,7 @@ class MotionFeatureExtractor:
 
     def motion_feature_1D_hist(self):
         all_motion_feature_vectors = []
+        all_mag_rho_volumnes = []
         for sample in range(self.nsamples):
             motion_feature_vector = []
             # Reshape each frame's data back into a (r, c) grid
@@ -92,6 +93,7 @@ class MotionFeatureExtractor:
                         # Extract a sub-volume of size (f, k, k)
                         mag_volume = mag_rho_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
                         angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
+                        all_mag_rho_volumnes.append(mag_volume)
                         # Quantize only angles
                         angle_bins = np.digitize(angle_volume, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
                         # Initialize a 1D histogram (8 bins for angles)
@@ -105,4 +107,4 @@ class MotionFeatureExtractor:
             motion_feature_vector = np.concatenate(motion_feature_vector)
             all_motion_feature_vectors.append(motion_feature_vector)
         # Return the motion feature vectors for all sequences
-        return np.array(all_motion_feature_vectors)
+        return np.array(all_motion_feature_vectors), np.array(all_mag_rho_volumnes)
