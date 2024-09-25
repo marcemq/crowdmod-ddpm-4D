@@ -92,9 +92,9 @@ def lpips_mprops_seq(gt_seq_list, pred_seq_list):
     mprops_nsamples_lpips = np.zeros((nsamples, 4))
     return mprops_nsamples_lpips
 
-def motion_feature_metric(gt_seq_list, pred_seq_list, f, k):
-    mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k)
-    mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k)
+def motion_feature_metric(gt_seq_list, pred_seq_list, f, k, gamma):
+    mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k, gamma=gamma)
+    mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k, gamma=gamma)
 
     mf_2D_pred = mf_extractor_pred.motion_feature_2D_hist()
     mf_1D_pred = mf_extractor_pred.motion_feature_1D_hist()

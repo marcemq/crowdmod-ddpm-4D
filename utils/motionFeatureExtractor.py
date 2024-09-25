@@ -2,9 +2,10 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
-    def __init__(self, seq_list, f, k, num_magnitude_bins=9, num_angle_bins=8):
+    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=9, num_angle_bins=8):
         self.f = f
         self.k = k
+        self.gamma = gamma
         self.nsamples = len(seq_list)
         self.seq_list = seq_list
         self._, self.r, self.c, self.F = seq_list[0].shape
@@ -97,7 +98,7 @@ class MotionFeatureExtractor:
                         hist_1D = np.zeros(self.num_angle_bins)
                         # Sum magnitudes into the corresponding angle bins
                         for bin_idx in range(self.num_angle_bins):
-                            hist_1D[bin_idx] = np.sum(np.sqrt(mag_volume[angle_bins == bin_idx]))
+                            hist_1D[bin_idx] = np.sum(np.pow(mag_volume[angle_bins == bin_idx], self.gamma))
                         # Append this histogram to the motion feature vector
                         motion_feature_vector.append(hist_1D)
             # Concatenate histograms from all volumes into a single vector

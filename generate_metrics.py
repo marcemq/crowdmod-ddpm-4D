@@ -86,7 +86,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
             mprops_nsamples_lpips = lpips_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR)
             save_metric_data(cfg, match, mprops_nsamples_lpips, "LPIPS")
         if metric in ['MOTION_FEAT', 'All']:
-            motion_feat_mse = motion_feature_metric(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k)
+            motion_feat_mse = motion_feature_metric(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
             save_metric_data(cfg, match, motion_feat_mse, "MOTIONFEAT", header="Hist-2D-based,Hist-1D-based")
         break
 
