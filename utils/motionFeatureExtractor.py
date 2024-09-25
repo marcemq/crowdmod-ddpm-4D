@@ -31,7 +31,7 @@ class MotionFeatureExtractor:
         """
         mag_rho = np.zeros((self.nsamples, self.F, self.N))
         angle_phi = np.zeros((self.nsamples, self.F, self.N))
-        #total_clipped = 0
+
         for sample in range(self.nsamples):
             one_pred_seq = self.seq_list[sample].cpu().numpy()
             U = self.get_vel_vector_field(one_pred_seq)
@@ -41,12 +41,19 @@ class MotionFeatureExtractor:
 
     def mag_rho_transform(self):
         mag_rho_transf = np.zeros((self.nsamples, self.F, self.N))
+        total_clipped = 0
         for sample in range(self.nsamples):
-            mag_rho_clipped = np.clip(self.mag_rho[sample], 0, 255)
+            mag_rho_sample = self.mag_rho[sample]
+            mag_rho_clipped = np.clip(mag_rho_sample, 0, 255)
             mag_rho_normalized = self.scaler.fit_transform(mag_rho_clipped).reshape(self.F, self.N)
             mag_rho_log = np.log2(mag_rho_normalized + 1)
             mag_rho_transf[sample] = mag_rho_log
-
+            # Count clipped values to have a sense of information loss
+            clipped_values = np.sum((mag_rho_sample < 0) | (mag_rho_sample > 255))
+            total_clipped += clipped_values
+            if clipped_values>0:
+                print(f"clipped values:{clipped_values} at sample:{sample}")
+        print(f'Total clipped values at mag_rho_transform:{total_clipped}')
         return mag_rho_transf
 
     def motion_feature_2D_hist(self):
