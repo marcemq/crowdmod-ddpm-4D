@@ -93,7 +93,7 @@ def lpips_mprops_seq(gt_seq_list, pred_seq_list):
     return mprops_nsamples_lpips
 
 def _save_mag_rho_data(all_mag_rho_vol, nameToUse):
-    file_name = f"metrics/all_mah_rho_{nameToUse}.csv"
+    file_name = f"metrics/all_mag_rho_{nameToUse}.csv"
     np.savetxt(file_name, all_mag_rho_vol, delimiter=",", comments="")
 
 def motion_feature_metric(gt_seq_list, pred_seq_list, f, k, gamma, mag_rho_flag=True):
