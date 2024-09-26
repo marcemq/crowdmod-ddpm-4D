@@ -108,8 +108,13 @@ def motion_feature_metric(gt_seq_list, pred_seq_list, f, k, gamma, mag_rho_flag=
         _save_mag_rho_data(all_mag_rho_vol_pred, "PRED")
         _save_mag_rho_data(all_mag_rho_vol_gt, "GT")
 
-    print("2D Motion Feature Shape for predicted seqs:", mf_2D_pred.shape)
-    print("1D Motion Feature Shape for predicted seqs:", mf_1D_pred.shape)
+    print("2D Motion Feature shape for predicted seqs:", mf_2D_pred.shape)
+    print("1D Motion Feature shape for predicted seqs:", mf_1D_pred.shape)
+    print("all_mag_rho_vol shape for predicted seqs:", all_mag_rho_vol_pred.shape)
+
+    print("2D Motion Feature shape for GT seqs:", mf_2D_gt.shape)
+    print("1D Motion Feature shape for GT seqs:", mf_1D_gt.shape)
+    print("all_mag_rho_vol shape for GT seqs:", all_mag_rho_vol_gt.shape)
 
     motion_feat_mse = np.zeros((len(pred_seq_list), 2))
 
