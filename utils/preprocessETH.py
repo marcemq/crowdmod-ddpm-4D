@@ -1,30 +1,31 @@
 import pandas as pd
+import argparse
 import matplotlib.pyplot as plt
 import os
 import glob
 import numpy as np
 from myparser import getYamlConfig
-#function that maps frame_ID to unixtime
-#The time difference between any two consecutive frames is 0.4
 def unixtime(df, init_time = 1694563200.0):
+    #function that maps frame_ID to unixtime
     df['time'] = df['time'].astype(float)
     for i in range(df.shape[0]):
         df.loc[i, 'time'] = init_time + df['time'][i]*0.4/10
 
     return df    
-#function to calculate the motion angle
+
 def angle(x1, y1, x2, y2):
-  delta_x = x2 - x1
-  delta_y = y2 - y1
+    #function to calculate the motion angle
+    delta_x = x2 - x1
+    delta_y = y2 - y1
 
-  return np.arctan2(delta_y, delta_x)
-#function to calculate the distance given two points
+    return np.arctan2(delta_y, delta_x)
+
 def distance(x1, y1, x2, y2):
-  return np.sqrt((x1-x2)**2 + (y1-y2)**2)
-
-#function that modifies dataframe given a left upper point 
-#and grid dimensions
+    #function to calculate the distance given two points
+    return np.sqrt((x1-x2)**2 + (y1-y2)**2)
+ 
 def newDF_LU(df, LU, cols, rows):
+    #function that modifies dataframe given a left upper point
     df = df[(df['pos_x'] > LU[0]) & 
     (df['pos_x'] < LU[0] + cols) & 
     (df['pos_y'] > LU[1] - rows) &
@@ -36,7 +37,7 @@ def newDF_LU(df, LU, cols, rows):
     return df
 
 def generate_csv(raw_path, agg_path):
-    files = glob.glob(os.path.join(raw_path, '*')) #extract files path
+    files = glob.glob(os.path.join(raw_path, '*'))
     # Define the column names (headers)
     column_names = ["time", "agent_ID", "pos_x", "pos_y"]
 
@@ -74,7 +75,6 @@ def find_LU(cfg, agg_path):
 
 def add_vel_angle(agg_path):
     files = glob.glob(os.path.join(agg_path, '*'))
-
     #for every file we add two columns: velocity and motion_angle
     for path_file in files:
         df = pd.read_csv(path_file)
@@ -85,33 +85,37 @@ def add_vel_angle(agg_path):
         df['vel'] = df['pos_x']
         df['motion_angle'] = df['pos_x']
 
-        A = [[] for _ in range(int(df['agent_ID'].max() + 1))]
+        indexes_per_agent = [[] for _ in rBnge(int(df['agent_ID'].max() + 1))]
 
-        for i in range(1, len(A)):
-            A[i] = df.loc[df['agent_ID'] == i].index
+        for i in range(1, len(indexes_per_agent)):
+            indexes_per_agent[i] = df.loc[df['agent_ID'] == i].index
 
-            if(len(A[i]) == 1): 
+            if(len(indexes_per_agent[i]) == 1): 
                 df = df.loc[df['agent_ID'] != i]
                 continue
             
-            for j in range(1, A[i].shape[0]):
-                dis = distance(df.loc[A[i][j-1], 'pos_x'], df.loc[A[i][j-1], 'pos_y'],
-                                df.loc[A[i][j], 'pos_x'], df.loc[A[i][j], 'pos_y'])
+            for j in range(1, indexes_per_agent[i].shape[0]):
+                dis = distance(df.loc[indexes_per_agent[i][j-1], 'pos_x'], df.loc[indexes_per_agent[i][j-1], 'pos_y'],
+                                df.loc[indexes_per_agent[i][j], 'pos_x'], df.loc[indexes_per_agent[i][j], 'pos_y'])
                     
-                df.loc[A[i][j], 'motion_angle'] = angle(df.loc[A[i][j-1], 'pos_x'], df.loc[A[i][j-1], 'pos_y'],
-                                                        df.loc[A[i][j], 'pos_x'], df.loc[A[i][j], 'pos_y'])
+                df.loc[indexes_per_agent[i][j], 'motion_angle'] = angle(df.loc[indexes_per_agent[i][j-1], 'pos_x'], df.loc[indexes_per_agent[i][j-1], 'pos_y'],
+                                            df.loc[indexes_per_agent[i][j], 'pos_x'], df.loc[indexes_per_agent[i][j], 'pos_y'])
                     
-                df.loc[A[i][j], 'vel'] = dis / (df.loc[A[i][j], 'time']-df.loc[A[i][j-1], 'time'])
+                df.loc[indexes_per_agent[i][j], 'vel'] = dis / (df.loc[indexes_per_agent[i][j], 'time']-df.loc[indexes_per_agent[i][j-1], 'time'])
 
-            if(len(A[i]) > 0):
-                df.loc[A[i][0], 'vel'] = df.loc[A[i][1], 'vel']
-                df.loc[A[i][0], 'motion_angle'] = df.loc[A[i][1], 'motion_angle']     
+            if(len(indexes_per_agent[i]) > 0):
+                df.loc[indexes_per_agent[i][0], 'vel'] = df.loc[indexes_per_agent[i][1], 'vel']
+                df.loc[indexes_per_agent[i][0], 'motion_angle'] = df.loc[indexes_per_agent[i][1], 'motion_angle']     
 
         df.to_csv(path_file, index=False)        
 
 
 if __name__ == '__main__':
-    cfg = getYamlConfig('config/ETH_ddpm.yml')
+    parser = argparse.ArgumentParser(description="A script to preprocess ETH data.")
+    parser.add_argument('--config-yml-file', type=str, default='config/ETH_ddpm.yml', help='Configuration YML file for specific dataset.')
+    args = parser.parse_args()
+
+    cfg = getYamlConfig(args.config_yml_file)
     generate_csv(cfg.DATA_AGGREGATION.RAW_DATA_DIR, cfg.DATA_AGGREGATION.AGG_DATA_DIR)
     find_LU(cfg, cfg.DATA_AGGREGATION.AGG_DATA_DIR)
     add_vel_angle(cfg.DATA_AGGREGATION.AGG_DATA_DIR)
