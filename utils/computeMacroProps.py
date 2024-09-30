@@ -50,12 +50,12 @@ def computeMacroPropsATC(cfg, aggDataDir, pklDataDir, filenames, t_init=None, t_
         if t_last is None:
             t_final = data['time'].max()
 
-        t_seq = pd.to_timedelta((cfg.DATASET.SEQ_LEN)*cfg.CONVGRU.TIME_RES, unit='s')
+        t_seq = pd.to_timedelta((cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN)*cfg.CONVGRU.TIME_RES, unit='s')
         logging.info('t_init_obs + t_seq: {} and t_final {}'.format(t_init_obs + t_seq, t_final))
         while t_init_obs + t_seq <= t_final:
             t_init_current = t_init_obs
-            seq = np.zeros((4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.SEQ_LEN))
-            for obs in range(cfg.DATASET.SEQ_LEN):
+            seq = np.zeros((4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN))
+            for obs in range(cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN):
                 dataByTime = filterDataByTime(filteredData, time=t_init_obs, cfg=cfg)
                 t_init_obs += pd.to_timedelta(cfg.CONVGRU.TIME_RES, unit='s')
                 rho, mu_vx, mu_vy, sigma2_v = getMacroPropertiesAtTimeStamp(dataByTime, cfg, LU=rLU)

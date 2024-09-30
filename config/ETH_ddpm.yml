@@ -22,7 +22,6 @@ MACROPROPS:
   TIME_RES: 0.4 #Frames for second are 2.5
 DATASET:
   NAME: "ETH-UCY-4D"
-  SEQ_LEN: 8
   PAST_LEN: 5
   FUTURE_LEN: 3
   TRAIN_FILE_COUNT: 5

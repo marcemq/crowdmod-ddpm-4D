@@ -6,7 +6,9 @@ import glob
 import numpy as np
 from myparser import getYamlConfig
 def unixtime(df, init_time = 1694563200.0):
-    #function that maps frame_ID to unixtime
+    """
+    This function maps frame_ID value to unixtime.
+    """
     df['time'] = df['time'].astype(float)
     for i in range(df.shape[0]):
         df.loc[i, 'time'] = init_time + df['time'][i]*0.4/10
@@ -14,18 +16,18 @@ def unixtime(df, init_time = 1694563200.0):
     return df    
 
 def angle(x1, y1, x2, y2):
-    #function to calculate the motion angle
     delta_x = x2 - x1
     delta_y = y2 - y1
 
     return np.arctan2(delta_y, delta_x)
 
 def distance(x1, y1, x2, y2):
-    #function to calculate the distance given two points
     return np.sqrt((x1-x2)**2 + (y1-y2)**2)
  
 def newDF_LU(df, LU, cols, rows):
-    #function that modifies dataframe given a left upper point
+    """
+    This function defines a new dataframe given the left upper point and dimensions of the grid.
+    """
     df = df[(df['pos_x'] > LU[0]) & 
     (df['pos_x'] < LU[0] + cols) & 
     (df['pos_y'] > LU[1] - rows) &
@@ -52,8 +54,7 @@ def generate_csv(raw_path, agg_path):
         df.to_csv(agg_path + input_file[n:-4] + '.csv', index=False)
 
 def find_LU(cfg, agg_path):
-    files = glob.glob(os.path.join(agg_path, '*')) #extract files path  
-    #we specify the amount of cols and rows
+    files = glob.glob(os.path.join(agg_path, '*'))
     cols = cfg.MACROPROPS.COLS
     rows = cfg.MACROPROPS.ROWS
     #for every file we find the left upper point that maximizes the density
@@ -74,8 +75,10 @@ def find_LU(cfg, agg_path):
         df.to_csv(input_file, index=False) 
 
 def add_vel_angle(agg_path):
+    """
+    This function adds velocity and motion angle to every dataframe in the given path.
+    """
     files = glob.glob(os.path.join(agg_path, '*'))
-    #for every file we add two columns: velocity and motion_angle
     for path_file in files:
         df = pd.read_csv(path_file)
         #we transform the position in m to mm
