@@ -121,21 +121,23 @@ class MotionFeatureExtractor:
                     for col in range(0, self.c, self.k):  # Spatial columns (k x k blocks)
                         # Extract a sub-volume of size (f, k, k)
                         mag_volume = mag_rho_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
-                        hist_mag, _ = np.histogram(mag_volume, bins=self.num_magnitude_bins)
-                        mag_volume_norm = np.array(mag_volume / hist_mag)
+                        mag_bin_indices = np.digitize(mag_volume, np.linspace(0, 8, self.num_magnitude_bins + 1)) - 1
+                        mag_counts = np.bincount(mag_bin_indices, minlength=self.num_magnitude_bins)
+                        mag_volume_norm = np.array([value / mag_counts[bin_idx] for value, bin_idx in zip(mag_volume, mag_bin_indices)])
                         all_mag_rho_volumnes.append(mag_volume_norm)
 
                         angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
-                        hist_angle, _ = np.histogram(angle_volume, bins=self.num_angle_bins)
-                        angle_volume_norm = np.array(angle_volume / hist_angle)
+                        angle_bin_indices = np.digitize(angle_volume, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
+                        angle_counts = np.bincount(angle_bin_indices, minlength=self.num_angle_bins)
+                        angle_volume_norm = np.array([value / angle_counts[bin_idx] for value, bin_idx in zip(angle_volume, angle_bin_indices)])
 
                         # Quantize only angles
-                        angle_bins = np.digitize(angle_volume_norm, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
+                        angle_bins = np.digitize(angle_volume, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
                         # Initialize a 1D histogram (8 bins for angles)
                         hist_1D = np.zeros(self.num_angle_bins)
                         # Sum magnitudes into the corresponding angle bins
                         for bin_idx in range(self.num_angle_bins):
-                            hist_1D[bin_idx] = np.sum(np.power(mag_volume_norm[angle_bins == bin_idx], self.gamma))
+                            hist_1D[bin_idx] = np.sum(np.power(mag_volume[angle_bins == bin_idx], self.gamma))
                         # Append this histogram to the motion feature vector
                         motion_feature_vector.append(hist_1D)
             # Concatenate histograms from all volumes into a single vector
