@@ -110,10 +110,7 @@ class MotionFeatureExtractor:
     def motion_feature_1D_hist(self):
         all_motion_feature_vectors = []
         all_mag_rho_volumnes = []
-        mag_rho_count_dict, angle_phi_count_dict = self._get_mag_angle_counts()
-        print(mag_rho_count_dict)
-        print("*****************")
-        print(angle_phi_count_dict)
+
         for sample in range(self.nsamples):
             motion_feature_vector = []
             # Reshape each frame's data back into a (r, c) grid
@@ -124,13 +121,16 @@ class MotionFeatureExtractor:
                     for col in range(0, self.c, self.k):  # Spatial columns (k x k blocks)
                         # Extract a sub-volume of size (f, k, k)
                         mag_volume = mag_rho_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
+                        hist_mag, _ = np.histogram(mag_volume, bins=self.num_magnitude_bins)
+                        mag_volume_norm = np.array(mag_volume / hist_mag)
+                        all_mag_rho_volumnes.append(mag_volume_norm)
+
                         angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
-                        mag_volume_norm = np.array([value / mag_rho_count_dict.get(value, 1) for value in mag_volume])
-                        angle_volume_norm = np.array([value / angle_phi_count_dict.get(value, 1) for value in angle_volume])
-                        all_mag_rho_volumnes.append(mag_volume_norm)  # Collect normalized magnitudes for further use
+                        hist_angle, _ = np.histogram(angle_volume, bins=self.num_angle_bins)
+                        angle_volume_norm = np.array(angle_volume / hist_angle)
 
                         # Quantize only angles
-                        angle_bins = np.digitize(angle_volume, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
+                        angle_bins = np.digitize(angle_volume_norm, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
                         # Initialize a 1D histogram (8 bins for angles)
                         hist_1D = np.zeros(self.num_angle_bins)
                         # Sum magnitudes into the corresponding angle bins
