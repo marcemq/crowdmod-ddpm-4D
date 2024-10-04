@@ -22,8 +22,8 @@ MACROPROPS:
   TIME_RES: 0.5
 DATASET:
   NAME: "ATC4TEST-4D"
-  PAST_LEN: 8
-  FUTURE_LEN: 8 # this are the only that get workout by difussion at training ang generation
+  PAST_LEN: 5
+  FUTURE_LEN: 3 # predicted sequence by difussion at training ang generation
   TRAIN_FILE_COUNT: 3
   VAL_FILE_COUNT: 2
   TEST_FILE_COUNT: 1
@@ -41,7 +41,7 @@ MODEL:
   DROPOUT_RATE: 0.05
   TIME_EMB_MULT: 4 # 128
   SAVE_DIR: "saved_models/"
-  MODEL_NAME: "UNet_Macroprops4D_E{}_LR{}_TFC{}_PL{}_FL{}.pth"
+  MODEL_NAME: "UNet_Mprops4D_SizeXS_E{}_LR{}_TFC{}_PL{}_FL{}.pth"
   RETRAIN: False
   MIN_RHO_4_PRED: 20
 DIFFUSION:
@@ -52,9 +52,15 @@ DIFFUSION:
   NSAMPLES: 4   # Define number of samples: how many samples do we want -> preds
   PRED_MPROPS_FACTOR: [1, 100, 100, 1000000]
   GUIDANCE: 'sparsity'
+METRICS:
+  MOTION_FEATURE:
+    f: 1    # Number of frames of each volume
+    k: 4    # Spatial dimensions of each volume, valid for ATC grid
+    s: 1
+    GAMMA: 2.0 # Exponent of the power function for 1D-histogram
 TRAIN:
   INITIAL_LR: 0.0005
-  EPOCHS: 600
+  EPOCHS: 10
   SOLVER:
     LR: 0.00005
     WEIGHT_DECAY: 0.003

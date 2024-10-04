@@ -1,5 +1,7 @@
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
+from sklearn.metrics import mean_squared_error
+from utils.motionFeatureExtractor import MotionFeatureExtractor
 
 def my_psnr(y_gt, y_hat, data_range, eps):
     err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
@@ -89,3 +91,28 @@ def lpips_mprops_seq(gt_seq_list, pred_seq_list):
     _, _, _, pred_len = pred_seq_list[0].shape
     mprops_nsamples_lpips = np.zeros((nsamples, 4))
     return mprops_nsamples_lpips
+
+def _save_mag_rho_data(all_mag_rho_vol, nameToUse):
+    file_name = f"metrics/all_mag_rho_{nameToUse}.csv"
+    np.savetxt(file_name, all_mag_rho_vol, delimiter=",", comments="")
+
+def motion_feature_metric_mse(gt_seq_list, pred_seq_list, f, k, gamma, mag_rho_flag=False):
+    mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k, gamma=gamma)
+    mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k, gamma=gamma)
+
+    mf_2D_pred = mf_extractor_pred.motion_feature_2D_hist()
+    mf_2D_gt = mf_extractor_gt.motion_feature_2D_hist()
+    mf_1D_pred, all_mag_rho_vol_pred = mf_extractor_pred.motion_feature_1D_hist()
+    mf_1D_gt, all_mag_rho_vol_gt = mf_extractor_gt.motion_feature_1D_hist()
+    if mag_rho_flag:
+        _save_mag_rho_data(all_mag_rho_vol_pred, "PRED")
+        _save_mag_rho_data(all_mag_rho_vol_gt, "GT")
+
+    motion_feat_mse = np.zeros((len(pred_seq_list), 2))
+
+    for sample in range(len(pred_seq_list)):
+        mse_2D = mean_squared_error(mf_2D_gt[sample], mf_2D_pred[sample])
+        mse_1D = mean_squared_error(mf_1D_gt[sample], mf_1D_pred[sample])
+        motion_feat_mse[sample] = (mse_2D, mse_1D)
+
+    return motion_feat_mse
