@@ -72,40 +72,14 @@ class MotionFeatureExtractor:
                         # Compute 2D histogram (quantized magnitude vs angle)
                         hist_2D, _, _ = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 255], [0, 2*np.pi]])
                         # Flatten and add to the motion feature vector
-                        motion_feature_vector.append(hist_2D.flatten())
+                        hist_2D = hist_2D.flatten()
+                        hist_2D = hist_2D / hist_2D.sum()
+                        motion_feature_vector.append(hist_2D)
             # Concatenate histograms from all volumes into a single vector
             motion_feature_vector = np.concatenate(motion_feature_vector)
             all_motion_feature_vectors.append(motion_feature_vector)
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors)
-
-    def _get_mag_angle_counts(self):
-        all_mag_rho_volumnes = []
-        all_angle_phi_volumnes = []
-        # Collect all magnitude values from each sub-volume
-        for sample in range(self.nsamples):
-            mag_rho_reshaped = self.mag_rho_transf[sample].reshape(self.F, self.r, self.c)
-            angle_phi_reshaped = self.angle_phi[sample].reshape(self.F, self.r, self.c)
-            
-            for i in range(0, self.F, self.f):  # Temporal volumes of size f
-                for row in range(0, self.r, self.k):  # Spatial rows (k x k blocks)
-                    for col in range(0, self.c, self.k):  # Spatial columns (k x k blocks)
-                        # Extract a sub-volume of size (f, k, k)
-                        mag_volume = mag_rho_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
-                        angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
-                        all_mag_rho_volumnes.append(mag_volume)  # Collect all magnitudes
-                        all_angle_phi_volumnes.append(angle_volume)
-
-        # Convert to numpy array and compute histogram
-        all_mag_rho_volumnes = np.array(all_mag_rho_volumnes)
-        all_angle_phi_volumnes = np.array(all_angle_phi_volumnes)
-
-        unique_magnitudes, counts = np.unique(all_mag_rho_volumnes, return_counts=True)
-        mag_rho_count_dict = dict(zip(unique_magnitudes, counts))
-        unique_angles, counts = np.unique(all_angle_phi_volumnes, return_counts=True)
-        angle_phi_count_dict = dict(zip(unique_angles, counts))
-
-        return mag_rho_count_dict, angle_phi_count_dict
 
     def motion_feature_1D_hist(self):
         all_motion_feature_vectors = []
@@ -121,24 +95,16 @@ class MotionFeatureExtractor:
                     for col in range(0, self.c, self.k):  # Spatial columns (k x k blocks)
                         # Extract a sub-volume of size (f, k, k)
                         mag_volume = mag_rho_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
-                        mag_bin_indices = np.digitize(mag_volume, np.linspace(0, 8, self.num_magnitude_bins + 1)) - 1
-                        mag_counts = np.bincount(mag_bin_indices, minlength=self.num_magnitude_bins)
-                        mag_volume_norm = np.array([value / mag_counts[bin_idx] for value, bin_idx in zip(mag_volume, mag_bin_indices)])
-                        all_mag_rho_volumnes.append(mag_volume_norm)
-
                         angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
-                        angle_bin_indices = np.digitize(angle_volume, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
-                        angle_counts = np.bincount(angle_bin_indices, minlength=self.num_angle_bins)
-                        angle_volume_norm = np.array([value / angle_counts[bin_idx] for value, bin_idx in zip(angle_volume, angle_bin_indices)])
-
                         # Quantize only angles
                         angle_bins = np.digitize(angle_volume, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
                         # Initialize a 1D histogram (8 bins for angles)
                         hist_1D = np.zeros(self.num_angle_bins)
                         # Sum magnitudes into the corresponding angle bins
                         for bin_idx in range(self.num_angle_bins):
-                            hist_1D[bin_idx] = np.sum(np.power(mag_volume_norm[angle_bins == bin_idx], self.gamma))
+                            hist_1D[bin_idx] = np.sum(np.power(mag_volume[angle_bins == bin_idx], self.gamma))
                         # Append this histogram to the motion feature vector
+                        hist_1D = hist_1D / hist_1D.sum()
                         motion_feature_vector.append(hist_1D)
             # Concatenate histograms from all volumes into a single vector
             motion_feature_vector = np.concatenate(motion_feature_vector)
