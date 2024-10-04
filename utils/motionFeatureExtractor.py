@@ -96,6 +96,7 @@ class MotionFeatureExtractor:
                         # Extract a sub-volume of size (f, k, k)
                         mag_volume = mag_rho_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
                         angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
+                        all_mag_rho_volumnes.append(mag_volume)
                         # Quantize only angles
                         angle_bins = np.digitize(angle_volume, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
                         # Initialize a 1D histogram (8 bins for angles)
