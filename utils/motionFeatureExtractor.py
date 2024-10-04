@@ -104,8 +104,8 @@ class MotionFeatureExtractor:
                         # Sum magnitudes into the corresponding angle bins
                         for bin_idx in range(self.num_angle_bins):
                             hist_1D[bin_idx] = np.sum(np.power(mag_volume[angle_bins == bin_idx], self.gamma))
-                        # Append this histogram to the motion feature vector
-                        hist_1D = hist_1D / hist_1D.sum()
+                        # Append this histogram to the motion feature vector avoing division by cero
+                        hist_1D = hist_1D / (hist_1D.sum() + 1)
                         motion_feature_vector.append(hist_1D)
             # Concatenate histograms from all volumes into a single vector
             motion_feature_vector = np.concatenate(motion_feature_vector)
