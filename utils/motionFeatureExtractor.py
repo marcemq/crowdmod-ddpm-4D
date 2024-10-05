@@ -79,7 +79,7 @@ class MotionFeatureExtractor:
             # Concatenate histograms from all volumes into a single vector
             motion_feature_vector = np.concatenate(motion_feature_vector)
             if not local_norm:
-                motion_feature_vector / motion_feature_vector.sum()
+                motion_feature_vector = motion_feature_vector / (motion_feature_vector.sum() + 1)
             all_motion_feature_vectors.append(motion_feature_vector)
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors)
@@ -114,7 +114,7 @@ class MotionFeatureExtractor:
             # Concatenate histograms from all volumes into a single vector
             motion_feature_vector = np.concatenate(motion_feature_vector)
             if not local_norm:
-                motion_feature_vector / motion_feature_vector.sum()
+                motion_feature_vector = motion_feature_vector / (motion_feature_vector.sum() + 1)
             all_motion_feature_vectors.append(motion_feature_vector)
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors), np.array(all_mag_rho_volumnes)
