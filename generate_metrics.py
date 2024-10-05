@@ -7,7 +7,7 @@ from models.generate import generate_ddpm, generate_ddim
 
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset
-from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, lpips_mprops_seq, motion_feature_metric_mse
+from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, lpips_mprops_seq, motion_feature_by_mse, motion_feature_by_bhattacharyya
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
@@ -85,9 +85,13 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
         if metric in ['LPIPS', 'All']:
             mprops_nsamples_lpips = lpips_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR)
             save_metric_data(cfg, match, mprops_nsamples_lpips, "LPIPS")
-        if metric in ['MOTION_FEAT', 'All']:
-            motion_feat_mse = motion_feature_metric_mse(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
-            save_metric_data(cfg, match, motion_feat_mse, "MOTIONFEAT", header="Hist-2D-based,Hist-1D-based")
+        if metric in ['MOTION_FEAT_MSE', 'All']:
+            motion_feat_mse = motion_feature_by_mse(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
+            save_metric_data(cfg, match, motion_feat_mse, "MOTIONFEAT-MSE", header="MSE-Hist-2D-based,MSE-Hist-1D-based")
+        if metric in ['MOTION_FEAT_BHATT', 'All']:
+            motion_feat_bhatt_dist, motion_feat_bhatt_coef = motion_feature_by_bhattacharyya(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
+            save_metric_data(cfg, match, motion_feat_bhatt_dist, "MOTIONFEAT-BHATT-DIST", header="BHATT-DIST-Hist-2D-based,BHATT-DIST-Hist-1D-based")
+            save_metric_data(cfg, match, motion_feat_bhatt_coef, "MOTIONFEAT-BHATT-COEF", header="BHATT-COEF-Hist-2D-based,BHATT-COEF-Hist-1D-based")
         break
 
 if __name__ == '__main__':
