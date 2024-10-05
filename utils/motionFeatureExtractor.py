@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.spatial import distance
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
@@ -121,7 +120,20 @@ class MotionFeatureExtractor:
         return np.array(all_motion_feature_vectors), np.array(all_mag_rho_volumnes)
 
 def get_bhattacharyya_dist_coef(P,Q):
-    bhattacharyya_dist = -np.log(distance.bhattacharyya(P, Q))
-    bhattacharyya_coef = distance.bhattacharyya(P, Q)
+    """
+    Given two discrete probabilistic distributions P and Q
+    Returns:
+    - Bhattacharyya distance
+    - Bhattacharyya coefficient
+    """
+    P = np.array(P)
+    Q = np.array(Q)
+    # Compute Bhattacharyya coefficient
+    bhattacharyya_coef = np.sum(np.sqrt(P * Q))
+    # Avoid taking the log of zero by adding a small epsilon
+    epsilon = 1e-10
+    bhattacharyya_coef = np.clip(bhattacharyya_coef, epsilon, 1.0)
+    # Compute Bhattacharyya distance
+    bhattacharyya_dist = -np.log(bhattacharyya_coef)
 
     return bhattacharyya_dist, bhattacharyya_coef
