@@ -4,12 +4,13 @@ from sklearn.metrics import mean_squared_error
 from utils.motionFeatureExtractor import MotionFeatureExtractor, get_bhattacharyya_dist_coef
 
 def my_psnr(y_gt, y_hat, data_range, eps):
+    # Compute mean squared error
     err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
-    data_range = float(data_range)  # prevent overflow for small integer types
-    if err < eps:
-        psnr = 10 * np.log10((data_range**2) / eps)
-    else:
-        psnr = 10 * np.log10((data_range**2) / err)
+    # Prevent overflow and division by zero
+    err = max(err, eps)
+    # Calculate PSNR
+    data_range = float(data_range)
+    psnr = 10 * np.log10((data_range ** 2) / err)  
     return psnr
 
 def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, eps):
