@@ -74,18 +74,18 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
             pred_seq_list.append(future_samples_pred[i])
             gt_seq_list.append(random_future_samples[i])
 
-        if metric in ['PSNR', 'All']:
+        if metric in ['PSNR', 'ALL']:
             mprops_nsamples_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
             save_metric_data(cfg, match, mprops_nsamples_psnr, "PSNR")
             save_metric_data(cfg, match, mprops_max_psnr, "MAX-PSNR")
-        if metric in ['SSIM', 'All']:
+        if metric in ['SSIM', 'ALL']:
             mprops_nsamples_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq)
             save_metric_data(cfg, match, mprops_nsamples_ssim, "SSIM")
             save_metric_data(cfg, match, mprops_max_ssim, "MAX-SSIM")
-        if metric in ['MOTION_FEAT_MSE', 'All']:
+        if metric in ['MOTION_FEAT_MSE', 'ALL']:
             motion_feat_mse = motion_feature_by_mse(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
             save_metric_data(cfg, match, motion_feat_mse, "MOTIONFEAT_MSE", header="MSE_Hist_2D_Based,MSE_Hist_1D_Based")
-        if metric in ['MOTION_FEAT_BHATT', 'All']:
+        if metric in ['MOTION_FEAT_BHATT', 'ALL']:
             motion_feat_bhatt_dist, motion_feat_bhatt_coef = motion_feature_by_bhattacharyya(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
             save_metric_data(cfg, match, motion_feat_bhatt_dist, "MOTIONFEAT_BHATT_DIST", header="BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based")
             save_metric_data(cfg, match, motion_feat_bhatt_coef, "MOTIONFEAT_BHATT_COEF", header="BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based")
