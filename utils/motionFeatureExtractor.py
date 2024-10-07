@@ -56,7 +56,7 @@ class MotionFeatureExtractor:
 
         return mag_rho_transf
 
-    def motion_feature_2D_hist(self, local_norm=True):
+    def motion_feature_2D_hist(self):
         all_motion_feature_vectors = []
         for sample in range(self.nsamples):
             motion_feature_vector = []
@@ -73,18 +73,15 @@ class MotionFeatureExtractor:
                         hist_2D, _, _ = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 255], [0, 2*np.pi]])
                         # Flatten and add to the motion feature vector
                         hist_2D = hist_2D.flatten()
-                        if local_norm:
-                            hist_2D = hist_2D / hist_2D.sum()
                         motion_feature_vector.append(hist_2D)
             # Concatenate histograms from all volumes into a single vector
             motion_feature_vector = np.concatenate(motion_feature_vector)
-            if not local_norm:
-                motion_feature_vector = motion_feature_vector / (motion_feature_vector.sum() + 1)
+            motion_feature_vector = motion_feature_vector / (motion_feature_vector.sum() + 1)
             all_motion_feature_vectors.append(motion_feature_vector)
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors)
 
-    def motion_feature_1D_hist(self, local_norm=True):
+    def motion_feature_1D_hist(self):
         all_motion_feature_vectors = []
         all_mag_rho_volumnes = []
 
@@ -108,13 +105,10 @@ class MotionFeatureExtractor:
                         for bin_idx in range(self.num_angle_bins):
                             hist_1D[bin_idx] = np.sum(np.power(mag_volume[angle_bins == bin_idx], self.gamma))
                         # Append this histogram to the motion feature vector avoing division by cero
-                        if local_norm:
-                            hist_1D = hist_1D / (hist_1D.sum() + 1)
                         motion_feature_vector.append(hist_1D)
             # Concatenate histograms from all volumes into a single vector
             motion_feature_vector = np.concatenate(motion_feature_vector)
-            if not local_norm:
-                motion_feature_vector = motion_feature_vector / (motion_feature_vector.sum() + 1)
+            motion_feature_vector = motion_feature_vector / (motion_feature_vector.sum() + 1)
             all_motion_feature_vectors.append(motion_feature_vector)
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors), np.array(all_mag_rho_volumnes)

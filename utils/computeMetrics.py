@@ -117,40 +117,24 @@ def motion_feature_by_mse(gt_seq_list, pred_seq_list, f, k, gamma, mag_rho_flag=
 
     return motion_feat_mse
 
-def motion_feature_by_bhattacharyya(gt_seq_list, pred_seq_list, f, k, gamma, local_norm=False):
+def motion_feature_by_bhattacharyya(gt_seq_list, pred_seq_list, f, k, gamma):
     num_angle_bins = 8
     num_magnitude_bins=9
 
     mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k, gamma=gamma, num_magnitude_bins=num_magnitude_bins, num_angle_bins=num_angle_bins)
     mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k, gamma=gamma, num_magnitude_bins=num_magnitude_bins, num_angle_bins=num_angle_bins)
 
-    mf_2D_pred = mf_extractor_pred.motion_feature_2D_hist(local_norm)
-    mf_2D_gt = mf_extractor_gt.motion_feature_2D_hist(local_norm)
-    mf_1D_pred, _ = mf_extractor_pred.motion_feature_1D_hist(local_norm)
-    mf_1D_gt, _ = mf_extractor_gt.motion_feature_1D_hist(local_norm)
+    mf_2D_pred = mf_extractor_pred.motion_feature_2D_hist()
+    mf_2D_gt = mf_extractor_gt.motion_feature_2D_hist()
+    mf_1D_pred, _ = mf_extractor_pred.motion_feature_1D_hist()
+    mf_1D_gt, _ = mf_extractor_gt.motion_feature_1D_hist()
 
-    total_samples, total_elems_1Dhist = mf_1D_pred.shape
-
-    if local_norm:
-        motion_feat_bhatt_dist, motion_feat_bhatt_coef = [], []
-        for sample in range(total_samples):
-            local_dist, local_coef = [], []
-            for idx_hist in range(0, total_elems_1Dhist, num_angle_bins):
-                local_bhat_dist_2D, local_bhat_coef_2D = get_bhattacharyya_dist_coef(mf_2D_gt[sample][idx_hist:idx_hist+num_angle_bins], mf_2D_pred[sample][idx_hist:idx_hist+num_angle_bins])
-                local_bhat_dist_1D, local_bhat_coef_1D  = get_bhattacharyya_dist_coef(mf_1D_gt[sample][idx_hist:idx_hist+num_angle_bins], mf_1D_pred[sample][idx_hist:idx_hist+num_angle_bins])
-                local_dist.append(local_bhat_dist_2D, local_bhat_dist_1D)
-                local_coef.append(local_bhat_coef_2D, local_bhat_coef_1D)
-            motion_feat_bhatt_dist.append(local_dist)
-            motion_feat_bhatt_coef.append(local_coef)
-        motion_feat_bhatt_dist = np.array(motion_feat_bhatt_dist)
-        motion_feat_bhatt_coef = np.array(motion_feat_bhatt_coef)
-    else:
-        motion_feat_bhatt_dist = np.zeros((len(pred_seq_list), 2))
-        motion_feat_bhatt_coef = np.zeros((len(pred_seq_list), 2))
-        for sample in range(len(pred_seq_list)):
-            bhat_dist_2D, bhat_coef_2D = get_bhattacharyya_dist_coef(mf_2D_gt[sample], mf_2D_pred[sample])
-            bhat_dist_1D, bhat_coef_1D  = get_bhattacharyya_dist_coef(mf_1D_gt[sample], mf_1D_pred[sample])
-            motion_feat_bhatt_dist[sample] = (bhat_dist_2D, bhat_dist_1D)
-            motion_feat_bhatt_coef[sample] = (bhat_coef_2D, bhat_coef_1D)
+    motion_feat_bhatt_dist = np.zeros((len(pred_seq_list), 2))
+    motion_feat_bhatt_coef = np.zeros((len(pred_seq_list), 2))
+    for sample in range(len(pred_seq_list)):
+        bhat_dist_2D, bhat_coef_2D = get_bhattacharyya_dist_coef(mf_2D_gt[sample], mf_2D_pred[sample])
+        bhat_dist_1D, bhat_coef_1D  = get_bhattacharyya_dist_coef(mf_1D_gt[sample], mf_1D_pred[sample])
+        motion_feat_bhatt_dist[sample] = (bhat_dist_2D, bhat_dist_1D)
+        motion_feat_bhatt_coef[sample] = (bhat_coef_2D, bhat_coef_1D)
 
     return motion_feat_bhatt_dist, motion_feat_bhatt_coef
