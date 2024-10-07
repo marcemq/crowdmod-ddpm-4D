@@ -113,7 +113,7 @@ class MotionFeatureExtractor:
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors), np.array(all_mag_rho_volumnes)
 
-def get_bhattacharyya_dist_coef(P,Q):
+def get_bhattacharyya_dist_coef(P, Q):
     """
     Given two discrete probabilistic distributions P and Q
     Returns:

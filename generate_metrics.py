@@ -84,11 +84,11 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
             save_metric_data(cfg, match, mprops_max_ssim, "MAX-SSIM")
         if metric in ['MOTION_FEAT_MSE', 'All']:
             motion_feat_mse = motion_feature_by_mse(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
-            save_metric_data(cfg, match, motion_feat_mse, "MOTIONFEAT-MSE", header="MSE-Hist-2D-based,MSE-Hist-1D-based")
+            save_metric_data(cfg, match, motion_feat_mse, "MOTIONFEAT_MSE", header="MSE_Hist_2D_Based,MSE_Hist_1D_Based")
         if metric in ['MOTION_FEAT_BHATT', 'All']:
             motion_feat_bhatt_dist, motion_feat_bhatt_coef = motion_feature_by_bhattacharyya(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
-            save_metric_data(cfg, match, motion_feat_bhatt_dist, "MOTIONFEAT-BHATT-DIST", header="BHATT-DIST-Hist-2D-based,BHATT-DIST-Hist-1D-based")
-            save_metric_data(cfg, match, motion_feat_bhatt_coef, "MOTIONFEAT-BHATT-COEF", header="BHATT-COEF-Hist-2D-based,BHATT-COEF-Hist-1D-based")
+            save_metric_data(cfg, match, motion_feat_bhatt_dist, "MOTIONFEAT_BHATT_DIST", header="BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based")
+            save_metric_data(cfg, match, motion_feat_bhatt_coef, "MOTIONFEAT_BHATT_COEF", header="BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based")
         break
 
 if __name__ == '__main__':
