@@ -73,10 +73,10 @@ class MotionFeatureExtractor:
                         hist_2D, _, _ = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 255], [0, 2*np.pi]])
                         # Flatten and add to the motion feature vector
                         hist_2D = hist_2D.flatten()
-                        hist_2D = hist_2D / hist_2D.sum()
                         motion_feature_vector.append(hist_2D)
             # Concatenate histograms from all volumes into a single vector
             motion_feature_vector = np.concatenate(motion_feature_vector)
+            motion_feature_vector = motion_feature_vector / (motion_feature_vector.sum() + 1)
             all_motion_feature_vectors.append(motion_feature_vector)
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors)
@@ -105,10 +105,29 @@ class MotionFeatureExtractor:
                         for bin_idx in range(self.num_angle_bins):
                             hist_1D[bin_idx] = np.sum(np.power(mag_volume[angle_bins == bin_idx], self.gamma))
                         # Append this histogram to the motion feature vector avoing division by cero
-                        hist_1D = hist_1D / (hist_1D.sum() + 1)
                         motion_feature_vector.append(hist_1D)
             # Concatenate histograms from all volumes into a single vector
             motion_feature_vector = np.concatenate(motion_feature_vector)
+            motion_feature_vector = motion_feature_vector / (motion_feature_vector.sum() + 1)
             all_motion_feature_vectors.append(motion_feature_vector)
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors), np.array(all_mag_rho_volumnes)
+
+def get_bhattacharyya_dist_coef(P, Q):
+    """
+    Given two discrete probabilistic distributions P and Q
+    Returns:
+    - Bhattacharyya distance
+    - Bhattacharyya coefficient
+    """
+    P = np.array(P)
+    Q = np.array(Q)
+    # Compute Bhattacharyya coefficient
+    bhattacharyya_coef = np.sum(np.sqrt(P * Q))
+    # Avoid taking the log of zero by adding a small epsilon
+    epsilon = 1e-10
+    bhattacharyya_coef = np.clip(bhattacharyya_coef, epsilon, 1.0)
+    # Compute Bhattacharyya distance
+    bhattacharyya_dist = -np.log(bhattacharyya_coef)
+
+    return bhattacharyya_dist, bhattacharyya_coef

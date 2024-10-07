@@ -1,15 +1,16 @@
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
 from sklearn.metrics import mean_squared_error
-from utils.motionFeatureExtractor import MotionFeatureExtractor
+from utils.motionFeatureExtractor import MotionFeatureExtractor, get_bhattacharyya_dist_coef
 
 def my_psnr(y_gt, y_hat, data_range, eps):
+    # Compute mean squared error
     err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
-    data_range = float(data_range)  # prevent overflow for small integer types
-    if err < eps:
-        psnr = 10 * np.log10((data_range**2) / eps)
-    else:
-        psnr = 10 * np.log10((data_range**2) / err)
+    # Prevent overflow and division by zero
+    err = max(err, eps)
+    # Calculate PSNR
+    data_range = float(data_range)
+    psnr = 10 * np.log10((data_range ** 2) / err)  
     return psnr
 
 def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, eps):
@@ -86,17 +87,11 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
 
     return mprops_nsamples_ssim, mprops_max_ssim
 
-def lpips_mprops_seq(gt_seq_list, pred_seq_list):
-    nsamples = len(pred_seq_list)
-    _, _, _, pred_len = pred_seq_list[0].shape
-    mprops_nsamples_lpips = np.zeros((nsamples, 4))
-    return mprops_nsamples_lpips
-
 def _save_mag_rho_data(all_mag_rho_vol, nameToUse):
     file_name = f"metrics/all_mag_rho_{nameToUse}.csv"
     np.savetxt(file_name, all_mag_rho_vol, delimiter=",", comments="")
 
-def motion_feature_metric_mse(gt_seq_list, pred_seq_list, f, k, gamma, mag_rho_flag=False):
+def motion_feature_by_mse(gt_seq_list, pred_seq_list, f, k, gamma, mag_rho_flag=False):
     mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k, gamma=gamma)
     mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k, gamma=gamma)
 
@@ -116,3 +111,25 @@ def motion_feature_metric_mse(gt_seq_list, pred_seq_list, f, k, gamma, mag_rho_f
         motion_feat_mse[sample] = (mse_2D, mse_1D)
 
     return motion_feat_mse
+
+def motion_feature_by_bhattacharyya(gt_seq_list, pred_seq_list, f, k, gamma):
+    num_angle_bins = 8
+    num_magnitude_bins=9
+
+    mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k, gamma=gamma, num_magnitude_bins=num_magnitude_bins, num_angle_bins=num_angle_bins)
+    mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k, gamma=gamma, num_magnitude_bins=num_magnitude_bins, num_angle_bins=num_angle_bins)
+
+    mf_2D_pred = mf_extractor_pred.motion_feature_2D_hist()
+    mf_2D_gt = mf_extractor_gt.motion_feature_2D_hist()
+    mf_1D_pred, _ = mf_extractor_pred.motion_feature_1D_hist()
+    mf_1D_gt, _ = mf_extractor_gt.motion_feature_1D_hist()
+
+    motion_feat_bhatt_dist = np.zeros((len(pred_seq_list), 2))
+    motion_feat_bhatt_coef = np.zeros((len(pred_seq_list), 2))
+    for sample in range(len(pred_seq_list)):
+        bhat_dist_2D, bhat_coef_2D = get_bhattacharyya_dist_coef(mf_2D_gt[sample], mf_2D_pred[sample])
+        bhat_dist_1D, bhat_coef_1D  = get_bhattacharyya_dist_coef(mf_1D_gt[sample], mf_1D_pred[sample])
+        motion_feat_bhatt_dist[sample] = (bhat_dist_2D, bhat_dist_1D)
+        motion_feat_bhatt_coef[sample] = (bhat_coef_2D, bhat_coef_1D)
+
+    return motion_feat_bhatt_dist, motion_feat_bhatt_coef
