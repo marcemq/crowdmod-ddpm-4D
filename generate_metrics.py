@@ -82,9 +82,6 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
             mprops_nsamples_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq)
             save_metric_data(cfg, match, mprops_nsamples_ssim, "SSIM")
             save_metric_data(cfg, match, mprops_max_ssim, "MAX-SSIM")
-        if metric in ['LPIPS', 'All']:
-            mprops_nsamples_lpips = lpips_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR)
-            save_metric_data(cfg, match, mprops_nsamples_lpips, "LPIPS")
         if metric in ['MOTION_FEAT_MSE', 'All']:
             motion_feat_mse = motion_feature_by_mse(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
             save_metric_data(cfg, match, motion_feat_mse, "MOTIONFEAT-MSE", header="MSE-Hist-2D-based,MSE-Hist-1D-based")

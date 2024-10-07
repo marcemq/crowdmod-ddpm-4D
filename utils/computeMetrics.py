@@ -86,12 +86,6 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
 
     return mprops_nsamples_ssim, mprops_max_ssim
 
-def lpips_mprops_seq(gt_seq_list, pred_seq_list):
-    nsamples = len(pred_seq_list)
-    _, _, _, pred_len = pred_seq_list[0].shape
-    mprops_nsamples_lpips = np.zeros((nsamples, 4))
-    return mprops_nsamples_lpips
-
 def _save_mag_rho_data(all_mag_rho_vol, nameToUse):
     file_name = f"metrics/all_mag_rho_{nameToUse}.csv"
     np.savetxt(file_name, all_mag_rho_vol, delimiter=",", comments="")
