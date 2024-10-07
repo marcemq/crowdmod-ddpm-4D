@@ -7,7 +7,7 @@ from models.generate import generate_ddpm, generate_ddim
 
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset
-from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, lpips_mprops_seq, motion_feature_by_mse, motion_feature_by_bhattacharyya
+from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_by_mse, motion_feature_by_bhattacharyya
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
