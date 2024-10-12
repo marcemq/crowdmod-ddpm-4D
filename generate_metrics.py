@@ -18,7 +18,7 @@ def save_metric_data(cfg, match, data, metric, header):
 def save_all_metrics(match, metrics_dict):
     # Stack metrics by epoch into an array
     for metric_name, (metric_data_list, _) in metrics_dict.items():
-        metrics_dict[metric_name][0] = np.stack(metric_data_list)
+        metrics_dict[metric_name][0] = np.vstack(metric_data_list)
 
     # Save each non-empty metric with its required data
     for metric_name, (metric_data, metric_header) in metrics_dict.items():
