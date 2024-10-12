@@ -11,11 +11,32 @@ from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_featur
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
-def save_metric_data(cfg, match, data, metric, header="rho,vx,vy,unc"):
+def save_metric_data(cfg, match, data, metric, header):
     file_name = f"metrics/mpSampling_{metric}_NS{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
     np.savetxt(file_name, data, delimiter=",", header=header, comments="")
 
-def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
+def save_all_metrics(match, metrics_dict):
+    # Stack metrics by epoch into an array
+    for metric_name, (metric_data_list, _) in metrics_dict.items():
+        metrics_dict[metric_name][0] = np.stack(metric_data_list)
+
+    # Save each non-empty metric with its required data
+    for metric_name, (metric_data, metric_header) in metrics_dict.items():
+        if len(metric_data) != 0:
+            save_metric_data(cfg, match, metric_data, metric_name, metric_header)
+
+def get_metrics_dict():
+    metrics_dict = {"PSNR" : ([], "rho,vx,vy,unc"),
+                    "MAX-PSNR" : ([], "rho,vx,vy,unc"),
+                    "SSIM" : ([], "rho,vx,vy,unc"),
+                    "MAX-SSIM" : ([], "rho,vx,vy,unc"),
+                    "MOTIONFEAT_MSE" : ([], "MSE_Hist_2D_Based,MSE_Hist_1D_Based"),
+                    "MOTIONFEAT_BHATT_DIST" : ([], "BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based"),
+                    "MOTIONFEAT_BHATT_COEF" : ([], "BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based")
+                    }
+    return metrics_dict
+
+def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -42,6 +63,8 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
     diffusionmodel.to(device)
     pred_seq_list, gt_seq_list = [], []
     taus = 1
+    count_batch = 0
+    metrics_dict = get_metrics_dict()
     # cicle over batched test data
     for batch in batched_test_data:
         past_test, future_test, stats = batch
@@ -75,26 +98,32 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric):
             gt_seq_list.append(random_future_samples[i])
 
         if metric in ['PSNR', 'ALL']:
-            mprops_nsamples_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
-            save_metric_data(cfg, match, mprops_nsamples_psnr, "PSNR")
-            save_metric_data(cfg, match, mprops_max_psnr, "MAX-PSNR")
+            mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+            metrics_dict['PSNR'][0].append(mprops_psnr)
+            metrics_dict['MAX-PSNR'][0].append(mprops_max_psnr)
         if metric in ['SSIM', 'ALL']:
-            mprops_nsamples_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq)
-            save_metric_data(cfg, match, mprops_nsamples_ssim, "SSIM")
-            save_metric_data(cfg, match, mprops_max_ssim, "MAX-SSIM")
+            mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq)
+            metrics_dict['SSIM'][0].append(mprops_ssim)
+            metrics_dict['MAX-SSIM'][0].append(mprops_max_ssim)
         if metric in ['MOTION_FEAT_MSE', 'ALL']:
             motion_feat_mse = motion_feature_by_mse(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
-            save_metric_data(cfg, match, motion_feat_mse, "MOTIONFEAT_MSE", header="MSE_Hist_2D_Based,MSE_Hist_1D_Based")
+            metrics_dict["MOTIONFEAT_MSE"][0].append(motion_feat_mse)
         if metric in ['MOTION_FEAT_BHATT', 'ALL']:
             motion_feat_bhatt_dist, motion_feat_bhatt_coef = motion_feature_by_bhattacharyya(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
-            save_metric_data(cfg, match, motion_feat_bhatt_dist, "MOTIONFEAT_BHATT_DIST", header="BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based")
-            save_metric_data(cfg, match, motion_feat_bhatt_coef, "MOTIONFEAT_BHATT_COEF", header="BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based")
-        break
+            metrics_dict["MOTIONFEAT_BHATT_DIST"][0].append(motion_feat_bhatt_dist)
+            metrics_dict["MOTIONFEAT_BHATT_COEF"][0].append(motion_feat_bhatt_coef)
+
+        count_batch += 1
+        if count_batch == batches_to_use:
+            break
+
+    save_all_metrics(metrics_dict)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to sample crowd macroprops from trained model.")
     parser.add_argument('--chunk-repd-past-seq', type=int, default=5, help='Chunk of repeteaded past sequences to use when predict.')
     parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute')
+    parser.add_argument('--batches-to-use', type=int, default=1, help='Total of batches to use to compute metrics.')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
     args = parser.parse_args()
@@ -103,4 +132,4 @@ if __name__ == '__main__':
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    generate_metrics(cfg, filenames, chunkRepdPastSeq=args.chunk_repd_past_seq, metric=args.metric)
+    generate_metrics(cfg, filenames, chunkRepdPastSeq=args.chunk_repd_past_seq, metric=args.metric, batches_to_use=args.batches_to_use)
