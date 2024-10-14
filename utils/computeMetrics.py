@@ -7,7 +7,7 @@ def my_psnr(y_gt, y_hat, data_range, eps):
     # Compute mean squared error
     err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
     # Prevent overflow and division by zero
-    err = max(err, eps)
+    err = max(err, 0.001)
     # Calculate PSNR
     data_range = float(data_range)
     psnr = 10 * np.log10((data_range ** 2) / err)  
