@@ -92,7 +92,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
         else:
             print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
-        future_samples_pred = xnoisy_over_time[cfg.DIFFUSION.TIMESTEPS]
+        future_samples_pred = x
         for i in range(len(random_past_idx)):
             pred_seq_list.append(future_samples_pred[i])
             gt_seq_list.append(random_future_samples[i])

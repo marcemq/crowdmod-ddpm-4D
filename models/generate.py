@@ -7,7 +7,7 @@ from models.sparsityGuidance import sparsityGradient
 
 # This is how we will use the model once trained
 @torch.inference_mode()
-def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:DDPM, cfg, device,verbose=True):
+def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:DDPM, cfg, device, history=False):
     # Set the model in evaluation mode
     denoiser_model.eval()
     # Noise from a normal distribution
@@ -26,6 +26,9 @@ def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:
             # Update the noisy image with the sparsity guidance (TESTING!)
             sparsity_grad = sparsityGradient(xnoisy,cfg, device)
             xnoisy-= 0.004*sigma*sparsity_grad
+        if history:
+            xnoisy_over_time.append(xnoisy)
+    if not history:
         xnoisy_over_time.append(xnoisy)
     return xnoisy, xnoisy_over_time
 
