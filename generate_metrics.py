@@ -117,7 +117,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
         if count_batch == batches_to_use:
             break
 
-    save_all_metrics(metrics_dict)
+    save_all_metrics(match, metrics_dict)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to sample crowd macroprops from trained model.")
