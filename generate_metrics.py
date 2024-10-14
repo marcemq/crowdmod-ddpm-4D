@@ -15,26 +15,34 @@ def save_metric_data(cfg, match, data, metric, header):
     file_name = f"metrics/mpSampling_{metric}_NS{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
     np.savetxt(file_name, data, delimiter=",", header=header, comments="")
 
-def save_all_metrics(match, metrics_dict):
+def save_all_metrics(match, metrics_data_dict, metrics_header_dict):
     # Stack metrics by epoch into an array
-    for metric_name, (metric_data_list, _) in metrics_dict.items():
-        metrics_dict[metric_name][0] = np.vstack(metric_data_list)
+    for metric_name, metric_data_list in metrics_data_dict.items():
+        metrics_data_dict[metric_name] = np.vstack(metric_data_list)
 
     # Save each non-empty metric with its required data
-    for metric_name, (metric_data, metric_header) in metrics_dict.items():
-        if len(metric_data) != 0:
-            save_metric_data(cfg, match, metric_data, metric_name, metric_header)
+    for metric_name, metric_header in metrics_header_dict.items():
+        if len(metrics_data_dict[metric_name]) != 0:
+            save_metric_data(cfg, match, metrics_data_dict[metric_name], metric_name, metric_header)
 
-def get_metrics_dict():
-    metrics_dict = {"PSNR" : ([], "rho,vx,vy,unc"),
-                    "MAX-PSNR" : ([], "rho,vx,vy,unc"),
-                    "SSIM" : ([], "rho,vx,vy,unc"),
-                    "MAX-SSIM" : ([], "rho,vx,vy,unc"),
-                    "MOTIONFEAT_MSE" : ([], "MSE_Hist_2D_Based,MSE_Hist_1D_Based"),
-                    "MOTIONFEAT_BHATT_DIST" : ([], "BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based"),
-                    "MOTIONFEAT_BHATT_COEF" : ([], "BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based")
+def get_metrics_dicts():
+    metrics_data_dict = {"PSNR" : [],
+                    "MAX-PSNR" : [],
+                    "SSIM" : [],
+                    "MAX-SSIM" : [],
+                    "MOTIONFEAT_MSE" : [],
+                    "MOTIONFEAT_BHATT_DIST" : [],
+                    "MOTIONFEAT_BHATT_COEF" : []
                     }
-    return metrics_dict
+    metrics_header_dict = {"PSNR" : "rho,vx,vy,unc",
+                    "MAX-PSNR" : "rho,vx,vy,unc",
+                    "SSIM" : "rho,vx,vy,unc",
+                    "MAX-SSIM" : "rho,vx,vy,unc",
+                    "MOTIONFEAT_MSE" : "MSE_Hist_2D_Based,MSE_Hist_1D_Based",
+                    "MOTIONFEAT_BHATT_DIST" : "BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based",
+                    "MOTIONFEAT_BHATT_COEF" : "BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based"
+                    }
+    return metrics_data_dict, metrics_header_dict
 
 def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     torch.manual_seed(42)
@@ -64,7 +72,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     pred_seq_list, gt_seq_list = [], []
     taus = 1
     count_batch = 0
-    metrics_dict = get_metrics_dict()
+    metrics_data_dict, metrics_header_dict = get_metrics_dicts()
     # cicle over batched test data
     for batch in batched_test_data:
         past_test, future_test, stats = batch
@@ -99,25 +107,25 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
 
         if metric in ['PSNR', 'ALL']:
             mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
-            metrics_dict['PSNR'][0].append(mprops_psnr)
-            metrics_dict['MAX-PSNR'][0].append(mprops_max_psnr)
+            metrics_data_dict['PSNR'].append(mprops_psnr)
+            metrics_data_dict['MAX-PSNR'].append(mprops_max_psnr)
         if metric in ['SSIM', 'ALL']:
             mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq)
-            metrics_dict['SSIM'][0].append(mprops_ssim)
-            metrics_dict['MAX-SSIM'][0].append(mprops_max_ssim)
+            metrics_data_dict['SSIM'].append(mprops_ssim)
+            metrics_data_dict['MAX-SSIM'].append(mprops_max_ssim)
         if metric in ['MOTION_FEAT_MSE', 'ALL']:
             motion_feat_mse = motion_feature_by_mse(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
-            metrics_dict["MOTIONFEAT_MSE"][0].append(motion_feat_mse)
+            metrics_data_dict["MOTIONFEAT_MSE"].append(motion_feat_mse)
         if metric in ['MOTION_FEAT_BHATT', 'ALL']:
             motion_feat_bhatt_dist, motion_feat_bhatt_coef = motion_feature_by_bhattacharyya(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
-            metrics_dict["MOTIONFEAT_BHATT_DIST"][0].append(motion_feat_bhatt_dist)
-            metrics_dict["MOTIONFEAT_BHATT_COEF"][0].append(motion_feat_bhatt_coef)
+            metrics_data_dict["MOTIONFEAT_BHATT_DIST"].append(motion_feat_bhatt_dist)
+            metrics_data_dict["MOTIONFEAT_BHATT_COEF"].append(motion_feat_bhatt_coef)
 
         count_batch += 1
         if count_batch == batches_to_use:
             break
 
-    save_all_metrics(match, metrics_dict)
+    save_all_metrics(match, metrics_data_dict, metrics_header_dict)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to sample crowd macroprops from trained model.")
