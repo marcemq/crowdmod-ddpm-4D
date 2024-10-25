@@ -52,7 +52,7 @@ class MotionFeatureExtractor:
             # Count clipped values to have a sense of information loss
             clipped_values = np.sum((mag_rho_sample < 0) | (mag_rho_sample > 255))
             total_clipped += clipped_values
-        print(f'Total clipped values at mag_rho_transform:{total_clipped}')
+        #print(f'Total clipped values at mag_rho_transform:{total_clipped}')
 
         return mag_rho_transf
 
