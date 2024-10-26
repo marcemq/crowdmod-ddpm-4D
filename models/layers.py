@@ -18,19 +18,15 @@ class AttentionBlock(nn.Module):
         h_spatial = h.permute(0, 4, 1, 2, 3).reshape(B*L, C, H*W).swapaxes(1, 2)  # [B*L, H*W, C]
         h_spatial, _ = self.spatial_mhsa(h_spatial, h_spatial, h_spatial)  # [B*L, H*W, C]
         h_spatial = h_spatial.swapaxes(1, 2).reshape(B, L, C, H, W).permute(0, 2, 3, 4, 1)  # [B, C, H, W, L]
-        x = x + h_spatial
 
         # Reshape for temporal attention: [B, C, H, W, L] --> [B*H*W, C, L]
-        h_temporal = x.permute(0, 2, 3, 1, 4).reshape(B*H*W, C, L).swapaxes(1, 2)  # [B*H*W, L, C]
+        h_temporal = h_spatial.permute(0, 2, 3, 1, 4).reshape(B*H*W, C, L).swapaxes(1, 2)  # [B*H*W, L, C]
         h_temporal, _ = self.temporal_mhsa(h_temporal, h_temporal, h_temporal)  # [B*H*W, L, C]
         h_temporal = h_temporal.swapaxes(1, 2).reshape(B, H, W, C, L).permute(0, 3, 1, 2, 4)  # [B, C, H, W, L]
 
-        # Add temporal attention to the original input
+        # Add spatian and temporal attention to the original input
         x = x + h_temporal
 
-        #h    = h.reshape(B, self.channels, H * W * L).swapaxes(1, 2)  # [B, C, H, W, L] --> [B, C, H*W*L] --> [B, H*W*L, C]
-        #h, _ = self.mhsa(h, h, h)  # [B, H*W*L, C]
-        #h    = h.swapaxes(2, 1).view(B, self.channels, H, W, L)  # [B, C, H*W*L] --> [B, C, H, W, L]
         return x
     
 # Resnet block
