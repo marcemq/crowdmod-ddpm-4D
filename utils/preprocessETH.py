@@ -115,7 +115,7 @@ def add_vel_angle(agg_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to preprocess ETH data.")
-    parser.add_argument('--config-yml-file', type=str, default='config/ETH_ddpm.yml', help='Configuration YML file for specific dataset.')
+    parser.add_argument('--config-yml-file', type=str, default='config/ETH_ddpm.yml', help='Configuration YML file for ETH dataset.')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file)
