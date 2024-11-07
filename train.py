@@ -16,11 +16,11 @@ import gc,logging,os
 from matplotlib import pyplot as plt
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset
+from utils.model_details import count_trainable_params
 from models.diffusion.forward import ForwardSampler
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from models.training import train_one_epoch
-from torchsummary import summary
 from functools import partial
 
 def train(cfg, filenames, show_losses_plot=False):
@@ -53,11 +53,8 @@ def train(cfg, filenames, show_losses_plot=False):
                                 time_multiple           = cfg.MODEL.TIME_EMB_MULT,
                                 condition               = cfg.MODEL.CONDITION)
     denoiser.to(device)
-    #specific_timesteps = [250]
-    #t = torch.as_tensor(specific_timesteps, dtype=torch.long)
-    #t = torch.randint(low=0, high=1000, size=(64,), device=device)
-    #summary(denoiser, [(64, 4, 12, 36, 5), t] )
-
+    trainable_params = count_trainable_params(denoiser)
+    print(f"Total trainable parameters at denoiser:{trainable_params}")
     # The optimizer (Adam with weight decay)
     optimizer = optim.Adam(denoiser.parameters(),lr=cfg.TRAIN.SOLVER.LR, betas=cfg.TRAIN.SOLVER.BETAS,weight_decay=cfg.TRAIN.SOLVER.WEIGHT_DECAY)
 
