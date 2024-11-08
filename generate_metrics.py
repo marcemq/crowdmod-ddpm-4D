@@ -7,7 +7,7 @@ from models.generate import generate_ddpm, generate_ddim
 
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset
-from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_by_mse, motion_feature_by_bhattacharyya
+from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
@@ -113,14 +113,17 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
             mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq)
             metrics_data_dict['SSIM'].append(mprops_ssim)
             metrics_data_dict['MAX-SSIM'].append(mprops_max_ssim)
-        if metric in ['MOTION_FEAT_MSE', 'ALL']:
-            motion_feat_mse = motion_feature_by_mse(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
-            metrics_data_dict["MOTIONFEAT_MSE"].append(motion_feat_mse)
-        if metric in ['MOTION_FEAT_BHATT', 'ALL']:
-            motion_feat_bhatt_dist, motion_feat_bhatt_coef = motion_feature_by_bhattacharyya(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA)
-            metrics_data_dict["MOTIONFEAT_BHATT_DIST"].append(motion_feat_bhatt_dist)
-            metrics_data_dict["MOTIONFEAT_BHATT_COEF"].append(motion_feat_bhatt_coef)
+        if metric in ['MOTION_FEAT_MSE', 'MOTION_FEAT_BHATT', 'ALL']:
+            mse_flag = metric == 'MOTION_FEAT_MSE' or metric == 'ALL'
+            bhatt_flag = metric == 'MOTION_FEAT_BHATT' or metric == 'ALL'
 
+            mfeat_mse, mfeat_bhatt_dist, mfeat_bhatt_coef = motion_feature_metrics(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA, mse_flag, bhatt_flag)
+
+            if mse_flag:
+                metrics_data_dict["MOTION_FEAT_MSE"].append(mfeat_mse)
+            if bhatt_flag:
+                metrics_data_dict["MOTION_FEAT_BHATT_DIST"].append(mfeat_bhatt_dist)
+                metrics_data_dict["MOTION_FEAT_BHATT_COEF"].append(mfeat_bhatt_coef)
         count_batch += 1
         if count_batch == batches_to_use:
             break
