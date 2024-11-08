@@ -10,7 +10,9 @@ def my_psnr(y_gt, y_hat, data_range, eps):
     err = max(err, 0.001)
     # Calculate PSNR
     data_range = float(data_range)
-    psnr = 10 * np.log10((data_range ** 2) / err)  
+    tmp_num = 20 * np.log10(data_range)
+    tmp_den = 10 * np.log10(err)
+    psnr = tmp_num -  tmp_den
     return psnr
 
 def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, eps):

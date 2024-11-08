@@ -69,7 +69,6 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     timesteps=cfg.DIFFUSION.TIMESTEPS
     diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS)
     diffusionmodel.to(device)
-    pred_seq_list, gt_seq_list = [], []
     taus = 1
     count_batch = 0
     metrics_data_dict, metrics_header_dict = get_metrics_dicts()
@@ -101,6 +100,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
             print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
         future_samples_pred = x
+        pred_seq_list, gt_seq_list = [], []
         for i in range(len(random_past_idx)):
             pred_seq_list.append(future_samples_pred[i])
             gt_seq_list.append(random_future_samples[i])
