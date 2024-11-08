@@ -12,20 +12,21 @@ class AttentionBlock(nn.Module):
 
     def forward(self, x):
         B, C, H, W, L = x.shape
-        h    = self.group_norm(x)
+        h_spa    = self.group_norm(x)
+        h_tmp    = self.group_norm(x)
 
         # Reshape for spatial attention: [B, C, H, W, L] --> [B*L, C, H*W]
-        h_spatial = h.permute(0, 4, 1, 2, 3).reshape(B*L, C, H*W).swapaxes(1, 2)  # [B*L, H*W, C]
+        h_spatial = h_spa.permute(0, 4, 1, 2, 3).reshape(B*L, C, H*W).swapaxes(1, 2)  # [B*L, H*W, C]
         h_spatial, _ = self.spatial_mhsa(h_spatial, h_spatial, h_spatial)  # [B*L, H*W, C]
         h_spatial = h_spatial.swapaxes(1, 2).reshape(B, L, C, H, W).permute(0, 2, 3, 4, 1)  # [B, C, H, W, L]
 
         # Reshape for temporal attention: [B, C, H, W, L] --> [B*H*W, C, L]
-        h_temporal = h_spatial.permute(0, 2, 3, 1, 4).reshape(B*H*W, C, L).swapaxes(1, 2)  # [B*H*W, L, C]
+        h_temporal = h_tmp.permute(0, 2, 3, 1, 4).reshape(B*H*W, C, L).swapaxes(1, 2)  # [B*H*W, L, C]
         h_temporal, _ = self.temporal_mhsa(h_temporal, h_temporal, h_temporal)  # [B*H*W, L, C]
         h_temporal = h_temporal.swapaxes(1, 2).reshape(B, H, W, C, L).permute(0, 3, 1, 2, 4)  # [B, C, H, W, L]
 
         # Add spatian and temporal attention to the original input
-        x = x + h_temporal
+        x = x + h_spatial + h_temporal
 
         return x
     
