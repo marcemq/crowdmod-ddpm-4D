@@ -91,7 +91,7 @@ def _save_mag_rho_data(all_mag_rho_vol, nameToUse):
     file_name = f"metrics/all_mag_rho_{nameToUse}.csv"
     np.savetxt(file_name, all_mag_rho_vol, delimiter=",", comments="")
 
-def motion_feature_by_mse(gt_seq_list, pred_seq_list, f, k, gamma, mag_rho_flag=False):
+def motion_feature_metrics(gt_seq_list, pred_seq_list, f, k, gamma, mse_metric=False, bhatt_metrics=False):
     mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k, gamma=gamma)
     mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k, gamma=gamma)
 
@@ -99,34 +99,28 @@ def motion_feature_by_mse(gt_seq_list, pred_seq_list, f, k, gamma, mag_rho_flag=
     mf_2D_gt = mf_extractor_gt.motion_feature_2D_hist()
     mf_1D_pred, all_mag_rho_vol_pred = mf_extractor_pred.motion_feature_1D_hist()
     mf_1D_gt, all_mag_rho_vol_gt = mf_extractor_gt.motion_feature_1D_hist()
-    if mag_rho_flag:
-        _save_mag_rho_data(all_mag_rho_vol_pred, "PRED")
-        _save_mag_rho_data(all_mag_rho_vol_gt, "GT")
+    mfeat_mse, mfeat_bhatt_dist, mfeat_bhatt_coef = None, None, None
 
-    motion_feat_mse = np.zeros((len(pred_seq_list), 2))
+    if mse_metric:
+        mfeat_mse = motion_feature_by_mse(mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt)
+    if bhatt_metrics:
+        mfeat_bhatt_dist, mfeat_bhatt_coef = motion_feature_by_bhattacharyya(mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt)
 
-    for sample in range(len(pred_seq_list)):
+    return mfeat_mse, mfeat_bhatt_dist, mfeat_bhatt_coef
+
+def motion_feature_by_mse(mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt):
+    motion_feat_mse = np.zeros((len(mf_2D_pred), 2))
+    for sample in range(len(mf_2D_pred)):
         mse_2D = mean_squared_error(mf_2D_gt[sample], mf_2D_pred[sample])
         mse_1D = mean_squared_error(mf_1D_gt[sample], mf_1D_pred[sample])
         motion_feat_mse[sample] = (mse_2D, mse_1D)
 
     return motion_feat_mse
 
-def motion_feature_by_bhattacharyya(gt_seq_list, pred_seq_list, f, k, gamma):
-    num_angle_bins = 8
-    num_magnitude_bins=9
-
-    mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k, gamma=gamma, num_magnitude_bins=num_magnitude_bins, num_angle_bins=num_angle_bins)
-    mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k, gamma=gamma, num_magnitude_bins=num_magnitude_bins, num_angle_bins=num_angle_bins)
-
-    mf_2D_pred = mf_extractor_pred.motion_feature_2D_hist()
-    mf_2D_gt = mf_extractor_gt.motion_feature_2D_hist()
-    mf_1D_pred, _ = mf_extractor_pred.motion_feature_1D_hist()
-    mf_1D_gt, _ = mf_extractor_gt.motion_feature_1D_hist()
-
-    motion_feat_bhatt_dist = np.zeros((len(pred_seq_list), 2))
-    motion_feat_bhatt_coef = np.zeros((len(pred_seq_list), 2))
-    for sample in range(len(pred_seq_list)):
+def motion_feature_by_bhattacharyya(mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt):
+    motion_feat_bhatt_dist = np.zeros((len(mf_2D_pred), 2))
+    motion_feat_bhatt_coef = np.zeros((len(mf_2D_pred), 2))
+    for sample in range(len(mf_2D_pred)):
         bhat_dist_2D, bhat_coef_2D = get_bhattacharyya_dist_coef(mf_2D_gt[sample], mf_2D_pred[sample])
         bhat_dist_1D, bhat_coef_1D  = get_bhattacharyya_dist_coef(mf_1D_gt[sample], mf_1D_pred[sample])
         motion_feat_bhatt_dist[sample] = (bhat_dist_2D, bhat_dist_1D)
