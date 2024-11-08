@@ -7,9 +7,8 @@ def my_psnr(y_gt, y_hat, data_range, eps):
     # Compute mean squared error
     err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
     # Prevent overflow and division by zero
-    err = max(err, 0.001)
+    err = max(err, eps)
     # Calculate PSNR
-    data_range = float(data_range)
     tmp_num = 20 * np.log10(data_range)
     tmp_den = 10 * np.log10(err)
     psnr = tmp_num -  tmp_den
@@ -29,9 +28,9 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
         one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
         one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
         # Calculate data ranges for each macroprop
-        rho_range = int(one_gt_seq[0].max() - one_gt_seq[0].min())
-        vx_range  = int(one_gt_seq[1].max() - one_gt_seq[1].min())
-        vy_range  = int(one_gt_seq[2].max() - one_gt_seq[2].min())
+        rho_range = float(one_gt_seq[0].max() - one_gt_seq[0].min())
+        vx_range  = float(one_gt_seq[1].max() - one_gt_seq[1].min())
+        vy_range  = float(one_gt_seq[2].max() - one_gt_seq[2].min())
 
         psnr_rho, psnr_vx, psnr_vy = 0, 0, 0
         for j in range(pred_len):
