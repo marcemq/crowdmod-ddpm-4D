@@ -74,6 +74,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     metrics_data_dict, metrics_header_dict = get_metrics_dicts()
     # cicle over batched test data
     for batch in batched_test_data:
+        print(f'Computing metrics on batch:{count_batch+1}')
         past_test, future_test, stats = batch
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)

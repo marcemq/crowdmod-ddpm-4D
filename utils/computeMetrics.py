@@ -20,17 +20,23 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
     mprops_nsamples_psnr = np.zeros((nsamples, 3))
     mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, 3))
 
-    for i in range(nsamples):
-        one_pred_seq =  pred_seq_list[i].cpu().numpy()
-        one_gt_seq =  gt_seq_list[i].cpu().numpy()
+    pred_seq_list_cpu =  pred_seq_list[i].cpu().numpy()
+    gt_seq_list_cpu =  gt_seq_list[i].cpu().numpy()
+    mprops_factor = np.array(mprops_factor)
 
-        mprops_factor = np.array(mprops_factor)
+    # Calculate data ranges for each macroprop over all seqs [0, :, :, j]
+    rho_range = float(gt_seq_list_cpu[:, 0, :, :].max() - gt_seq_list_cpu[:, 0, :, :].min())
+    vx_range  = float(gt_seq_list_cpu[:, 1, :, :].max() - gt_seq_list_cpu[:, 1, :, :].min())
+    vy_range  = float(gt_seq_list_cpu[:, 2, :, :].max() - gt_seq_list_cpu[:, 2, :, :].min())
+    print(f'Range of macroprops \n rho:{rho_range}, vx:{vx_range} and vy:{vy_range}')
+    print(f'Scaled range of macroprops \n rho:{rho_range*mprops_factor[0]}, vx:{vx_range*mprops_factor[1]} and vy:{vy_range*mprops_factor[2]}')
+
+    for i in range(nsamples):
+        one_pred_seq =  pred_seq_list_cpu[i]
+        one_gt_seq =  gt_seq_list_cpu[i]
+
         one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
         one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
-        # Calculate data ranges for each macroprop
-        rho_range = float(one_gt_seq[0].max() - one_gt_seq[0].min())
-        vx_range  = float(one_gt_seq[1].max() - one_gt_seq[1].min())
-        vy_range  = float(one_gt_seq[2].max() - one_gt_seq[2].min())
 
         psnr_rho, psnr_vx, psnr_vy = 0, 0, 0
         for j in range(pred_len):
