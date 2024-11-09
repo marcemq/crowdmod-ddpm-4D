@@ -49,7 +49,6 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
 
     rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor)
     print(f'Range of macroprops \n rho:{rho_range}, vx:{vx_range} and vy:{vy_range}')
-    print(f'Scaled range of macroprops \n rho:{rho_range*mprops_factor[0]}, vx:{vx_range*mprops_factor[1]} and vy:{vy_range*mprops_factor[2]}')
 
     for i in range(nsamples):
         one_pred_seq = pred_seq_list[i].cpu().numpy()
