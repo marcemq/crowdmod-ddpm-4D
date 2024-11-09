@@ -45,6 +45,7 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
     _, _, _, pred_len = pred_seq_list[0].shape
     mprops_nsamples_psnr = np.zeros((nsamples, 3))
     mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, 3))
+    mprops_factor = np.array(mprops_factor)
 
     rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor)
     print(f'Range of macroprops \n rho:{rho_range}, vx:{vx_range} and vy:{vy_range}')
