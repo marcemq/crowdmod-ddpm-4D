@@ -20,8 +20,8 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
     mprops_nsamples_psnr = np.zeros((nsamples, 3))
     mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, 3))
 
-    pred_seq_list_cpu =  pred_seq_list[i].cpu().numpy()
-    gt_seq_list_cpu =  gt_seq_list[i].cpu().numpy()
+    pred_seq_list_cpu =  pred_seq_list.cpu().numpy()
+    gt_seq_list_cpu =  gt_seq_list.cpu().numpy()
     mprops_factor = np.array(mprops_factor)
 
     # Calculate data ranges for each macroprop over all seqs [0, :, :, j]
