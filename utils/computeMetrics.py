@@ -11,7 +11,7 @@ def my_psnr(y_gt, y_hat, data_range, eps):
     # Calculate PSNR
     tmp_num = 20 * np.log10(data_range)
     tmp_den = 10 * np.log10(err)
-    psnr = tmp_num -  tmp_den
+    psnr = tmp_num - tmp_den
     return psnr
 
 def get_mprops_ranges(gt_seq_list, mprops_factor):
@@ -48,7 +48,7 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
     mprops_factor = np.array(mprops_factor)
 
     rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor)
-    print(f'Range of macroprops \n rho:{rho_range}, vx:{vx_range} and vy:{vy_range}')
+    print(f'Range of macroprops \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
 
     for i in range(nsamples):
         one_pred_seq = pred_seq_list[i].cpu().numpy()
