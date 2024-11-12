@@ -34,10 +34,10 @@ def get_metrics_dicts():
                     "MOTION_FEAT_BHATT_DIST" : [],
                     "MOTION_FEAT_BHATT_COEF" : []
                     }
-    metrics_header_dict = {"PSNR" : "rho,vx,vy,unc",
-                    "MAX-PSNR" : "rho,vx,vy,unc",
-                    "SSIM" : "rho,vx,vy,unc",
-                    "MAX-SSIM" : "rho,vx,vy,unc",
+    metrics_header_dict = {"PSNR" : "rho,vx,vy",
+                    "MAX-PSNR" : "rho,vx,vy",
+                    "SSIM" : "rho,vx,vy",
+                    "MAX-SSIM" : "rho,vx,vy",
                     "MOTION_FEAT_MSE" : "MSE_Hist_2D_Based,MSE_Hist_1D_Based",
                     "MOTION_FEAT_BHATT_DIST" : "BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based",
                     "MOTION_FEAT_BHATT_COEF" : "BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based"
@@ -69,12 +69,13 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     timesteps=cfg.DIFFUSION.TIMESTEPS
     diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS)
     diffusionmodel.to(device)
-    pred_seq_list, gt_seq_list = [], []
     taus = 1
     count_batch = 0
     metrics_data_dict, metrics_header_dict = get_metrics_dicts()
     # cicle over batched test data
     for batch in batched_test_data:
+        print("===" * 20)
+        print(f'Computing metrics on batch:{count_batch+1}')
         past_test, future_test, stats = batch
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
@@ -101,6 +102,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
             print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
         future_samples_pred = x
+        pred_seq_list, gt_seq_list = [], []
         for i in range(len(random_past_idx)):
             pred_seq_list.append(future_samples_pred[i])
             gt_seq_list.append(random_future_samples[i])
