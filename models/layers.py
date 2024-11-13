@@ -21,7 +21,7 @@ class AttentionBlock(nn.Module):
         h_spatial = h_spatial.swapaxes(1, 2).reshape(B, L, C, H, W).permute(0, 2, 3, 4, 1)  # [B, C, H, W, L]
 
         # Reshape for temporal attention: [B, C, H, W, L] --> [B*H*W, C, L]
-        h_temporal = h_tmp.permute(0, 2, 3, 1, 4).reshape(B*H*W, C, L).swapaxes(1, 2)  # [B*H*W, L, C]
+        h_temporal = h_spatial.permute(0, 2, 3, 1, 4).reshape(B*H*W, C, L).swapaxes(1, 2)  # [B*H*W, L, C]
         h_temporal, _ = self.temporal_mhsa(h_temporal, h_temporal, h_temporal)  # [B*H*W, L, C]
         h_temporal = h_temporal.swapaxes(1, 2).reshape(B, H, W, C, L).permute(0, 3, 1, 2, 4)  # [B, C, H, W, L]
 
