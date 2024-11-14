@@ -7,11 +7,11 @@ from models.sparsityGuidance import sparsityGradient
 
 # This is how we will use the model once trained
 @torch.inference_mode()
-def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:DDPM, cfg, device, history=False):
+def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:DDPM, cfg, device, nsamples, history=False):
     # Set the model in evaluation mode
     denoiser_model.eval()
     # Noise from a normal distribution
-    xnoisy = torch.randn((cfg.DIFFUSION.NSAMPLES, 4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.FUTURE_LEN), device=device)
+    xnoisy = torch.randn((nsamples, 4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.FUTURE_LEN), device=device)
     xnoisy_over_time = [xnoisy]
     # Now, to reverse the diffusion process, use a sequence of denoising steps
     for t in tqdm(iterable=reversed(range(0, backward_sampler.timesteps)),
@@ -33,11 +33,11 @@ def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:
     return xnoisy, xnoisy_over_time
 
 @torch.inference_mode()
-def generate_ddim(denoiser_model:nn.Module, past:torch.Tensor, taus, backward_sampler:DDPM, cfg, device, verbose=True):
+def generate_ddim(denoiser_model:nn.Module, past:torch.Tensor, taus, backward_sampler:DDPM, cfg, device, nsamples, verbose=True):
     # Set the model in evaluation mode
     denoiser_model.eval()
     # Noise from a normal distribution
-    xnoisy = torch.randn((cfg.DIFFUSION.NSAMPLES, 4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.FUTURE_LEN), device=device)
+    xnoisy = torch.randn((nsamples, 4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.FUTURE_LEN), device=device)
     last_t                     = torch.ones(xnoisy.shape[0], dtype=torch.long, device=device) * (backward_sampler.timesteps-1)
     sqrt_alpha_bar_t           = get_from_idx(backward_sampler.sqrt_alpha_bar, last_t)
     sqrt_one_minus_alpha_bar_t = get_from_idx(backward_sampler.sqrt_one_minus_alpha_bar, last_t)
