@@ -7,15 +7,27 @@ class AttentionBlock(nn.Module):
         super().__init__()
         self.channels  = channels
         self.group_norm= nn.GroupNorm(num_groups=8, num_channels=channels)
-        self.mhsa      = nn.MultiheadAttention(embed_dim=self.channels, num_heads=4, batch_first=True)
-# AR: review H, W
+        self.spatial_mhsa = nn.MultiheadAttention(embed_dim=self.channels, num_heads=4, batch_first=True)
+        self.temporal_mhsa = nn.MultiheadAttention(embed_dim=self.channels, num_heads=4, batch_first=True)
+
     def forward(self, x):
-        B, _, H, W, L = x.shape
-        h    = self.group_norm(x)
-        h    = h.reshape(B, self.channels, H * W * L).swapaxes(1, 2)  # [B, C, H, W, L] --> [B, C, H*W*L] --> [B, H*W*L, C]
-        h, _ = self.mhsa(h, h, h)  # [B, H*W*L, C]
-        h    = h.swapaxes(2, 1).view(B, self.channels, H, W, L)  # [B, C, H*W*L] --> [B, C, H, W, L]
-        return x + h
+        B, C, H, W, L = x.shape
+        h_tmp    = self.group_norm(x)
+
+       # Reshape for temporal attention: [B, C, H, W, L] --> [B*H*W, C, L]
+        h_temporal = h_tmp.permute(0, 2, 3, 1, 4).reshape(B*H*W, C, L).swapaxes(1, 2)  # [B*H*W, L, C]
+        h_temporal, _ = self.temporal_mhsa(h_temporal, h_temporal, h_temporal)  # [B*H*W, L, C]
+        h_temporal = h_temporal.swapaxes(1, 2).reshape(B, H, W, C, L).permute(0, 3, 1, 2, 4)  # [B, C, H, W, L]
+
+        # Reshape for spatial attention: [B, C, H, W, L] --> [B*L, C, H*W]
+        h_spatial = h_temporal.permute(0, 4, 1, 2, 3).reshape(B*L, C, H*W).swapaxes(1, 2)  # [B*L, H*W, C]
+        h_spatial, _ = self.spatial_mhsa(h_spatial, h_spatial, h_spatial)  # [B*L, H*W, C]
+        h_spatial = h_spatial.swapaxes(1, 2).reshape(B, L, C, H, W).permute(0, 2, 3, 4, 1)  # [B, C, H, W, L]
+
+        # Add spatian and temporal attention to the original input
+        x = x + h_spatial
+
+        return x
     
 # Resnet block
 class ResnetBlock(nn.Module):
