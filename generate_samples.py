@@ -67,7 +67,7 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
         #x_train, y_train, stats = batch
-        random_past_idx = torch.randperm(past_test.shape[0])[:cfg.DIFFUSION.NSAMPLES]
+        random_past_idx = torch.randperm(past_test.shape[0])[:cfg.DIFFUSION.NSAMPLES4GENGIF]
         # Predict different sequences for the same past sequence
         if samePastSeq:
             fixed_past_idx = random_past_idx[0]
@@ -87,13 +87,10 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
         else:
             print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
-        future_sample_pred = xnoisy_over_time[cfg.DIFFUSION.TIMESTEPS]
+        future_sample_pred = x
         for i in range(len(random_past_idx)):
-            # TODO: review if inverse transform is still needed
-            #future_sample_pred_iv = inverseTransform(future_sample_pred[i], stats)
             future_sample_pred_iv = future_sample_pred[i]
             future_sample_gt_iv = random_future_samples[i]
-            #past_sample_iv = inverseTransform(random_past_samples[i], stats)
             past_sample_iv = random_past_samples[i]
             seq_pred = torch.cat([past_sample_iv, future_sample_pred_iv], dim=3)
             seq_frames.append(seq_pred)
