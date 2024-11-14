@@ -24,7 +24,7 @@ def _get_j_indexes(cfg, plotPast):
 def _get_rho_limits(cfg, seq_frames, j_indexes):
     rho_min, rho_max = 0, float('-inf')  # Set the color limits here
 
-    for i in range(cfg.DIFFUSION.NSAMPLES * 2):
+    for i in range(cfg.DIFFUSION.NSAMPLES4PLOTS * 2):
         one_seq_img = seq_frames[i]
         for j in j_indexes:
             one_sample_img = one_seq_img[:, :, :, j]
@@ -47,15 +47,15 @@ def plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, 
     j_indexes = _get_j_indexes(cfg, plotPast)
     rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
 
-    fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES*2, len(j_indexes), figsize=(10,8), facecolor='white')
+    fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES4PLOTS*2, len(j_indexes), figsize=(10,8), facecolor='white')
     fig.subplots_adjust(hspace=0.1, wspace=0.1)
 
-    for i in range(cfg.DIFFUSION.NSAMPLES*2):
+    for i in range(cfg.DIFFUSION.NSAMPLES4PLOTS*2):
         one_seq_img = seq_frames[i]
         for ind, j in enumerate(j_indexes):
             if ind == 0:
                 label = f"GT\nseq-{i // 2 + 1}" if (i + 1) % 2 == 0 else f"Pred\nseq-{i // 2 + 1}"
-                fig.text(0.11, 0.845 - i / (cfg.DIFFUSION.NSAMPLES * 2 + 4.6), label, fontsize=8, ha='center', va='center', rotation=90)
+                fig.text(0.11, 0.845 - i / (cfg.DIFFUSION.NSAMPLES4PLOTS * 2 + 4.6), label, fontsize=8, ha='center', va='center', rotation=90)
 
             one_sample_img = one_seq_img[:,:,:,j].cpu()
             rho = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
@@ -94,7 +94,7 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
     title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
 
     # Iterate over each sequence to create a GIF for each
-    for i in range(cfg.DIFFUSION.NSAMPLES*2):
+    for i in range(cfg.DIFFUSION.NSAMPLES4PLOTS*2):
         fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
         fig.subplots_adjust(hspace=0.1, wspace=0.1)
 
