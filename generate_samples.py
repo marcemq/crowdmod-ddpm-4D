@@ -67,7 +67,7 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
         #x_train, y_train, stats = batch
-        random_past_idx = torch.randperm(past_test.shape[0])[:cfg.DIFFUSION.NSAMPLES4GENGIF]
+        random_past_idx = torch.randperm(past_test.shape[0])[:cfg.DIFFUSION.NSAMPLES4PLOTS]
         # Predict different sequences for the same past sequence
         if samePastSeq:
             fixed_past_idx = random_past_idx[0]
@@ -76,14 +76,14 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
         if cfg.DIFFUSION.SAMPLER == "DDPM":
-            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device) # AR review .cpu() call here
+            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, cfg.DIFFUSION.NSAMPLES4PLOTS) # AR review .cpu() call here
             if cfg.DIFFUSION.GUIDANCE == "sparsity" or cfg.DIFFUSION.GUIDANCE == "none":
                 l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
                 print('L1 norm {:.2f}'.format(l1))
         elif cfg.DIFFUSION.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.DIFFUSION.DDIM_DIVIDER)
             print(f'taus:{taus}')
-            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples,taus,diffusionmodel,cfg,device) # AR review .cpu() call here
+            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, cfg.DIFFUSION.NSAMPLES4PLOTS) # AR review .cpu() call here
         else:
             print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
