@@ -13,7 +13,6 @@ from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
 def save_metric_data(cfg, match, data, metric, header):
-    create_directory(cfg.MODEL.OUTPUT_DIR)
     file_name = f"{cfg.MODEL.OUTPUT_DIR}/mpSampling_{metric}_NS{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
     np.savetxt(file_name, data, delimiter=",", header=header, comments="")
 
@@ -47,6 +46,7 @@ def get_metrics_dicts():
     return metrics_data_dict, metrics_header_dict
 
 def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
+    create_directory(cfg.MODEL.OUTPUT_DIR)
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
