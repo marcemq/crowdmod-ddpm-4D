@@ -7,12 +7,14 @@ from models.generate import generate_ddpm, generate_ddim
 
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset
+from utils.utils import create_directory
 from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
 def save_metric_data(cfg, match, data, metric, header):
-    file_name = f"metrics/mpSampling_{metric}_NS{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
+    create_directory(cfg.MODEL.OUTPUT_DIR)
+    file_name = f"{cfg.MODEL.OUTPUT_DIR}/mpSampling_{metric}_NS{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
     np.savetxt(file_name, data, delimiter=",", header=header, comments="")
 
 def save_all_metrics(match, metrics_data_dict, metrics_header_dict):
