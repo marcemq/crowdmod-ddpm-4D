@@ -153,7 +153,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
 
     title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})"
     save_all_metrics(match, metrics_data_dict, metrics_header_dict, title)
-    save_all_boxplots_metrics(match, metrics_data_dict, metrics_header_dict, title)
+    save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to generate metrics from a trained model.")
