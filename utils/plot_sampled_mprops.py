@@ -137,6 +137,6 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
         # Set up animation for the current sequence
         ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
         # Save each sequence as a separate GIF
-        gif_name = f"{cfg.MODEL.OUTPUT_DIR}/mprops_GT_seq_{i // 2 + 1}.gif" if (i + 1) % 2 == 0 else f"images/mprops_seq_{i // 2 + 1}.gif"
+        gif_name = f"{cfg.MODEL.OUTPUT_DIR}/mprops_GT_seq_{i // 2 + 1}.gif" if (i + 1) % 2 == 0 else f"{cfg.MODEL.OUTPUT_DIR}/mprops_seq_{i // 2 + 1}.gif"
         ani.save(gif_name, writer=PillowWriter(fps=2))
         plt.close(fig)
