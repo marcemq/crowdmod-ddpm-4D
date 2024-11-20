@@ -2,12 +2,15 @@ import argparse
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import json
 import os, re
 from models.generate import generate_ddpm, generate_ddim
 
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset
 from utils.utils import create_directory
+from utils.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
 from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
@@ -15,8 +18,10 @@ from models.diffusion.ddpm import DDPM
 def save_metric_data(cfg, match, data, metric, header):
     file_name = f"{cfg.MODEL.OUTPUT_DIR}/mpSampling_{metric}_NS{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
     np.savetxt(file_name, data, delimiter=",", header=header, comments="")
+    return file_name
 
-def save_all_metrics(match, metrics_data_dict, metrics_header_dict):
+def save_all_metrics(match, metrics_data_dict, metrics_header_dict, title):
+    metrics_filenames_dict = {"title": title}
     # Stack metrics by epoch into an array
     for metric_name, metric_data_list in metrics_data_dict.items():
         metrics_data_dict[metric_name] = np.vstack(metric_data_list)
@@ -24,7 +29,21 @@ def save_all_metrics(match, metrics_data_dict, metrics_header_dict):
     # Save each non-empty metric with its required data
     for metric_name, metric_header in metrics_header_dict.items():
         if len(metrics_data_dict[metric_name]) != 0:
-            save_metric_data(cfg, match, metrics_data_dict[metric_name], metric_name, metric_header)
+            file_name = save_metric_data(cfg, match, metrics_data_dict[metric_name], metric_name, metric_header)
+            metrics_filenames_dict[metric_name] = file_name
+
+    with open(f"{cfg.MODEL.OUTPUT_DIR}/metrics_files.json", "w") as json_file:
+        json.dump(metrics_filenames_dict, json_file)
+    print(f"Dictionary of metrics filenames saved to '{cfg.MODEL.OUTPUT_DIR}/metrics_files.json'")
+
+def save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title):
+    # Convert the dictionary of arrays into a dictionary of DataFrames
+    metrics_df_dict = {key: pd.DataFrame(value, columns=metrics_header_dict[key].split(",")) for key, value in metrics_data_dict.items()}
+
+    merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-PSNR'], df=metrics_df_dict['PSNR'], title=f"PSNR and MAX-PSNR of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_PSNR.png")
+    merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-SSIM'], df=metrics_df_dict['SSIM'], title=f"SSIM and MAX-SSIM of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_SSIM.png")
+    createBoxPlot(metrics_df_dict['MOTION_FEAT_MSE'], title=f"MSE of Motion feature of {title}", columns_to_plot=metrics_header_dict["MOTION_FEAT_MSE"].split(","), save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_MF_MSE.png")
+    createBoxPlot_bhatt(metrics_df_dict['MOTION_FEAT_BHATT_COEF'], metrics_df_dict['MOTION_FEAT_BHATT_DIST'], title=f"BHATT of Motion feature of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_BHATT.png")
 
 def get_metrics_dicts():
     metrics_data_dict = {"PSNR" : [],
@@ -132,10 +151,12 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
         if count_batch == batches_to_use:
             break
 
-    save_all_metrics(match, metrics_data_dict, metrics_header_dict)
+    title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})"
+    save_all_metrics(match, metrics_data_dict, metrics_header_dict, title)
+    save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="A script to sample crowd macroprops from trained model.")
+    parser = argparse.ArgumentParser(description="A script to generate metrics from a trained model.")
     parser.add_argument('--chunk-repd-past-seq', type=int, default=5, help='Chunk of repeteaded past sequences to use when predict.')
     parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute')
     parser.add_argument('--batches-to-use', type=int, default=1, help='Total of batches to use to compute metrics.')
