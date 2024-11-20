@@ -7,7 +7,7 @@ PICKLE:
 MACROPROPS:
   # Grid size
   ROWS: 12
-  COLS: 36
+  COLS: 12
   # Grid resolution
   DX: 1.0
   DY: 1.0
