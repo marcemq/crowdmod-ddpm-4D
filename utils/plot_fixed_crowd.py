@@ -55,11 +55,11 @@ def computeMacroPropsATC(cfg, aggFilename, t_init):
     return dataByTime, macroprops, rLU
 
 def plotFixedTrajCrowdAndMacro(cfg, aggFilename, t_init):
-    ROWS, COLS=12,12
+    ROWS, COLS = cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS
     crowd, macroprops, rLU = computeMacroPropsATC(cfg, aggFilename, t_init)
 
     x, y = np.mgrid[0:COLS, 0:COLS]
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(6, 6))
     axp = ax.matshow(macroprops[0,:,:], cmap=plt.cm.Blues)
     Q = ax.quiver(macroprops[1,:,:], -macroprops[2,:,:], color='green', angles='xy',scale_units='xy', scale=1,width=0.007)
     cbar=plt.colorbar(axp, cmap=plt.cm.Blues, fraction=0.017, pad=0.04)
@@ -76,8 +76,23 @@ def plotFixedTrajCrowdAndMacro(cfg, aggFilename, t_init):
     ax.quiver(crowd['pos_j'], crowd['pos_i'], crowd['vel_x'], -crowd['vel_y'], color='red', angles='xy', scale_units='xy', scale=1,width=0.005)
 
     ax.scatter(crowd["pos_j"], crowd["pos_i"], c='r', s=10.0)
-    plt.show()
-    fig.savefig("images/macroPropsAndCrowd.pdf", format='pdf', bbox_inches='tight')
+    fig.savefig("images/macroPropsAndCrowd.pdf", format='pdf')
+
+def plotFixedRawCrowd(cfg, aggFilename, t_init):
+    crowd, macroprops, rLU = computeMacroPropsATC(cfg, aggFilename, t_init)
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    axp = ax.matshow(macroprops[0,:,:], cmap=plt.cm.Blues)
+    cbar= plt.colorbar(axp, cmap=plt.cm.Blues, fraction=0.017, pad=0.04)
+    cbar.ax.text(2, 3.3, 'Density',va='center', ha='center', fontsize=11)
+    cbar.ax.remove()
+
+    crowd['pos_i'] = np.abs(((crowd['pos_y'].to_numpy() - (rLU[1]-0.7))/cfg.MACROPROPS.DY).reshape(-1))
+    crowd['pos_j'] = ((crowd['pos_x'].to_numpy() - (rLU[0]+0.5))/cfg.MACROPROPS.DX).reshape(-1)
+    ax.quiver(crowd['pos_j'], crowd['pos_i'], crowd['vel_x'], -crowd['vel_y'], color='red', angles='xy', scale_units='xy', scale=1,width=0.005)
+
+    ax.scatter(crowd["pos_j"], crowd["pos_i"], c='r', s=10.0)
+    fig.savefig("images/rawCrowd.pdf", format='pdf')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to plot a pedestrian crowd and its macroscopic properties.")
@@ -91,5 +106,6 @@ if __name__ == '__main__':
     t_init =  datetime.strptime("2012-11-14 12:26:29", '%Y-%m-%d %H:%M:%S')
 
     plotFixedTrajCrowdAndMacro(cfg, aggFilename, t_init)
+    plotFixedRawCrowd(cfg, aggFilename, t_init)
     # How to execute: at root repository
     # python3 utils/plot_fixed_crowd.py
