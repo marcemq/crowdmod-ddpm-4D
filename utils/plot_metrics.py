@@ -1,11 +1,8 @@
 import pandas as pd
 from matplotlib import pyplot as plt
 
-def createBoxPlot(df, title, columns_to_plot=None, save_path=None):
-    if columns_to_plot:
-        df[columns_to_plot].boxplot()
-    else:
-        df[df.columns.tolist()].boxplot()
+def createBoxPlot(df, title, columns_to_plot, save_path=None):
+    df[columns_to_plot].boxplot()
     plt.title(title, fontsize=16)
     plt.gca().spines[['top', 'right']].set_visible(False)
     plt.ylabel('Values')
