@@ -125,7 +125,7 @@ def get_bhattacharyya_dist_coef(P, Q):
     # Compute Bhattacharyya coefficient
     bhattacharyya_coef = np.sum(np.sqrt(P * Q))
     # Avoid taking the log of zero by adding a small epsilon
-    epsilon = 1e-5
+    epsilon = 1e-3
     bhattacharyya_coef = np.clip(bhattacharyya_coef, epsilon, 1.0)
     # Compute Bhattacharyya distance
     bhattacharyya_dist = -np.log(bhattacharyya_coef)
