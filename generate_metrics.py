@@ -38,7 +38,7 @@ def save_all_metrics(match, metrics_data_dict, metrics_header_dict, title):
 
 def save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title):
     # Convert the dictionary of arrays into a dictionary of DataFrames
-    metrics_df_dict = {key: pd.DataFrame(value) for key, value in metrics_data_dict.items()}
+    metrics_df_dict = {key: pd.DataFrame(value, columns=metrics_header_dict[key]) for key, value in metrics_data_dict.items()}
 
     merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-PSNR'], df=metrics_df_dict['PSNR'], title=f"PSNR and MAX-PSNR of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_PSNR.png")
     merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-SSIM'], df=metrics_df_dict['SSIM'], title=f"SSIM and MAX-SSIM of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_SSIM.png")
