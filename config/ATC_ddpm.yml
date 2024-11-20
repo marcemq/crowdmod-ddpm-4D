@@ -41,8 +41,8 @@ MODEL:
   DROPOUT_RATE: 0.1
   TIME_EMB_MULT: 4 # 128
   SAVE_DIR: "saved_models/"
-  OUTPUT_DIR : "output_att4"
-  MODEL_NAME: "UNet_Mprops4D_SizeS_E{}_LR{}_TFC{}_PL{}_FL{}_att4.pth"
+  OUTPUT_DIR : "output_att5"
+  MODEL_NAME: "UNet_Mprops4D_SizeS_E{}_LR{}_TFC{}_PL{}_FL{}_att5.pth"
   RETRAIN: False
   MIN_RHO_4_PRED: 20
 DIFFUSION:
