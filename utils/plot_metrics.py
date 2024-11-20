@@ -12,6 +12,7 @@ def createBoxPlot(df, title, columns_to_plot, save_path=None):
         print(f"Boxplot saved to {save_path}")
     else:
         plt.show()
+    plt.close()
 
 def createBoxPlot_bhatt(df1, df2, title, save_path=None):
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
@@ -36,6 +37,7 @@ def createBoxPlot_bhatt(df1, df2, title, save_path=None):
         print(f"Boxplot saved to {save_path}")
     else:
         plt.show()
+    plt.close()
 
 def merge_and_plot_boxplot(df_max, df, title, save_path):
   df_max = df_max.add_prefix('max-')
