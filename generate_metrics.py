@@ -40,9 +40,9 @@ def save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title):
     # Convert the dictionary of arrays into a dictionary of DataFrames
     metrics_df_dict = {key: pd.DataFrame(value, columns=metrics_header_dict[key].split(",")) for key, value in metrics_data_dict.items()}
 
-    merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-PSNR'], df=metrics_df_dict['PSNR'], title=f"PSNR and MAX-PSNR of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_PSNR.png")
-    merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-SSIM'], df=metrics_df_dict['SSIM'], title=f"SSIM and MAX-SSIM of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_SSIM.png")
-    createBoxPlot(metrics_df_dict['MOTION_FEAT_MSE'], title=f"MSE of Motion feature of {title}", columns_to_plot=metrics_header_dict["MOTION_FEAT_MSE"].split(","), save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_MF_MSE.png")
+    merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-PSNR'], df=metrics_df_dict['PSNR'], title=f"PSNR and MAX-PSNR of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_PSNR.png", ytick_step=5)
+    merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-SSIM'], df=metrics_df_dict['SSIM'], title=f"SSIM and MAX-SSIM of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_SSIM.png", ytick_step=0.2)
+    createBoxPlot(metrics_df_dict['MOTION_FEAT_MSE'], title=f"MSE of Motion feature of {title}", columns_to_plot=metrics_header_dict["MOTION_FEAT_MSE"].split(","), save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_MF_MSE.png", ytick_step=0.0002)
     createBoxPlot_bhatt(metrics_df_dict['MOTION_FEAT_BHATT_COEF'], metrics_df_dict['MOTION_FEAT_BHATT_DIST'], title=f"BHATT of Motion feature of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_BHATT.png")
 
 def get_metrics_dicts():
