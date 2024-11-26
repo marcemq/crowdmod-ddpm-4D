@@ -7,7 +7,6 @@ class AttentionBlock(nn.Module):
         super().__init__()
         self.channels  = channels
         self.group_norm= nn.GroupNorm(num_groups=8, num_channels=channels)
-        self.mhsa      = nn.MultiheadAttention(embed_dim=self.channels, num_heads=4, batch_first=True)
         self.spatial_mhsa = nn.MultiheadAttention(embed_dim=self.channels, num_heads=4, batch_first=True)
         self.temporal_mhsa = nn.MultiheadAttention(embed_dim=self.channels, num_heads=4, batch_first=True)
 
