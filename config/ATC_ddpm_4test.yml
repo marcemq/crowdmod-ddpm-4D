@@ -7,7 +7,7 @@ PICKLE:
 MACROPROPS:
   # Grid size
   ROWS: 12
-  COLS: 36
+  COLS: 12
   # Grid resolution
   DX: 1.0
   DY: 1.0
@@ -41,6 +41,7 @@ MODEL:
   DROPOUT_RATE: 0.05
   TIME_EMB_MULT: 4 # 128
   SAVE_DIR: "saved_models/"
+  OUTPUT_DIR : "output"
   MODEL_NAME: "UNet_Mprops4D_SizeXS_E{}_LR{}_TFC{}_PL{}_FL{}.pth"
   RETRAIN: False
   MIN_RHO_4_PRED: 20

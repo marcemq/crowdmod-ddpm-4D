@@ -8,6 +8,7 @@ from models.generate import generate_ddpm, generate_ddim
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from utils.dataset import getDataset
+from utils.utils import create_directory
 from utils.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
@@ -36,6 +37,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
     return grid_img
 
 def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1, samePastSeq=False):
+    create_directory(cfg.MODEL.OUTPUT_DIR)
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -36,13 +36,13 @@ def _get_rho_limits(cfg, seq_frames, j_indexes):
 def plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale):
     if plotMprop=="Density":
         title = f"Sampling density for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
-        figName = f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_4Density_{match.group()}.svg"
+        figName = f"{cfg.MODEL.OUTPUT_DIR}/mpSampling_{cfg.DIFFUSION.SAMPLER}_4Density_{match.group()}.svg"
     elif plotMprop=="Uncertainty":
         title = f"Sampling uncertainty for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
-        figName = f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_4Uncertainty_{match.group()}.svg"
+        figName = f"{cfg.MODEL.OUTPUT_DIR}/mpSampling_{cfg.DIFFUSION.SAMPLER}_4Uncertainty_{match.group()}.svg"
     else:
         title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
-        figName= f"images/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
+        figName= f"{cfg.MODEL.OUTPUT_DIR}/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
 
     j_indexes = _get_j_indexes(cfg, plotPast)
     rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
@@ -137,6 +137,6 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
         # Set up animation for the current sequence
         ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
         # Save each sequence as a separate GIF
-        gif_name = f"images/mprops_GT_seq_{i // 2 + 1}.gif" if (i + 1) % 2 == 0 else f"images/mprops_seq_{i // 2 + 1}.gif"
+        gif_name = f"{cfg.MODEL.OUTPUT_DIR}/mprops_GT_seq_{i // 2 + 1}.gif" if (i + 1) % 2 == 0 else f"{cfg.MODEL.OUTPUT_DIR}/mprops_seq_{i // 2 + 1}.gif"
         ani.save(gif_name, writer=PillowWriter(fps=2))
         plt.close(fig)
