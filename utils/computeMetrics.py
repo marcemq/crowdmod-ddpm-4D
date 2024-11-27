@@ -56,8 +56,8 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
         one_pred_seq = pred_seq_list[i].cpu().numpy()
         one_gt_seq = gt_seq_list[i].cpu().numpy()
 
-        one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
-        one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
+        one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+        one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
 
         psnr_rho, psnr_vx, psnr_vy, psnr_unc = 0, 0, 0, 0
         for j in range(pred_len):
@@ -93,8 +93,8 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
         one_gt_seq = gt_seq_list[i].cpu().numpy()
 
         mprops_factor = np.array(mprops_factor)
-        one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
-        one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
+        one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+        one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
 
         ssim_rho, ssim_vx, ssim_vy, ssim_unc = 0, 0, 0, 0
         for j in range(pred_len):
