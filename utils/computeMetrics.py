@@ -22,7 +22,7 @@ def get_mprops_ranges(gt_seq_list, mprops_factor):
 
     for i, one_gt_seq in enumerate(gt_seq_list):
         # Convert the tensor to a numpy array and scale it
-        one_gt_seq = one_gt_seq.cpu().numpy() * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
+        one_gt_seq = one_gt_seq.cpu().numpy() * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
 
         # Calculate max and min values for rho, vx, and vy, storing them in columns
         max_vals[i, 0], min_vals[i, 0] = one_gt_seq[0].max(), one_gt_seq[0].min()  # rho
