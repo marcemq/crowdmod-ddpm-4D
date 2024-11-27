@@ -22,7 +22,7 @@ def get_mprops_ranges(gt_seq_list, mprops_factor):
 
     for i, one_gt_seq in enumerate(gt_seq_list):
         # Convert the tensor to a numpy array and scale it
-        one_gt_seq = one_gt_seq.cpu().numpy() * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+        one_gt_seq = one_gt_seq.cpu().numpy() * mprops_factor
 
         # Calculate max and min values for rho, vx, and vy, storing them in columns
         max_vals[i, 0], min_vals[i, 0] = one_gt_seq[0].max(), one_gt_seq[0].min()  # rho
@@ -43,6 +43,7 @@ def get_mprops_ranges(gt_seq_list, mprops_factor):
     return rho_range, vx_range, vy_range, unc_range
 
 def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, eps):
+    mprops_factor = np.array(mprops_factor)[:, np.newaxis, np.newaxis, np.newaxis]
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
     mprops_nsamples_psnr = np.zeros((nsamples, 4))
@@ -56,8 +57,8 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
         one_pred_seq = pred_seq_list[i].cpu().numpy()
         one_gt_seq = gt_seq_list[i].cpu().numpy()
 
-        one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
-        one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+        one_pred_seq = one_pred_seq * mprops_factor
+        one_gt_seq = one_gt_seq * mprops_factor
 
         psnr_rho, psnr_vx, psnr_vy, psnr_unc = 0, 0, 0, 0
         for j in range(pred_len):
@@ -81,6 +82,7 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
     return mprops_nsamples_psnr, mprops_max_psnr
 
 def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq):
+    mprops_factor = np.array(mprops_factor)[:, np.newaxis, np.newaxis, np.newaxis]
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
     mprops_nsamples_ssim = np.zeros((nsamples, 4))
@@ -93,8 +95,8 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
         one_gt_seq = gt_seq_list[i].cpu().numpy()
 
         mprops_factor = np.array(mprops_factor)
-        one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
-        one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+        one_pred_seq = one_pred_seq * mprops_factor
+        one_gt_seq = one_gt_seq * mprops_factor
 
         ssim_rho, ssim_vx, ssim_vy, ssim_unc = 0, 0, 0, 0
         for j in range(pred_len):
