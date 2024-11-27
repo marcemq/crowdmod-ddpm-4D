@@ -52,7 +52,7 @@ DIFFUSION:
   DDIM_DIVIDER: 90     # Define number of timesteps to divide by
   NSAMPLES: 1280       # Define number of predicted samples (64 BS * 20 rep, default values)
   NSAMPLES4PLOTS: 10  # Define number of predicted samples to plot static and dynamic seqs
-  PRED_MPROPS_FACTOR: [1, 10, 10, 100]
+  PRED_MPROPS_FACTOR: [1, 10, 10, 10]
   GUIDANCE: 'sparsity'
 METRICS:
   MOTION_FEATURE:
