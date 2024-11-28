@@ -41,7 +41,8 @@ def computeMacroPropsATC(cfg, aggDataDir, pklDataDir, filenames, t_init=None, t_
         seq_per_file = []
         logging.info('Extracting data from: {}'.format(os.path.join(aggDataDir, filename)))
         logging.info("File {} out of {}".format(idx+1, len(filenames)))
-        df = pd.read_csv(os.path.join(aggDataDir, filename), index_col=0)
+        # AR: add index_col=0 for ATC dataset
+        df = pd.read_csv(os.path.join(aggDataDir, filename))
         df['time'] = pd.to_datetime(df['time'])
         data, rLU = preProcessData(df, cfg=cfg, LU=cfg.MACROPROPS.LU)
         filteredData = filterDataByLU(data, cfg=cfg, LU=rLU)
@@ -51,14 +52,14 @@ def computeMacroPropsATC(cfg, aggDataDir, pklDataDir, filenames, t_init=None, t_
         if t_last is None:
             t_final = data['time'].max()
 
-        t_seq = pd.to_timedelta((cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN)*cfg.CONVGRU.TIME_RES, unit='s')
+        t_seq = pd.to_timedelta((cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN)*cfg.MACROPROPS.TIME_RES, unit='s')
         logging.info('t_init_obs + t_seq: {} and t_final {}'.format(t_init_obs + t_seq, t_final))
         while t_init_obs + t_seq <= t_final:
             t_init_current = t_init_obs
             seq = np.zeros((4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN))
             for obs in range(cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN):
                 dataByTime = filterDataByTime(filteredData, time=t_init_obs, cfg=cfg)
-                t_init_obs += pd.to_timedelta(cfg.CONVGRU.TIME_RES, unit='s')
+                t_init_obs += pd.to_timedelta(cfg.MACROPROPS.TIME_RES, unit='s')
                 rho, mu_vx, mu_vy, sigma2_v = getMacroPropertiesAtTimeStamp(dataByTime, cfg, LU=rLU)
                 seq[:,:,:,obs] = np.stack((rho, mu_vx, mu_vy, sigma2_v), axis=0)
             seq_per_file.append(seq)
