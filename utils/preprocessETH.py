@@ -45,9 +45,11 @@ def generate_csv(raw_path, agg_path):
 
     # Read the .txt file into a DataFrame
     for input_file in files:
+        print(f'Processing file:{input_file}')
         df = pd.read_csv(input_file, delimiter="\t", header=None, names=column_names)
         df = unixtime(df)
-        if input_file == 'txtFiles/biwi_hotel.txt': #we realize a rotation 
+        file_name = os.path.basename(input_file)
+        if file_name == 'biwi_hotel.txt': #we realize a rotation
             df['pos_x'], df['pos_y'] = -df['pos_y'], df['pos_x']
 
         n = len(raw_path)
@@ -88,7 +90,7 @@ def add_vel_angle(agg_path):
         df['vel'] = df['pos_x']
         df['motion_angle'] = df['pos_x']
 
-        indexes_per_agent = [[] for _ in rBnge(int(df['agent_ID'].max() + 1))]
+        indexes_per_agent = [[] for _ in range(int(df['agent_ID'].max() + 1))]
 
         for i in range(1, len(indexes_per_agent)):
             indexes_per_agent[i] = df.loc[df['agent_ID'] == i].index

@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import os
 import sys
+import argparse
 from tqdm.auto import tqdm
 from myparser import getYamlConfig
 from data import preProcessData, filterDataByLU, filterDataByTime, getMacroPropertiesAtTimeStamp
@@ -81,7 +82,11 @@ def computeMacroPropsATC(cfg, aggDataDir, pklDataDir, filenames, t_init=None, t_
         logging.info("-------------------------------------")
 
 if __name__ == '__main__':
-    cfg = getYamlConfig()
+    parser = argparse.ArgumentParser(description="A script to compute macroproperties from aggregated data")
+    parser.add_argument('--config-yml-file', type=str, default='config/ETH_ddpm.yml', help='Configuration YML file for specific dataset.')
+    args = parser.parse_args()
+
+    cfg = getYamlConfig(args.config_yml_file)
     filenames = os.listdir(cfg.DATA_AGGREGATION.AGG_DATA_DIR)
     filenames = [ filename for filename in filenames if filename.endswith('.csv') ]
     computeMacroPropsATC(cfg, cfg.DATA_AGGREGATION.AGG_DATA_DIR, cfg.PICKLE.PICKLE_DIR, filenames)
