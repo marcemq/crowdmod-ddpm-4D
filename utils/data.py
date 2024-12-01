@@ -146,7 +146,10 @@ def preProcessData(df, cfg, LU):
         - a rotated version of LU for further use
     """
     # Angle for data rotation
-    THETA = np.pi-cfg.MACROPROPS.THETA
+    if cfg.MACROPROPS.THETA == 0:
+        THETA = cfg.MACROPROPS.THETA
+    else:    
+        THETA = np.pi-cfg.MACROPROPS.THETA
     R = np.array([[np.cos(THETA), -np.sin(THETA)], [np.sin(THETA), np.cos(THETA)]])
     # compute XY positions in meters
     df['pos_x'] = df['pos_x']/1000.0

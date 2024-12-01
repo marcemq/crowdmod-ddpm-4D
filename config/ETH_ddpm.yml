@@ -12,7 +12,7 @@ MACROPROPS:
   DX: 1.0
   DY: 1.0
   LU:
-    - 0
+    - 12
     - 8
   # EPSILON value to avoid division by cero
   EPS: 0.000001
