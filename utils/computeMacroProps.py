@@ -85,7 +85,7 @@ def computeMacroPropsATC(cfg, aggDataDir, pklDataDir, filenames, t_init=None, t_
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to compute macroproperties from aggregated data")
-    parser.add_argument('--config-yml-file', type=str, default='config/ETH_ddpm.yml', help='Configuration YML file for specific dataset.')
+    parser.add_argument('--config-yml-file', type=str, default='config/ETHUCY_ddpm.yml', help='Configuration YML file for specific dataset.')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file)
