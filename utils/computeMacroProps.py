@@ -43,6 +43,7 @@ def computeMacroPropsATC(cfg, aggDataDir, pklDataDir, filenames, t_init=None, t_
         logging.info("File {} out of {}".format(idx+1, len(filenames)))
         # AR: add index_col=0 for ATC dataset
         df = pd.read_csv(os.path.join(aggDataDir, filename))
+        # AR: test if unit='s' also applies for ATC dataset
         df['time'] = pd.to_datetime(df['time'], unit='s')
         data, rLU = preProcessData(df, cfg=cfg, LU=cfg.MACROPROPS.LU)
         filteredData = filterDataByLU(data, cfg=cfg, LU=rLU)
@@ -65,7 +66,7 @@ def computeMacroPropsATC(cfg, aggDataDir, pklDataDir, filenames, t_init=None, t_
             seq_per_file.append(seq)
 
             if cfg.MACROPROPS.OVERLAP:
-                t_init_obs = t_init_current + pd.to_timedelta(cfg.MACROPROPS.WINDOWSIZE*cfg.MACROPROPS.TIME_RES, unit = 's')
+                t_init_obs = t_init_current + pd.to_timedelta(cfg.MACROPROPS.WINDOWSIZE*cfg.MACROPROPS.TIME_RES, unit='s')
 
         seq_count += len(seq_per_file)
         seq_to_write = np.asarray(seq_per_file)

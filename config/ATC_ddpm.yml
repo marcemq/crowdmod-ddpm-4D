@@ -18,6 +18,7 @@ MACROPROPS:
   # EPSILON value to avoid division by cero
   EPS: 0.000001
   OVERLAP: True
+  WINDOWSIZE: 1
   THETA: 2.5647
   TIME_RES: 0.5
 DATASET:
