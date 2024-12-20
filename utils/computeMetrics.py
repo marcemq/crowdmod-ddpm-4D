@@ -17,8 +17,8 @@ def my_psnr(y_gt, y_hat, data_range, eps):
 def get_mprops_ranges(gt_seq_list, mprops_factor):
     nsamples = len(gt_seq_list)
      # Initialize arrays to store max and min values for each sample and each property
-    max_vals = np.zeros((nsamples, 4))
-    min_vals = np.zeros((nsamples, 4))
+    max_vals = np.zeros((nsamples, 3))
+    min_vals = np.zeros((nsamples, 3))
 
     for i, one_gt_seq in enumerate(gt_seq_list):
         # Convert the tensor to a numpy array and scale it
@@ -28,30 +28,28 @@ def get_mprops_ranges(gt_seq_list, mprops_factor):
         max_vals[i, 0], min_vals[i, 0] = one_gt_seq[0].max(), one_gt_seq[0].min()  # rho
         max_vals[i, 1], min_vals[i, 1] = one_gt_seq[1].max(), one_gt_seq[1].min()  # vx
         max_vals[i, 2], min_vals[i, 2] = one_gt_seq[2].max(), one_gt_seq[2].min()  # vy
-        max_vals[i, 3], min_vals[i, 3] = one_gt_seq[3].max(), one_gt_seq[3].min()  # unc
 
     # Compute the overall max and min values for each macro-property across all samples
-    global_max_rho, global_max_vx, global_max_vy, global_max_unc = max_vals.max(axis=0)
-    global_min_rho, global_min_vx, global_min_vy, global_min_unc = min_vals.min(axis=0)
+    global_max_rho, global_max_vx, global_max_vy= max_vals.max(axis=0)
+    global_min_rho, global_min_vx, global_min_vy= min_vals.min(axis=0)
 
     # Compute the range for each macro-property
     rho_range = float(global_max_rho - global_min_rho)
     vx_range  = float(global_max_vx - global_min_vx)
     vy_range  = float(global_max_vy - global_min_vy)
-    unc_range = float(global_max_unc - global_min_unc)
 
-    return rho_range, vx_range, vy_range, unc_range
+    return rho_range, vx_range, vy_range
 
 def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, eps):
     mprops_factor = np.array(mprops_factor)[:, np.newaxis, np.newaxis, np.newaxis]
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
-    mprops_nsamples_psnr = np.zeros((nsamples, 4))
+    mprops_nsamples_psnr = np.zeros((nsamples, 3))
     mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, 4))
     mprops_factor = np.array(mprops_factor)
 
-    rho_range, vx_range, vy_range, unc_range = get_mprops_ranges(gt_seq_list, mprops_factor)
-    print(f'Range of macroprops \n rho:{rho_range:.4f}, vx:{vx_range:.4f}, vy:{vy_range:.4f} and unc:{unc_range:.4f}')
+    rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor)
+    print(f'Range of macroprops \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
 
     for i in range(nsamples):
         one_pred_seq = pred_seq_list[i].cpu().numpy()
@@ -60,15 +58,14 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
         one_pred_seq = one_pred_seq * mprops_factor
         one_gt_seq = one_gt_seq * mprops_factor
 
-        psnr_rho, psnr_vx, psnr_vy, psnr_unc = 0, 0, 0, 0
+        psnr_rho, psnr_vx, psnr_vy = 0, 0, 0
         for j in range(pred_len):
             psnr_rho += my_psnr(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range, eps=eps)
             psnr_vx  += my_psnr(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range, eps=eps)
             psnr_vy  += my_psnr(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range, eps=eps)
-            psnr_unc += my_psnr(one_gt_seq[3, :, :, j], one_pred_seq[3, :, :, j], data_range=unc_range, eps=eps)
 
         # Average PSNR across frames, except for unc channel
-        mprops_nsamples_psnr[i] = (psnr_rho/pred_len, psnr_vx/pred_len, psnr_vy/pred_len, psnr_unc/pred_len)
+        mprops_nsamples_psnr[i] = (psnr_rho/pred_len, psnr_vx/pred_len, psnr_vy/pred_len)
 
     # Compute the MAX PSNR by repeteaded seqs on each macroprops
     for i in range(0, nsamples, chunkRepdPastSeq):
@@ -76,8 +73,7 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
         max_rho = psnr_chunk[:,0].max()
         max_vx  = psnr_chunk[:,1].max()
         max_vy  = psnr_chunk[:,2].max()
-        max_unc = psnr_chunk[:,3].max()
-        mprops_max_psnr[i // chunkRepdPastSeq] = (max_rho, max_vx, max_vy, max_unc)
+        mprops_max_psnr[i // chunkRepdPastSeq] = (max_rho, max_vx, max_vy)
 
     return mprops_nsamples_psnr, mprops_max_psnr
 
@@ -85,10 +81,10 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
     mprops_factor = np.array(mprops_factor)[:, np.newaxis, np.newaxis, np.newaxis]
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
-    mprops_nsamples_ssim = np.zeros((nsamples, 4))
-    mprops_max_ssim = np.zeros((nsamples//chunkRepdPastSeq, 4))
+    mprops_nsamples_ssim = np.zeros((nsamples, 3))
+    mprops_max_ssim = np.zeros((nsamples//chunkRepdPastSeq, 3))
 
-    rho_range, vx_range, vy_range, unc_range = get_mprops_ranges(gt_seq_list, mprops_factor)
+    rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor)
 
     for i in range(nsamples):
         one_pred_seq = pred_seq_list[i].cpu().numpy()
@@ -98,15 +94,14 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
         one_pred_seq = one_pred_seq * mprops_factor
         one_gt_seq = one_gt_seq * mprops_factor
 
-        ssim_rho, ssim_vx, ssim_vy, ssim_unc = 0, 0, 0, 0
+        ssim_rho, ssim_vx, ssim_vy = 0, 0, 0
         for j in range(pred_len):
             ssim_rho += ssim(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
             ssim_vx  += ssim(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range)
             ssim_vy  += ssim(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range)
-            ssim_unc += ssim(one_gt_seq[3, :, :, j], one_pred_seq[3, :, :, j], data_range=unc_range)
 
         # Average SSIM across frames, except for unc channel
-        mprops_nsamples_ssim[i] = (ssim_rho/pred_len, ssim_vx/pred_len, ssim_vy/pred_len, ssim_unc/pred_len)
+        mprops_nsamples_ssim[i] = (ssim_rho/pred_len, ssim_vx/pred_len, ssim_vy/pred_len)
 
     # Compute the MAX SSIM by repeteaded seqs on each macroprops
     for i in range(0, nsamples, chunkRepdPastSeq):
@@ -114,8 +109,7 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq)
         max_rho = ssim_chunk[:, 0].max()
         max_vx  = ssim_chunk[:, 1].max()
         max_vy  = ssim_chunk[:, 2].max()
-        max_unc = ssim_chunk[:, 3].max()
-        mprops_max_ssim[i // chunkRepdPastSeq] = (max_rho, max_vx, max_vy, max_unc)
+        mprops_max_ssim[i // chunkRepdPastSeq] = (max_rho, max_vx, max_vy)
 
     return mprops_nsamples_ssim, mprops_max_ssim
 

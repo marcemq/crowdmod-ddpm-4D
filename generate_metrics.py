@@ -54,10 +54,10 @@ def get_metrics_dicts():
                     "MOTION_FEAT_BHATT_DIST" : [],
                     "MOTION_FEAT_BHATT_COEF" : []
                     }
-    metrics_header_dict = {"PSNR" : "rho,vx,vy,unc",
-                    "MAX-PSNR" : "rho,vx,vy,unc",
-                    "SSIM" : "rho,vx,vy,unc",
-                    "MAX-SSIM" : "rho,vx,vy,unc",
+    metrics_header_dict = {"PSNR" : "rho,vx,vy",
+                    "MAX-PSNR" : "rho,vx,vy",
+                    "SSIM" : "rho,vx,vy",
+                    "MAX-SSIM" : "rho,vx,vy",
                     "MOTION_FEAT_MSE" : "MSE_Hist_2D_Based,MSE_Hist_1D_Based",
                     "MOTION_FEAT_BHATT_DIST" : "BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based",
                     "MOTION_FEAT_BHATT_COEF" : "BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based"
