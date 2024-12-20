@@ -14,11 +14,11 @@ def my_psnr(y_gt, y_hat, data_range, eps):
     psnr = tmp_num - tmp_den
     return psnr
 
-def get_mprops_ranges(gt_seq_list, mprops_factor):
+def get_mprops_ranges(gt_seq_list, mprops_factor, mprops_count):
     nsamples = len(gt_seq_list)
      # Initialize arrays to store max and min values for each sample and each property
-    max_vals = np.zeros((nsamples, 3))
-    min_vals = np.zeros((nsamples, 3))
+    max_vals = np.zeros((nsamples, mprops_count))
+    min_vals = np.zeros((nsamples, mprops_count))
 
     for i, one_gt_seq in enumerate(gt_seq_list):
         # Convert the tensor to a numpy array and scale it
@@ -40,12 +40,12 @@ def get_mprops_ranges(gt_seq_list, mprops_factor):
 
     return rho_range, vx_range, vy_range
 
-def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, eps):
+def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, eps, mprops_count):
     mprops_factor = np.array(mprops_factor)[:, np.newaxis, np.newaxis, np.newaxis]
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
-    mprops_nsamples_psnr = np.zeros((nsamples, 3))
-    mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, 4))
+    mprops_nsamples_psnr = np.zeros((nsamples, mprops_count))
+    mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, mprops_count))
     mprops_factor = np.array(mprops_factor)
 
     rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor)
@@ -77,12 +77,12 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
 
     return mprops_nsamples_psnr, mprops_max_psnr
 
-def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq):
+def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, mprops_count):
     mprops_factor = np.array(mprops_factor)[:, np.newaxis, np.newaxis, np.newaxis]
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
-    mprops_nsamples_ssim = np.zeros((nsamples, 3))
-    mprops_max_ssim = np.zeros((nsamples//chunkRepdPastSeq, 3))
+    mprops_nsamples_ssim = np.zeros((nsamples, mprops_count))
+    mprops_max_ssim = np.zeros((nsamples//chunkRepdPastSeq, mprops_count))
 
     rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor)
 

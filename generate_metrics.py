@@ -129,11 +129,11 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
             gt_seq_list.append(random_future_samples[i])
 
         if metric in ['PSNR', 'ALL']:
-            mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+            mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.MACROPROPS.MPROPS_COUNT)
             metrics_data_dict['PSNR'].append(mprops_psnr)
             metrics_data_dict['MAX-PSNR'].append(mprops_max_psnr)
         if metric in ['SSIM', 'ALL']:
-            mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq)
+            mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
             metrics_data_dict['SSIM'].append(mprops_ssim)
             metrics_data_dict['MAX-SSIM'].append(mprops_max_ssim)
         if metric in ['MOTION_FEAT_MSE', 'MOTION_FEAT_BHATT', 'ALL']:
