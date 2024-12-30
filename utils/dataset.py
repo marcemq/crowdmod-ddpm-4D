@@ -57,7 +57,7 @@ def saveData(train_data, val_data, test_data, pickle_dir):
     pickle.dump(test_data, pickle_out, protocol=2)
     pickle_out.close()
 
-def getMacropropsFromFilenames(filenames):
+def getMacropropsFromFilenames(filenames, mprops_count):
     seq_per_file_list = []
     for idx, filename in enumerate(filenames):
         logging.info('Loading macro-props data from: {}'.format(filename))
@@ -77,14 +77,14 @@ def getMacropropsFromFilenames(filenames):
     seq_all = np.concatenate(seq_per_file_list, axis=0)
     data = np.asarray(seq_all)
 
-    stats = np.empty((4,4))
-    for i in range(4):
+    stats = np.empty((mprops_count, 4))
+    for i in range(mprops_count):
         stats[i, 0], stats[i, 1], stats[i, 2], stats[i, 3] = np.mean(data[:,i,:,:,:]), np.std(data[:,i,:,:,:]), np.min(data[:,i,:,:,:]), np.max(data[:,i,:,:,:])
         logging.info(f'Stats per dataset channel {i} ==> mean:{stats[i, 0]:.4f}, std:{stats[i, 1]:.4f}, min:{stats[i, 2]:.4f}, max:{stats[i, 3]:.4f}')
 
-    return data, stats
+    return data[:, 0:mprops_count, :, :, :], stats
 
-def dataHelper(cfg, filenames, train_data_only=False, test_data_only=False):
+def dataHelper(cfg, filenames, mprops_count, train_data_only=False, test_data_only=False):
     "Compute macroprops sequences and split data by filecount defined at config file."
     if not cfg.PICKLE.USE_PICKLE:
         logging.info("Read macroproperties data to define train, validation and test sets.")
@@ -97,13 +97,13 @@ def dataHelper(cfg, filenames, train_data_only=False, test_data_only=False):
         train_data, val_data, test_data, train_stats, val_stats, test_stats = None, None, None, None, None, None
 
         if train_data_only:
-            train_data, train_stats = getMacropropsFromFilenames(train_filenames)
+            train_data, train_stats = getMacropropsFromFilenames(train_filenames, mprops_count)
         elif test_data_only:
-            test_data, test_stats = getMacropropsFromFilenames(test_filenames)
+            test_data, test_stats = getMacropropsFromFilenames(test_filenames, mprops_count)
         else:
-            train_data, train_stats = getMacropropsFromFilenames(train_filenames)
-            val_data, val_stats = getMacropropsFromFilenames(val_filenames)
-            test_data, test_stats = getMacropropsFromFilenames(test_filenames)
+            train_data, train_stats = getMacropropsFromFilenames(train_filenames, mprops_count)
+            val_data, val_stats = getMacropropsFromFilenames(val_filenames, mprops_count)
+            test_data, test_stats = getMacropropsFromFilenames(test_filenames, mprops_count)
         #saveData(train_data, val_data, test_data, cfg.PICKLE.PICKLE_DIR)
     else:
         logging.info("Unpickling data...")
@@ -132,7 +132,7 @@ def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False, test_data
         BATCH_SIZE = cfg.DATASET.BATCH_SIZE
 
     # Load the dataset and perform the split
-    tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, train_data_only, test_data_only)
+    tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, cfg.MACROPROPS.MPROPS_COUNT, train_data_only, test_data_only)
     # Transfor set
     custom_transform = CustomTransform()
     train_data, val_data, test_data = None, None, None
