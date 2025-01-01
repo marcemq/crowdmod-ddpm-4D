@@ -8,13 +8,12 @@ from utils.data import preProcessData, filterDataByLU, filterDataByTime, getMacr
 from torch.utils.data import Dataset, DataLoader, TensorDataset, random_split
 
 class CustomTransform():
-    def __call__(self, tensor):
-        channels_to_normalize = 4
-        stats =np.empty((4,4))
-        for i in range(4):
+    def __call__(self, tensor, cfg):
+        stats = np.empty((cfg.MACROPROPS.MPROPS_COUNT, 4))
+        for i in range(cfg.MACROPROPS.MPROPS_COUNT):
             stats[i, 0], stats[i, 1], stats[i, 2], stats[i, 3] = np.mean(tensor[:,i,:,:]), np.std(tensor[:,i,:,:]), np.min(tensor[:,i,:,:]), np.max(tensor[:,i,:,:])
-        # density and var channels won't be normalized
-        for channel in range(1, channels_to_normalize-1):
+        # only velocity channels gets normalized
+        for channel in [1, 2]:
             tensor[:,channel,:,:,:]=((tensor[:, channel, :, :] - stats[channel,2]) / (stats[channel,3] - stats[channel,2])) * 2 - 1
 
         return tensor, stats
@@ -23,7 +22,7 @@ class MacropropsDataset(Dataset):
     def __init__(self, seq_all, cfg, transform=None):
         self.transform = transform
         if self.transform:
-            seq_all, stats = self.transform(seq_all)
+            seq_all, stats = self.transform(seq_all, cfg)
 
         self.PAST = seq_all[:,:,:,:,:cfg.DATASET.PAST_LEN]
         self.FUTURE = seq_all[:,:,:,:,cfg.DATASET.PAST_LEN:cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN]
