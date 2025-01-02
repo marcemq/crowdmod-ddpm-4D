@@ -78,7 +78,7 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
     return mprops_nsamples_psnr, mprops_max_psnr
 
 def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, mprops_count):
-    mprops_factor = np.array(mprops_factor)[:, np.newaxis, np.newaxis, np.newaxis]
+    mprops_factor = np.array(mprops_factor)[:mprops_count, np.newaxis, np.newaxis, np.newaxis]
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
     mprops_nsamples_ssim = np.zeros((nsamples, mprops_count))
