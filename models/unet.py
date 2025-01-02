@@ -132,7 +132,7 @@ class MacropropsDenoiser(nn.Module):
         if self.condition == "Past":
             #_,(past_encodings,__)= self.past_encoding(past)
             #past_encodings        = past_encodings[-1]
-            x = torch.cat([past, future], dim=self.input_channels)
+            x = torch.cat([past, future], dim=4)
             past_encodings = None
         else:
             x = future
