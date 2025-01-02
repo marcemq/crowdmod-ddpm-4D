@@ -21,7 +21,7 @@ class MacropropsDenoiser(nn.Module):
         condition = "Past"
     ):
         super().__init__()
-
+        self.input_channels = input_channels
         time_emb_dims_exp    = base_channels * time_multiple
         self.condition      = condition
         self.time_embeddings = SinusoidalPositionEmbeddings(time_emb_dims=base_channels, time_emb_dims_exp=time_emb_dims_exp)
@@ -132,7 +132,7 @@ class MacropropsDenoiser(nn.Module):
         if self.condition == "Past":
             #_,(past_encodings,__)= self.past_encoding(past)
             #past_encodings        = past_encodings[-1]
-            x = torch.cat([past, future], dim=4)
+            x = torch.cat([past, future], dim=self.input_channels)
             past_encodings = None
         else:
             x = future
