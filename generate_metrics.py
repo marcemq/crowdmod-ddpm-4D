@@ -72,13 +72,15 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     # Get batched datasets ready to iterate
     _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
-                                base_channels           = cfg.MODEL.BASE_CH,
-                                base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
-                                apply_attention         = cfg.MODEL.APPLY_ATTENTION,
-                                dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                time_multiple           = cfg.MODEL.TIME_EMB_MULT,
-                                condition               = cfg.MODEL.CONDITION)
+    denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
+                                  output_channels = cfg.MACROPROPS.MPROPS_COUNT,
+                                  num_res_blocks  = cfg.MODEL.NUM_RES_BLOCKS,
+                                  base_channels           = cfg.MODEL.BASE_CH,
+                                  base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.APPLY_ATTENTION,
+                                  dropout_rate            = cfg.MODEL.DROPOUT_RATE,
+                                  time_multiple           = cfg.MODEL.TIME_EMB_MULT,
+                                  condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
     print(f'model full name:{model_fullname}')

@@ -45,9 +45,9 @@ def train(cfg, filenames, show_losses_plot=False):
     batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(input_channels = cfg.MACROPROPS.MPROPS_COUNT,
+    denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
                                   output_channels = cfg.MACROPROPS.MPROPS_COUNT,
-                                  num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
+                                  num_res_blocks  = cfg.MODEL.NUM_RES_BLOCKS,
                                   base_channels           = cfg.MODEL.BASE_CH,
                                   base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
                                   apply_attention         = cfg.MODEL.APPLY_ATTENTION,
