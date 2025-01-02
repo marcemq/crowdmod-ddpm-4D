@@ -48,7 +48,7 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
     mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, mprops_count))
     mprops_factor = np.array(mprops_factor)
 
-    rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor)
+    rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor, mprops_count)
     print(f'Range of macroprops \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
 
     for i in range(nsamples):
@@ -84,7 +84,7 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
     mprops_nsamples_ssim = np.zeros((nsamples, mprops_count))
     mprops_max_ssim = np.zeros((nsamples//chunkRepdPastSeq, mprops_count))
 
-    rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor)
+    rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor, mprops_count)
 
     for i in range(nsamples):
         one_pred_seq = pred_seq_list[i].cpu().numpy()
