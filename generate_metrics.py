@@ -54,10 +54,10 @@ def get_metrics_dicts():
                     "MOTION_FEAT_BHATT_DIST" : [],
                     "MOTION_FEAT_BHATT_COEF" : []
                     }
-    metrics_header_dict = {"PSNR" : "rho,vx,vy,unc",
-                    "MAX-PSNR" : "rho,vx,vy,unc",
-                    "SSIM" : "rho,vx,vy,unc",
-                    "MAX-SSIM" : "rho,vx,vy,unc",
+    metrics_header_dict = {"PSNR" : "rho,vx,vy",
+                    "MAX-PSNR" : "rho,vx,vy",
+                    "SSIM" : "rho,vx,vy",
+                    "MAX-SSIM" : "rho,vx,vy",
                     "MOTION_FEAT_MSE" : "MSE_Hist_2D_Based,MSE_Hist_1D_Based",
                     "MOTION_FEAT_BHATT_DIST" : "BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based",
                     "MOTION_FEAT_BHATT_COEF" : "BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based"
@@ -72,13 +72,15 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     # Get batched datasets ready to iterate
     _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
-                                base_channels           = cfg.MODEL.BASE_CH,
-                                base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
-                                apply_attention         = cfg.MODEL.APPLY_ATTENTION,
-                                dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                time_multiple           = cfg.MODEL.TIME_EMB_MULT,
-                                condition               = cfg.MODEL.CONDITION)
+    denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
+                                  output_channels = cfg.MACROPROPS.MPROPS_COUNT,
+                                  num_res_blocks  = cfg.MODEL.NUM_RES_BLOCKS,
+                                  base_channels           = cfg.MODEL.BASE_CH,
+                                  base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.APPLY_ATTENTION,
+                                  dropout_rate            = cfg.MODEL.DROPOUT_RATE,
+                                  time_multiple           = cfg.MODEL.TIME_EMB_MULT,
+                                  condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
     print(f'model full name:{model_fullname}')
@@ -129,11 +131,11 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
             gt_seq_list.append(random_future_samples[i])
 
         if metric in ['PSNR', 'ALL']:
-            mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+            mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.MACROPROPS.MPROPS_COUNT)
             metrics_data_dict['PSNR'].append(mprops_psnr)
             metrics_data_dict['MAX-PSNR'].append(mprops_max_psnr)
         if metric in ['SSIM', 'ALL']:
-            mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq)
+            mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
             metrics_data_dict['SSIM'].append(mprops_ssim)
             metrics_data_dict['MAX-SSIM'].append(mprops_max_ssim)
         if metric in ['MOTION_FEAT_MSE', 'MOTION_FEAT_BHATT', 'ALL']:

@@ -45,13 +45,15 @@ def train(cfg, filenames, show_losses_plot=False):
     batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
-                                base_channels           = cfg.MODEL.BASE_CH,
-                                base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
-                                apply_attention         = cfg.MODEL.APPLY_ATTENTION,
-                                dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                time_multiple           = cfg.MODEL.TIME_EMB_MULT,
-                                condition               = cfg.MODEL.CONDITION)
+    denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
+                                  output_channels = cfg.MACROPROPS.MPROPS_COUNT,
+                                  num_res_blocks  = cfg.MODEL.NUM_RES_BLOCKS,
+                                  base_channels           = cfg.MODEL.BASE_CH,
+                                  base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.APPLY_ATTENTION,
+                                  dropout_rate            = cfg.MODEL.DROPOUT_RATE,
+                                  time_multiple           = cfg.MODEL.TIME_EMB_MULT,
+                                  condition               = cfg.MODEL.CONDITION)
     denoiser.to(device)
     trainable_params = count_trainable_params(denoiser)
     print(f"Total trainable parameters at denoiser:{trainable_params}")
