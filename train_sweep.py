@@ -45,13 +45,15 @@ def train(cfg, filenames, show_losses_plot=False):
     batched_train_data, _, _ = getDataset(cfg, filenames, wandb.config.batch_size, train_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
-                                base_channels           = wandb.config.base_ch,
-                                base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
-                                apply_attention         = cfg.MODEL.APPLY_ATTENTION,
-                                dropout_rate            = wandb.config.dropout_rate,
-                                time_multiple           = wandb.config.time_emb_mult,
-                                condition               = cfg.MODEL.CONDITION)
+    denoiser = MacropropsDenoiser(input_channels = cfg.MACROPROPS.MPROPS_COUNT,
+                                  output_channels = cfg.MACROPROPS.MPROPS_COUNT,
+                                  num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
+                                  base_channels           = wandb.config.base_ch,
+                                  base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.APPLY_ATTENTION,
+                                  dropout_rate            = wandb.config.dropout_rate,
+                                  time_multiple           = wandb.config.time_emb_mult,
+                                  condition               = cfg.MODEL.CONDITION)
     denoiser.to(device)
     #specific_timesteps = [250]
     #t = torch.as_tensor(specific_timesteps, dtype=torch.long)
