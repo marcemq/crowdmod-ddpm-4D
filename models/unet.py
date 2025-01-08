@@ -21,7 +21,7 @@ class MacropropsDenoiser(nn.Module):
         condition = "Past"
     ):
         super().__init__()
-
+        self.input_channels = input_channels
         time_emb_dims_exp    = base_channels * time_multiple
         self.condition      = condition
         self.time_embeddings = SinusoidalPositionEmbeddings(time_emb_dims=base_channels, time_emb_dims_exp=time_emb_dims_exp)

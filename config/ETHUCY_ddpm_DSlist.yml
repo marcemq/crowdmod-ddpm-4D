@@ -1,0 +1,8 @@
+DATA_LIST:
+  - "biwi_hotel.csv"
+  - "crowds_zara01.csv"
+  - "crowds_zara02.csv"
+  - "crowds_zara03.csv"
+  - "students001.csv"
+  - "students003.csv"
+  - "uni_examples.csv"
