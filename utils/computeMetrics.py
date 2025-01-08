@@ -14,15 +14,15 @@ def my_psnr(y_gt, y_hat, data_range, eps):
     psnr = tmp_num - tmp_den
     return psnr
 
-def get_mprops_ranges(gt_seq_list, mprops_factor):
+def get_mprops_ranges(gt_seq_list, mprops_factor, mprops_count):
     nsamples = len(gt_seq_list)
      # Initialize arrays to store max and min values for each sample and each property
-    max_vals = np.zeros((nsamples, 3))
-    min_vals = np.zeros((nsamples, 3))
+    max_vals = np.zeros((nsamples, mprops_count))
+    min_vals = np.zeros((nsamples, mprops_count))
 
     for i, one_gt_seq in enumerate(gt_seq_list):
         # Convert the tensor to a numpy array and scale it
-        one_gt_seq = one_gt_seq.cpu().numpy() * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
+        one_gt_seq = one_gt_seq.cpu().numpy() * mprops_factor
 
         # Calculate max and min values for rho, vx, and vy, storing them in columns
         max_vals[i, 0], min_vals[i, 0] = one_gt_seq[0].max(), one_gt_seq[0].min()  # rho
@@ -30,32 +30,33 @@ def get_mprops_ranges(gt_seq_list, mprops_factor):
         max_vals[i, 2], min_vals[i, 2] = one_gt_seq[2].max(), one_gt_seq[2].min()  # vy
 
     # Compute the overall max and min values for each macro-property across all samples
-    global_max_rho, global_max_vx, global_max_vy = max_vals.max(axis=0)
-    global_min_rho, global_min_vx, global_min_vy = min_vals.min(axis=0)
+    global_max_rho, global_max_vx, global_max_vy= max_vals.max(axis=0)
+    global_min_rho, global_min_vx, global_min_vy= min_vals.min(axis=0)
 
     # Compute the range for each macro-property
     rho_range = float(global_max_rho - global_min_rho)
-    vx_range = float(global_max_vx - global_min_vx)
-    vy_range = float(global_max_vy - global_min_vy)
+    vx_range  = float(global_max_vx - global_min_vx)
+    vy_range  = float(global_max_vy - global_min_vy)
 
     return rho_range, vx_range, vy_range
 
-def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, eps):
+def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, eps, mprops_count):
+    mprops_factor = np.array(mprops_factor)[:mprops_count, np.newaxis, np.newaxis, np.newaxis]
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
-    mprops_nsamples_psnr = np.zeros((nsamples, 3))
-    mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, 3))
+    mprops_nsamples_psnr = np.zeros((nsamples, mprops_count))
+    mprops_max_psnr = np.zeros((nsamples//chunkRepdPastSeq, mprops_count))
     mprops_factor = np.array(mprops_factor)
 
-    rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor)
+    rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor, mprops_count)
     print(f'Range of macroprops \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
 
     for i in range(nsamples):
         one_pred_seq = pred_seq_list[i].cpu().numpy()
         one_gt_seq = gt_seq_list[i].cpu().numpy()
 
-        one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
-        one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
+        one_pred_seq = one_pred_seq * mprops_factor
+        one_gt_seq = one_gt_seq * mprops_factor
 
         psnr_rho, psnr_vx, psnr_vy = 0, 0, 0
         for j in range(pred_len):
@@ -76,23 +77,22 @@ def psnr_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
 
     return mprops_nsamples_psnr, mprops_max_psnr
 
-def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq):
+def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, mprops_count):
+    mprops_factor = np.array(mprops_factor)[:mprops_count, np.newaxis, np.newaxis, np.newaxis]
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
-    mprops_nsamples_ssim = np.zeros((nsamples, 3))
-    mprops_max_ssim = np.zeros((nsamples//chunkRepdPastSeq, 3))
+    mprops_nsamples_ssim = np.zeros((nsamples, mprops_count))
+    mprops_max_ssim = np.zeros((nsamples//chunkRepdPastSeq, mprops_count))
+
+    rho_range, vx_range, vy_range = get_mprops_ranges(gt_seq_list, mprops_factor, mprops_count)
 
     for i in range(nsamples):
         one_pred_seq = pred_seq_list[i].cpu().numpy()
         one_gt_seq = gt_seq_list[i].cpu().numpy()
 
         mprops_factor = np.array(mprops_factor)
-        one_pred_seq = one_pred_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
-        one_gt_seq = one_gt_seq * mprops_factor[:, np.newaxis, np.newaxis, np.newaxis]
-         # Calculate data ranges for each macroprop
-        rho_range = int(one_gt_seq[0].max() - one_gt_seq[0].min())
-        vx_range  = int(one_gt_seq[1].max() - one_gt_seq[1].min())
-        vy_range  = int(one_gt_seq[2].max() - one_gt_seq[2].min())
+        one_pred_seq = one_pred_seq * mprops_factor
+        one_gt_seq = one_gt_seq * mprops_factor
 
         ssim_rho, ssim_vx, ssim_vy = 0, 0, 0
         for j in range(pred_len):
