@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import os
 import sys
+import argparse
 from tqdm.auto import tqdm
 from myparser import getYamlConfig
 from data import preProcessData, filterDataByLU, filterDataByTime, getMacroPropertiesAtTimeStamp
@@ -40,8 +41,10 @@ def computeMacroPropsATC(cfg, aggDataDir, pklDataDir, filenames, t_init=None, t_
         seq_per_file = []
         logging.info('Extracting data from: {}'.format(os.path.join(aggDataDir, filename)))
         logging.info("File {} out of {}".format(idx+1, len(filenames)))
-        df = pd.read_csv(os.path.join(aggDataDir, filename), index_col=0)
-        df['time'] = pd.to_datetime(df['time'])
+        # AR: add index_col=0 for ATC dataset
+        df = pd.read_csv(os.path.join(aggDataDir, filename))
+        # AR: test if unit='s' also applies for ATC dataset
+        df['time'] = pd.to_datetime(df['time'], unit='s')
         data, rLU = preProcessData(df, cfg=cfg, LU=cfg.MACROPROPS.LU)
         filteredData = filterDataByLU(data, cfg=cfg, LU=rLU)
 
@@ -50,20 +53,20 @@ def computeMacroPropsATC(cfg, aggDataDir, pklDataDir, filenames, t_init=None, t_
         if t_last is None:
             t_final = data['time'].max()
 
-        t_seq = pd.to_timedelta((cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN)*cfg.CONVGRU.TIME_RES, unit='s')
+        t_seq = pd.to_timedelta((cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN)*cfg.MACROPROPS.TIME_RES, unit='s')
         logging.info('t_init_obs + t_seq: {} and t_final {}'.format(t_init_obs + t_seq, t_final))
         while t_init_obs + t_seq <= t_final:
             t_init_current = t_init_obs
             seq = np.zeros((4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN))
             for obs in range(cfg.DATASET.PAST_LEN + cfg.DATASET.FUTURE_LEN):
                 dataByTime = filterDataByTime(filteredData, time=t_init_obs, cfg=cfg)
-                t_init_obs += pd.to_timedelta(cfg.CONVGRU.TIME_RES, unit='s')
+                t_init_obs += pd.to_timedelta(cfg.MACROPROPS.TIME_RES, unit='s')
                 rho, mu_vx, mu_vy, sigma2_v = getMacroPropertiesAtTimeStamp(dataByTime, cfg, LU=rLU)
                 seq[:,:,:,obs] = np.stack((rho, mu_vx, mu_vy, sigma2_v), axis=0)
             seq_per_file.append(seq)
 
             if cfg.MACROPROPS.OVERLAP:
-                t_init_obs = t_init_current + cfg.MACROPROPS.WINDOWSIZE*cfg.MACROPROPS.TIME_RES
+                t_init_obs = t_init_current + pd.to_timedelta(cfg.MACROPROPS.WINDOWSIZE*cfg.MACROPROPS.TIME_RES, unit='s')
 
         seq_count += len(seq_per_file)
         seq_to_write = np.asarray(seq_per_file)
@@ -81,7 +84,11 @@ def computeMacroPropsATC(cfg, aggDataDir, pklDataDir, filenames, t_init=None, t_
         logging.info("-------------------------------------")
 
 if __name__ == '__main__':
-    cfg = getYamlConfig()
+    parser = argparse.ArgumentParser(description="A script to compute macroproperties from aggregated data")
+    parser.add_argument('--config-yml-file', type=str, default='config/ETHUCY_ddpm.yml', help='Configuration YML file for specific dataset.')
+    args = parser.parse_args()
+
+    cfg = getYamlConfig(args.config_yml_file)
     filenames = os.listdir(cfg.DATA_AGGREGATION.AGG_DATA_DIR)
     filenames = [ filename for filename in filenames if filename.endswith('.csv') ]
     computeMacroPropsATC(cfg, cfg.DATA_AGGREGATION.AGG_DATA_DIR, cfg.PICKLE.PICKLE_DIR, filenames)

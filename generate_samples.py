@@ -45,13 +45,15 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
     _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
-                                base_channels           = cfg.MODEL.BASE_CH,
-                                base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
-                                apply_attention         = cfg.MODEL.APPLY_ATTENTION,
-                                dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                time_multiple           = cfg.MODEL.TIME_EMB_MULT,
-                                condition               = cfg.MODEL.CONDITION)
+    denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
+                                  output_channels = cfg.MACROPROPS.MPROPS_COUNT,
+                                  num_res_blocks  = cfg.MODEL.NUM_RES_BLOCKS,
+                                  base_channels           = cfg.MODEL.BASE_CH,
+                                  base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.APPLY_ATTENTION,
+                                  dropout_rate            = cfg.MODEL.DROPOUT_RATE,
+                                  time_multiple           = cfg.MODEL.TIME_EMB_MULT,
+                                  condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
     print(f'model full name:{model_fullname}')
@@ -120,7 +122,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
-    filenames = cfg.SUNDAY_DATA_LIST
+    filenames = cfg.DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     generate_samples(cfg, filenames, plotType=args.plot_type, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, samePastSeq=args.same_past_seq)
