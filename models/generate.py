@@ -21,9 +21,9 @@ def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:
         # Estimate the noise
         eps_pred = denoiser_model(xnoisy, t_tensor, past)
         # Denoise with the sampler and the estimation of the noise
+        # AR: verify if sigma es (1-alpha) from eq. sec 1.2
         xnoisy, sigma = backward_sampler.step(eps_pred, xnoisy, t)
         if cfg.DIFFUSION.GUIDANCE == "sparsity":
-            # Update the noisy image with the sparsity guidance (TESTING!)
             sparsity_grad = sparsityGradient(xnoisy,cfg, device)
             xnoisy-= 0.004*sigma*sparsity_grad
         if history:
