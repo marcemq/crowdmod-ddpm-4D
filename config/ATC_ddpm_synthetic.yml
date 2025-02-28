@@ -2,7 +2,7 @@ DATA_AGGREGATION:
   RAW_DATA_DIR: 'datasets/ATC/rawData/'
   AGG_DATA_DIR: 'datasets/ATC/aggData/'
 PICKLE:
-  PICKLE_DIR: 'datasets/ATC-3D_SYNTHETIC/'
+  PICKLE_DIR: 'datasets/ATC-4D_SYNTHETIC/'
   USE_PICKLE: False
 MACROPROPS:
   # Grid size
