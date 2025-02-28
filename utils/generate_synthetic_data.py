@@ -20,7 +20,7 @@ def generate_synthetic_data(cfg, filenames,samples_synthetic):
     shuffled_indices = torch.randperm(tmp_test_data.shape[0])
     shuffled_data = tmp_test_data[shuffled_indices]
     synthetic_data = shuffled_data[0:samples_synthetic]
-    print(f"synthetic_data tensor shape:{synthetic_data.shape}")
+    logging.info(f"New synthetic_data tensor shape:{synthetic_data.shape}")
     try:
         with open(sdata_path + "/synthetic_data.pkl", 'wb') as file:
             pickle.dump(synthetic_data, file)
