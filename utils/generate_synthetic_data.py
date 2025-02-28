@@ -1,12 +1,13 @@
 import argparse
 import sys
 import os, re
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + "/.."))
+import logging
 import torch
 import pickle
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + "/.."))
 from utils.utils import create_directory
 from utils.myparser import getYamlConfig
-from utils.dataset import getDataset, dataHelper
+from utils.dataset import dataHelper
 
 def generate_synthetic_data(cfg, filenames,samples_synthetic):
     sdata_path = os.path.join(os.getcwd(), "datasets", cfg.DATASET.NAME+"_SYNTHETIC")
@@ -24,7 +25,7 @@ def generate_synthetic_data(cfg, filenames,samples_synthetic):
         with open(sdata_path + "/synthetic_data.pkl", 'wb') as file:
             pickle.dump(synthetic_data, file)
     except MemoryError:
-        print("MemoryError: Unable to pickle synthetic data due to memory issues.")
+        logging.info("MemoryError: Unable to pickle synthetic data due to memory issues.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
