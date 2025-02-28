@@ -3,6 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import os, re
+import logging
 from models.generate import generate_ddpm, generate_ddim
 
 from models.unet import MacropropsDenoiser
@@ -55,8 +56,12 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
                                   time_multiple           = cfg.MODEL.TIME_EMB_MULT,
                                   condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
-    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
-    print(f'model full name:{model_fullname}')
+    if re.search(r"[{}]", cfg.MODEL.MODEL_NAME):
+        model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
+    else:
+        model_fullname = cfg.MODEL.SAVE_DIR+cfg.MODEL.MODEL_NAME
+    logging.info(f'model full name:{model_fullname}')
+
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
 
