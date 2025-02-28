@@ -28,8 +28,8 @@ def generate_synthetic_data(cfg, filenames,samples_synthetic):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
-    parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
-    parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
+    parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_synthetic.yml', help='Configuration YML file for specific dataset.')
+    parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist_synthetic.yml',help='Configuration YML macroprops list for specific dataset.')
     parser.add_argument('--samples-synthetic', type=int, default=20,help='Samples of synthetic sequences to be produced')
     args = parser.parse_args()
 
