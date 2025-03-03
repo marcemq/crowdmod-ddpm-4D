@@ -6,22 +6,47 @@ def sparsityGradient(xnoisy: torch.Tensor, cfg, device) -> torch.Tensor:
     # Compute the gradient of the sparsity loss
     return grad
 
-def preservationMass(x: torch.Tensor, device, delta_t=1.0, delta_l=1.0) -> torch.Tensor:
+def preservationMassGradient(x, device, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     """
-    Guidance for mass preservation within the defined grid
-    Return:
-    - grad of shame shape as xnoisy
+    Compute the gradient of the energy function defined for mass preservation.
+
+    Args:
+        x: Tensor of shape (B, 3, H, W, L)
+        delta_t: Time step difference
+        delta_l: Spatial step difference
+
+    Returns:
+        grad_E: Tensor of the same shape as x, representing the energy gradient
     """
-    B, C, H, W, L = x.shape
-    energy = torch.zeros(x.shape, device=device)
-    # temporal term for rho eq. 6
-    energy[:, 0, :, :, :-1] += (1 / delta_t) * (x[:, 0, :, :, 1:] - x[:, 0, :, :, :-1])
-    # spatial term for vel eq. 7
-    energy[:, 0, :-1, :, :] += (1 / delta_l) * x[:, 0, :-1, :, :] * (x[:, 1, :-1, :, :] - x[:, 1, :, :, :] + x[:, 2, :-1, :, :] - x[:, 2, :, :, :])
-    # spatial term for vel eq. 8
-    energy[:, 0, :, :-1, :] += (1 / delta_l) * x[:, 0, :, :-1, :] * (x[:, 1, :, :-1, :] - x[:, 1, :, :, :])
-    # spatial term for vel eq. 9
-    energy[:, 0, :, :-1, :] += (1 / delta_l) * x[:, 0, :, :-1, :] * (x[:, 2, :, :-1, :] - x[:, 0, :, :-1, :])
-    # derivative with respect to x (i,j,t)
-    grad = 0
-    return grad
+    B, _, H, W, L = x.shape
+    grad_E = torch.zeros_like(x, device=device)
+
+    # Define the inner grid range
+    i_range = slice(1, H - 1)
+    j_range = slice(1, W - 1)
+
+    # First term: temporal finite difference
+    f1 = (1 / delta_t) * (x[:, 0, i_range, j_range, 1:] - x[:, 0, i_range, j_range, :-1])
+
+    # Second term: spatial interaction term
+    f2 = (1 / delta_l) * x[:, 0, i_range, j_range, :] * (x[:, 1, i_range + 1, j_range, :] - x[:, 1, i_range, j_range, :] +
+          x[:, 2, i_range, j_range + 1, :] - x[:, 2, i_range, j_range, :])
+
+    # Third term: x[1] interaction
+    f3 = (1 / delta_l) * ((x[:, 0, i_range + 1, j_range, :] - x[:, 0, i_range, j_range, :]) * x[:, 1, i_range, j_range, :])
+
+    # Fourth term: x[2] interaction
+    f4 = (1 / delta_l) * ((x[:, 0, i_range, j_range + 1, :] - x[:, 0, i_range, j_range, :]) * x[:, 2, i_range, j_range, :])
+
+    # Compute f(x)
+    f_x = f1 + f2 + f3 + f4
+
+    # Compute the gradient for the inner grid
+    grad_E[:, 0, i_range, j_range, :] = f_x * (x[:, 1, i_range + 1, j_range, :] - x[:, 1, i_range, j_range, :] +
+                                                 x[:, 2, i_range, j_range + 1, :] - x[:, 2, i_range, j_range, :]) / delta_l
+
+    grad_E[:, 1, i_range, j_range, :] = f_x * (x[:, 0, i_range + 1, j_range, :] - x[:, 0, i_range, j_range, :]) / delta_l
+
+    grad_E[:, 2, i_range, j_range, :] = f_x * (x[:, 0, i_range, j_range + 1, :] - x[:, 0, i_range, j_range, :]) / delta_l
+
+    return grad_E
