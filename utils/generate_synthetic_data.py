@@ -21,25 +21,24 @@ def save_pickle_file(data, name, sdata_path):
 def generate_synthetic_data(cfg, filenames, samples_synthetic):
     sdata_path = os.path.join(os.getcwd(), "datasets", cfg.DATASET.NAME+"_SYNTHETIC")
     create_directory(sdata_path)
-    np.random.seed(42)
+    torch.manual_seed(42)
     # Get macroprps raw tensor
     _, _, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, cfg.MACROPROPS.MPROPS_COUNT, train_data_only=False, test_data_only=True)
-    shuffled_indices = np.random.permutation(tmp_test_data.shape[0])[:samples_synthetic]
-    true_data = tmp_test_data[shuffled_indices].copy()
+    shuffled_indices = torch.randperm(tmp_test_data.shape[0])[:samples_synthetic]
+    true_data = tmp_test_data[shuffled_indices]
     save_pickle_file(true_data, "true_data", sdata_path)
 
-    synthetic_data = true_data.copy()
+    synthetic_data = true_data
     B,_,H,W,L = synthetic_data.shape
     # Create synthetic tensor by adding a pedestrian from left to right
-    synthetic_tensor = np.zeros((1,3,H,W,L))
+    synthetic_tensor = torch.zeros((1,3,H,W,L))
     for l in range(min(L, W)): 
         synthetic_tensor[0, 0, 6, l, l] = 1  
         synthetic_tensor[0, 1, 6, l, l] = 0.5
         synthetic_tensor[0, 2, 6, l, l] = 0.0
 
     # Expand synthetic_tensor to match batch size
-    synthetic_tensor = np.tile(synthetic_tensor, (B, 1, 1, 1, 1))
-    synthetic_data += synthetic_tensor  # Element-wise addition
+    synthetic_data += synthetic_tensor.expand(B, -1, -1, -1, -1)
     save_pickle_file(synthetic_data, "synthetic_data", sdata_path)
 
 if __name__ == '__main__':
