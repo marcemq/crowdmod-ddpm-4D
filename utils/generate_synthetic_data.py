@@ -22,10 +22,12 @@ def generate_synthetic_data(cfg, filenames, samples_synthetic):
     sdata_path = os.path.join(os.getcwd(), "datasets", cfg.DATASET.NAME+"_SYNTHETIC")
     create_directory(sdata_path)
     torch.manual_seed(42)
+    # Setting the device to work with
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get macroprps raw tensor
     _, _, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, cfg.MACROPROPS.MPROPS_COUNT, train_data_only=False, test_data_only=True)
     shuffled_indices = torch.randperm(tmp_test_data.shape[0])[:samples_synthetic]
-    true_data = tmp_test_data[shuffled_indices]
+    true_data = tmp_test_data[shuffled_indices].to(device)
     logging.info(f"New synthetic_data tensor shape:{true_data.shape}")
     try:
         with open(sdata_path + "/true_data.pkl", 'wb') as file:
