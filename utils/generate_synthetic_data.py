@@ -27,7 +27,7 @@ def generate_synthetic_data(cfg, filenames, samples_synthetic):
     # Get macroprps raw tensor
     _, _, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, cfg.MACROPROPS.MPROPS_COUNT, train_data_only=False, test_data_only=True)
     shuffled_indices = torch.randperm(tmp_test_data.shape[0])[:samples_synthetic]
-    true_data = tmp_test_data[shuffled_indices].to(device)
+    true_data = tmp_test_data[shuffled_indices]
     logging.info(f"New synthetic_data tensor shape:{true_data.shape}")
     try:
         with open(sdata_path + "/true_data.pkl", 'wb') as file:
