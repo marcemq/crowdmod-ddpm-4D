@@ -14,7 +14,7 @@ def save_pickle_file(data, name, sdata_path):
     logging.info(f"New {name} tensor shape:{data.shape}")
     try:
         with open(f"{sdata_path}/{name}.pkl", 'wb') as file:
-            pickle.dump(name, file)
+            pickle.dump(data, file)
     except MemoryError:
         logging.info(f"MemoryError: Unable to pickle {name} due to memory issues.")
 
