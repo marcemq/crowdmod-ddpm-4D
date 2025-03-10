@@ -37,7 +37,7 @@ def get_synthetic_backward(B, H, W, L, vel_x=0.8):
     pedestrians_backward = np.zeros((1, 3, H, W, L))
     for l in range(min(L, W)):
         pedestrians_backward[0, 0, 6, W-1-l, l] = 1
-        pedestrians_backward[0, 1, 6, W-1-l, l] = vel_x
+        pedestrians_backward[0, 1, 6, W-1-l, l] = -vel_x
         pedestrians_backward[0, 2, 6, W-1-l, l] = 0.0
     # Expand tensor to match batch size
     return np.tile(pedestrians_backward, (B, 1, 1, 1, 1))
