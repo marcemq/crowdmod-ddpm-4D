@@ -78,4 +78,4 @@ if __name__ == '__main__':
     filenames = cfg.DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    generate_synthetic_data(cfg, filenames, args.samples_synthetic)
+    generate_synthetic_data(cfg, filenames, args.samples_synthetic, args.type_synthetic)
