@@ -18,7 +18,31 @@ def save_pickle_file(data, name, sdata_path):
     except MemoryError:
         logging.info(f"MemoryError: Unable to pickle {name} due to memory issues.")
 
-def generate_synthetic_data(cfg, filenames, samples_synthetic):
+def get_synthetic_forward(H, W, L, vel_x=0.8):
+    """
+    Create synthetic tensor by adding a pedestrian from left to right
+    """
+    pedestrians_forward = np.zeros((1, 3, H, W, L))
+    for l in range(min(L, W)):
+        pedestrians_forward[0, 0, 6, l, l] = 1
+        pedestrians_forward[0, 1, 6, l, l] = vel_x
+        pedestrians_forward[0, 2, 6, l, l] = 0.0
+
+    return pedestrians_forward
+
+def get_synthetic_backward(H, W, L, vel_x=0.8):
+    """
+    Create synthetic tensor by adding a pedestrian from right to left
+    """
+    pedestrians_backward = np.zeros((1, 3, H, W, L))
+    for l in range(min(L, W)):
+        pedestrians_backward[0, 0, 6, W-1-l, l] = 1
+        pedestrians_backward[0, 1, 6, W-1-l, l] = vel_x
+        pedestrians_backward[0, 2, 6, W-1-l, l] = 0.0
+
+    return pedestrians_backward
+
+def generate_synthetic_data(cfg, filenames, samples_synthetic, type_synthetic):
     sdata_path = os.path.join(os.getcwd(), "datasets", cfg.DATASET.NAME+"_SYNTHETIC")
     create_directory(sdata_path)
     np.random.seed(42)
@@ -30,27 +54,27 @@ def generate_synthetic_data(cfg, filenames, samples_synthetic):
 
     synthetic_data = true_data.copy()
     B, _, H, W, L = synthetic_data.shape
-    # Create synthetic tensor by adding a pedestrian from left to right
-    synthetic_tensor = np.zeros((1,3,H,W,L))
-    for l in range(min(L, W)): 
-        synthetic_tensor[0, 0, 6, l, l] = 1  
-        synthetic_tensor[0, 1, 6, l, l] = 0.5
-        synthetic_tensor[0, 2, 6, l, l] = 0.0
 
-    # Expand synthetic_tensor to match batch size
-    synthetic_tensor = np.tile(synthetic_tensor, (B, 1, 1, 1, 1))
-    
-    synthetic_data += synthetic_tensor  # Element-wise addition
+    synthetic_forward, synthetic_backward = [],[]
+    if type_synthetic in ['FORWARD', 'ALL']:
+        synthetic_forward = get_synthetic_forward(H, W, L)
+    if type_synthetic in ['BACKWARD', 'ALL']:
+        synthetic_backward = get_synthetic_backward(H, W, L)
+
+    # Expand synthetic_forward, synthetic_backward to match batch size
+    synthetic_forward = np.tile(synthetic_forward, (B, 1, 1, 1, 1))
+    synthetic_backward = np.tile(synthetic_backward, (B, 1, 1, 1, 1))
+    # # Element-wise addition
+    synthetic_data += (synthetic_forward + synthetic_backward)
     save_pickle_file(synthetic_data, "synthetic_data", sdata_path)
-    # Expand synthetic_tensor to match batch size
-    #synthetic_data += synthetic_tensor.expand(B, -1, -1, -1, -1)
-    #save_pickle_file(synthetic_data, "synthetic_data", sdata_path)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist.yml',help='Configuration YML macroprops list for specific dataset.')
     parser.add_argument('--samples-synthetic', type=int, default=20,help='Samples of synthetic sequences to be produced')
+    parser.add_argument('--type-synthetic', type=str, default='ALL',help='Type of synthetic data to be added FORWARD|BACKWARD|ALL')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)

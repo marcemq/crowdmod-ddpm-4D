@@ -1,2 +1,2 @@
 DATA_LIST:
-  - "true_data.pkl"
+  - "synthetic_data.pkl"
