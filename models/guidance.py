@@ -54,6 +54,8 @@ def preservationMassGradient_cero(x, device, delta_t=0.5, delta_l=1.0) -> torch.
 
     return grad_E
 
+import torch
+
 def preservationMassGradient(x, device, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     """
     Compute the gradient of the energy function defined for mass preservation.
@@ -69,51 +71,48 @@ def preservationMassGradient(x, device, delta_t=0.5, delta_l=1.0) -> torch.Tenso
     B, _, H, W, L = x.shape
     grad_E = torch.zeros_like(x, device=device)
 
-    # Define index ranges for the inner grid
-    i_range = torch.arange(1, H - 1, device=device)
-    j_range = torch.arange(1, W - 1, device=device)
+    # Define the inner grid using slices instead of tensors
+    i_range = slice(1, H - 1)
+    j_range = slice(1, W - 1)
 
-    # Create a meshgrid to handle multidimensional indexing
-    i_grid, j_grid = torch.meshgrid(i_range, j_range, indexing="ij")
-
-    # First term: temporal finite difference
-    f1 = (1 / delta_t) * (x[:, 0, i_grid, j_grid, 1:] - x[:, 0, i_grid, j_grid, :-1])
+    # First term: temporal finite difference (time axis)
+    f1 = (1 / delta_t) * (x[:, 0, i_range, j_range, 1:] - x[:, 0, i_range, j_range, :-1])
 
     # Second term: spatial interaction term
-    f2 = (1 / delta_l) * x[:, 0, i_grid, j_grid, :] * (
-        x[:, 1, i_grid + 1, j_grid, :] - x[:, 1, i_grid, j_grid, :] +
-        x[:, 2, i_grid, j_grid + 1, :] - x[:, 2, i_grid, j_grid, :]
+    f2 = (1 / delta_l) * x[:, 0, i_range, j_range, :] * (
+        x[:, 1, i_range.stop - 1, j_range, :] - x[:, 1, i_range.start, j_range, :] +
+        x[:, 2, i_range, j_range.stop - 1, :] - x[:, 2, i_range, j_range.start, :]
     )
 
     # Third term: x[1] interaction
-    f3 = (1 / delta_l) * ((x[:, 0, i_grid + 1, j_grid, :] - x[:, 0, i_grid, j_grid, :]) * 
-                           x[:, 1, i_grid, j_grid, :])
+    f3 = (1 / delta_l) * ((x[:, 0, i_range.stop - 1, j_range, :] - x[:, 0, i_range.start, j_range, :]) * 
+                           x[:, 1, i_range, j_range, :])
 
     # Fourth term: x[2] interaction
-    f4 = (1 / delta_l) * ((x[:, 0, i_grid, j_grid + 1, :] - x[:, 0, i_grid, j_grid, :]) * 
-                           x[:, 2, i_grid, j_grid, :])
+    f4 = (1 / delta_l) * ((x[:, 0, i_range, j_range.stop - 1, :] - x[:, 0, i_range, j_range.start, :]) * 
+                           x[:, 2, i_range, j_range, :])
 
     # Compute f(x)
     f_x = f1 + f2 + f3 + f4
 
     # Compute partial derivatives
     pdwr_density = (1 / delta_l) * (
-        x[:, 1, i_grid - 1, j_grid, :] - 2 * x[:, 1, i_grid, j_grid, :] + x[:, 1, i_grid + 1, j_grid, :]
+        x[:, 1, i_range.start - 1, j_range, :] - 2 * x[:, 1, i_range, j_range, :] + x[:, 1, i_range.stop, j_range, :]
     ) + (1 / delta_l) * (
-        x[:, 2, i_grid, j_grid - 1, :] - 2 * x[:, 2, i_grid, j_grid, :] + x[:, 2, i_grid, j_grid + 1, :]
+        x[:, 2, i_range, j_range.start - 1, :] - 2 * x[:, 2, i_range, j_range, :] + x[:, 2, i_range, j_range.stop, :]
     )
 
     pdwr_velx = (1 / delta_l) * (
-        x[:, 0, i_grid - 1, j_grid, :] - 2 * x[:, 0, i_grid, j_grid, :] + x[:, 0, i_grid + 1, j_grid, :]
+        x[:, 0, i_range.start - 1, j_range, :] - 2 * x[:, 0, i_range, j_range, :] + x[:, 0, i_range.stop, j_range, :]
     )
 
     pdwr_vely = (1 / delta_l) * (
-        x[:, 0, i_grid, j_grid - 1, :] - 2 * x[:, 0, i_grid, j_grid, :] + x[:, 0, i_grid, j_grid + 1, :]
+        x[:, 0, i_range, j_range.start - 1, :] - 2 * x[:, 0, i_range, j_range, :] + x[:, 0, i_range, j_range.stop, :]
     )
 
     # Compute the final gradient for the inner grid
-    grad_E[:, 0, i_grid, j_grid, :] = f_x * pdwr_density
-    grad_E[:, 1, i_grid, j_grid, :] = f_x * pdwr_velx
-    grad_E[:, 2, i_grid, j_grid, :] = f_x * pdwr_vely
+    grad_E[:, 0, i_range, j_range, :] = f_x * pdwr_density
+    grad_E[:, 1, i_range, j_range, :] = f_x * pdwr_velx
+    grad_E[:, 2, i_range, j_range, :] = f_x * pdwr_vely
 
     return grad_E
