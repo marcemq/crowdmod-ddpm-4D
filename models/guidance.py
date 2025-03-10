@@ -22,8 +22,8 @@ def preservationMassGradient(x, device, delta_t=0.5, delta_l=1.0) -> torch.Tenso
     grad_E = torch.zeros_like(x, device=device)
 
     # Define the inner grid range
-    i_range = slice(1, H - 1)
-    j_range = slice(1, W - 1)
+    i_range = torch.arange(1, H - 1, device=device)
+    j_range = torch.arange(1, W - 1, device=device)
 
     # First term: temporal finite difference
     f1 = (1 / delta_t) * (x[:, 0, i_range, j_range, 1:] - x[:, 0, i_range, j_range, :-1])
