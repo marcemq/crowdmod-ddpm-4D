@@ -41,12 +41,15 @@ def preservationMassGradient(x, device, delta_t=0.5, delta_l=1.0) -> torch.Tenso
     # Compute f(x)
     f_x = f1 + f2 + f3 + f4
 
-    # Compute the gradient for the inner grid
-    grad_E[:, 0, i_range, j_range, :] = f_x * (x[:, 1, i_range + 1, j_range, :] - x[:, 1, i_range, j_range, :] +
-                                                 x[:, 2, i_range, j_range + 1, :] - x[:, 2, i_range, j_range, :]) / delta_l
+    # Compute partial derivatives
+    pdwr_density = (1/delta_l)*(x[:, 1, i_range - 1, j_range, :] - 2*x[:, 1, i_range, j_range, :] + x[:, 1, i_range + 1, j_range, :])
+    + (1/delta_l)*(x[:, 2, i_range, j_range - 1, :] - 2*x[:, 2, i_range, j_range, :] + x[:, 2, i_range, j_range + 1, :])
+    pdwr_velx = (1/delta_l)*(x[:, 0, i_range - 1, j_range, :] - 2*x[:, 0, i_range, j_range, :] + x[:, 0, i_range + 1, j_range, :])
+    pdwr_vely = (1/delta_l)*(x[:, 0, i_range, j_range - 1, :] - 2*x[:, 0, i_range, j_range, :] + x[:, 0, i_range, j_range + 1, :] )
 
-    grad_E[:, 1, i_range, j_range, :] = f_x * (x[:, 0, i_range + 1, j_range, :] - x[:, 0, i_range, j_range, :]) / delta_l
-
-    grad_E[:, 2, i_range, j_range, :] = f_x * (x[:, 0, i_range, j_range + 1, :] - x[:, 0, i_range, j_range, :]) / delta_l
+    # Compute the final gradient for the inner grid
+    grad_E[:, 0, i_range, j_range, :] = f_x * pdwr_density
+    grad_E[:, 1, i_range, j_range, :] = f_x * pdwr_velx
+    grad_E[:, 2, i_range, j_range, :] = f_x * pdwr_vely
 
     return grad_E
