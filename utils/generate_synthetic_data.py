@@ -18,7 +18,7 @@ def save_pickle_file(data, name, sdata_path):
     except MemoryError:
         logging.info(f"MemoryError: Unable to pickle {name} due to memory issues.")
 
-def get_synthetic_forward(H, W, L, vel_x=0.8):
+def get_synthetic_forward(B, H, W, L, vel_x=0.8):
     """
     Create synthetic tensor by adding a pedestrian from left to right
     """
@@ -27,10 +27,10 @@ def get_synthetic_forward(H, W, L, vel_x=0.8):
         pedestrians_forward[0, 0, 6, l, l] = 1
         pedestrians_forward[0, 1, 6, l, l] = vel_x
         pedestrians_forward[0, 2, 6, l, l] = 0.0
+    # Expand tensor to match batch size
+    return np.tile(pedestrians_forward, (B, 1, 1, 1, 1))
 
-    return pedestrians_forward
-
-def get_synthetic_backward(H, W, L, vel_x=0.8):
+def get_synthetic_backward(B, H, W, L, vel_x=0.8):
     """
     Create synthetic tensor by adding a pedestrian from right to left
     """
@@ -39,8 +39,8 @@ def get_synthetic_backward(H, W, L, vel_x=0.8):
         pedestrians_backward[0, 0, 6, W-1-l, l] = 1
         pedestrians_backward[0, 1, 6, W-1-l, l] = vel_x
         pedestrians_backward[0, 2, 6, W-1-l, l] = 0.0
-
-    return pedestrians_backward
+    # Expand tensor to match batch size
+    return np.tile(pedestrians_backward, (B, 1, 1, 1, 1))
 
 def generate_synthetic_data(cfg, filenames, samples_synthetic, type_synthetic):
     sdata_path = os.path.join(os.getcwd(), "datasets", cfg.DATASET.NAME+"_SYNTHETIC")
@@ -57,13 +57,10 @@ def generate_synthetic_data(cfg, filenames, samples_synthetic, type_synthetic):
 
     synthetic_forward, synthetic_backward = [],[]
     if type_synthetic in ['FORWARD', 'ALL']:
-        synthetic_forward = get_synthetic_forward(H, W, L)
+        synthetic_forward = get_synthetic_forward(B, H, W, L)
     if type_synthetic in ['BACKWARD', 'ALL']:
-        synthetic_backward = get_synthetic_backward(H, W, L)
+        synthetic_backward = get_synthetic_backward(B, H, W, L)
 
-    # Expand synthetic_forward, synthetic_backward to match batch size
-    synthetic_forward = np.tile(synthetic_forward, (B, 1, 1, 1, 1))
-    synthetic_backward = np.tile(synthetic_backward, (B, 1, 1, 1, 1))
     # # Element-wise addition
     synthetic_data += (synthetic_forward + synthetic_backward)
     save_pickle_file(synthetic_data, "synthetic_data", sdata_path)
