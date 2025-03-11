@@ -11,7 +11,7 @@ from utils.myparser import getYamlConfig
 from utils.dataset import getDataset
 from utils.utils import create_directory
 from utils.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
-from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics
+from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics, energy_mprops_seq
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
@@ -44,6 +44,7 @@ def save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title):
     merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-SSIM'], df=metrics_df_dict['SSIM'], title=f"SSIM and MAX-SSIM of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_SSIM.png", ytick_step=0.2)
     createBoxPlot(metrics_df_dict['MOTION_FEAT_MSE'], title=f"MSE of Motion feature of {title}", columns_to_plot=metrics_header_dict["MOTION_FEAT_MSE"].split(","), save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_MF_MSE.png", ytick_step=0.0002)
     createBoxPlot_bhatt(metrics_df_dict['MOTION_FEAT_BHATT_COEF'], metrics_df_dict['MOTION_FEAT_BHATT_DIST'], title=f"BHATT of Motion feature of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_BHATT.png")
+    merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-ENERGY'], df=metrics_df_dict['ENERGY'], title=f"ENERGY and MAX-ENERGY of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_ENERGY.png", ytick_step=5)
 
 def get_metrics_dicts():
     metrics_data_dict = {"PSNR" : [],
@@ -52,7 +53,9 @@ def get_metrics_dicts():
                     "MAX-SSIM" : [],
                     "MOTION_FEAT_MSE" : [],
                     "MOTION_FEAT_BHATT_DIST" : [],
-                    "MOTION_FEAT_BHATT_COEF" : []
+                    "MOTION_FEAT_BHATT_COEF" : [],
+                    "ENERGY" : [],
+                    "MAX-ENERGY" : []
                     }
     metrics_header_dict = {"PSNR" : "rho,vx,vy",
                     "MAX-PSNR" : "rho,vx,vy",
@@ -60,7 +63,9 @@ def get_metrics_dicts():
                     "MAX-SSIM" : "rho,vx,vy",
                     "MOTION_FEAT_MSE" : "MSE_Hist_2D_Based,MSE_Hist_1D_Based",
                     "MOTION_FEAT_BHATT_DIST" : "BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based",
-                    "MOTION_FEAT_BHATT_COEF" : "BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based"
+                    "MOTION_FEAT_BHATT_COEF" : "BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based",
+                    "ENERGY" : "GT,PRED",
+                    "MAX-ENERGY" : "GT,PRED"
                     }
     return metrics_data_dict, metrics_header_dict
 
@@ -149,6 +154,10 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
             if bhatt_flag:
                 metrics_data_dict["MOTION_FEAT_BHATT_DIST"].append(mfeat_bhatt_dist)
                 metrics_data_dict["MOTION_FEAT_BHATT_COEF"].append(mfeat_bhatt_coef)
+        if metric in ['ENERGY', 'ALL']:
+            mprops_energy, mprops_max_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
+            metrics_data_dict['ENERGY'].append(mprops_energy)
+            metrics_data_dict['MAX-ENERGY'].append(mprops_max_energy)
         count_batch += 1
         if count_batch == batches_to_use:
             break
@@ -160,7 +169,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to generate metrics from a trained model.")
     parser.add_argument('--chunk-repd-past-seq', type=int, default=5, help='Chunk of repeteaded past sequences to use when predict.')
-    parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute')
+    parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute, options: PSNR|SSIM|MOTION_FEAT_BHATT|ENERGY|ALL')
     parser.add_argument('--batches-to-use', type=int, default=1, help='Total of batches to use to compute metrics.')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
