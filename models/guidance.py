@@ -99,7 +99,7 @@ def preservationMassNumericalGradient(x, device, delta_t=0.5, delta_l=1.0, eps=0
                         E_x_perturbed = compute_energy(x_perturbed, delta_t, delta_l)
 
                         # Compute finite difference approximation of gradient
-                        grad_energy[b, c, i, j, t] = (E_x_perturbed - E_x) / eps
+                        grad_energy[b, c, i, j, t] = (E_x_perturbed[b] - E_x[b]) / eps
 
     return grad_energy
 
