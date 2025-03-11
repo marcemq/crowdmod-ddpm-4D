@@ -111,15 +111,15 @@ def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     f_x = term1 + term2 + term3 + term4  # Expected shape: (B, H-2, W-2, L-1)
 
     # Debugging information
-    logging.info(f"Shape of term1: {term1.shape}")
-    logging.info(f"Shape of term2: {term2.shape}")
-    logging.info(f"Shape of term3: {term3.shape}")
-    logging.info(f"Shape of term4: {term4.shape}")
-    logging.info(f"Shape of f_x before unsquesse: {f_x.shape}")
+    #logging.info(f"Shape of term1: {term1.shape}")
+    #logging.info(f"Shape of term2: {term2.shape}")
+    #logging.info(f"Shape of term3: {term3.shape}")
+    #logging.info(f"Shape of term4: {term4.shape}")
+    #logging.info(f"Shape of f_x before unsquesse: {f_x.shape}")
 
     # Ensure f_x has 5 dimensions (B, 1, H-2, W-2, L-1)
     f_x = f_x.unsqueeze(1)  # Adds channel dimension (C=1)
-    logging.info(f"Shape of f_x after unsquesse: {f_x.shape}")
+    #logging.info(f"Shape of f_x after unsquesse: {f_x.shape}")
     # Compute energy by summing over spatial and temporal dimensions
     energy = 0.5 * torch.sum(f_x ** 2, dim=(1, 2, 3, 4))  # Shape: (B,)
 
