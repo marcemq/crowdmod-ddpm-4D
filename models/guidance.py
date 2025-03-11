@@ -1,3 +1,4 @@
+import logging
 import torch
 
 def sparsityGradient(xnoisy: torch.Tensor, cfg, device) -> torch.Tensor:
@@ -94,19 +95,19 @@ def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     
     # Compute finite differences
     term1 = (1 / delta_t) * (x[:, 0, 1:-1, 1:-1, 1:] - x[:, 0, 1:-1, 1:-1, :-1])  # Temporal diff
-    
+    logging.info(f'shape term1:{term1.shape}')
     term2 = (1 / delta_l) * x[:, 0, 1:-1, 1:-1, :-1] * (
         (x[:, 1, 2:, 1:-1, :-1] - x[:, 1, 1:-1, 1:-1, :-1]) + 
         (x[:, 2, 1:-1, 2:, :-1] - x[:, 2, 1:-1, 1:-1, :-1])
     )  # Mixed spatial terms
-
+    logging.info(f'shape term2:{term2.shape}')
     term3 = (1 / delta_l) * (x[:, 0, 2:, 1:-1, :-1] - x[:, 0, 1:-1, 1:-1, :-1]) * x[:, 1, 1:-1, 1:-1, :-1]  # Spatial x-diff
-    
+    logging.info(f'shape term3:{term3.shape}')
     term4 = (1 / delta_l) * (x[:, 0, 1:-1, 2:, :-1] - x[:, 0, 1:-1, 1:-1, :-1]) * x[:, 2, 1:-1, 1:-1, :-1]  # Spatial y-diff
-    
+    logging.info(f'shape term4:{term4.shape}')
     # Compute f_x
     f_x = term1 + term2 + term3 + term4
-
+    logging.info(f'shape f_x:{f_x.shape}')
     # Compute energy by summing over spatial and temporal dimensions
     energy = 0.5 * torch.sum(f_x ** 2, dim=(1, 2, 3, 4))  # Shape: (B,)
 
