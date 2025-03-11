@@ -77,27 +77,34 @@ def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
 
 def preservationMassNumericalGradient(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
     B, C, H, W, L = x.shape
-    grad_energy = torch.zeros_like(x)  # Store gradients
+    N = C * H * W * L  # Total elements per sample
+    grad_energy = torch.zeros_like(x)  # Gradient tensor
 
     # Compute E(x) once
     E_x = compute_energy(x, delta_t, delta_l)  # Shape: (B,)
-
-    # Expand x to (B, C, H, W, L, 1) for vectorized perturbation
-    x_expanded = x.unsqueeze(-1).expand(-1, -1, -1, -1, -1, C * H * W * L)
-
-    # Create perturbation mask: (B, C, H, W, L, C*H*W*L)
-    perturb_mask = torch.eye(C * H * W * L, device=x.device).view(C * H * W * L, C, H, W, L)
-    perturb_mask = perturb_mask.unsqueeze(0)  # Shape: (1, C*H*W*L, C, H, W, L)
-
-    # Apply perturbation in parallel
-    x_perturbed = x_expanded + eps * perturb_mask  # Shape: (B, C*H*W*L, C, H, W, L)
+    print(f'value range of E_x given batch of macroprops seqs')
+    print(E_x)
+    # Flatten spatial dimensions for efficient perturbation indexing
+    x_flat = x.view(B, N)  # Shape: (B, N)
+    
+    # Generate perturbation mask: Identity matrix for each sample
+    perturb_mask = torch.eye(N, device=device).unsqueeze(0).expand(B, -1, -1)  # (B, N, N)
+    
+    # Create perturbed versions of x
+    x_perturbed = x_flat.unsqueeze(1) + eps * perturb_mask  # Shape: (B, N, N)
+    
+    # Reshape back to (B, C, H, W, L) for compute_energy
+    x_perturbed = x_perturbed.view(B * N, C, H, W, L)
 
     # Compute E(x + eps) in parallel
-    E_x_perturbed = compute_energy(x_perturbed.view(B * C * H * W * L, C, H, W, L), delta_t, delta_l)
-    E_x_perturbed = E_x_perturbed.view(B, C, H, W, L)
+    E_x_perturbed = compute_energy(x_perturbed, delta_t, delta_l)  # Shape: (B * N,)
+    E_x_perturbed = E_x_perturbed.view(B, N)  # Reshape back to (B, N)
 
-    # Compute gradient
-    grad_energy = (E_x_perturbed - E_x.view(B, 1, 1, 1, 1)) / eps
+    # Compute finite difference gradient
+    grad_flat = (E_x_perturbed - E_x.unsqueeze(1)) / eps  # Shape: (B, N)
+
+    # Reshape back to (B, C, H, W, L)
+    grad_energy = grad_flat.view(B, C, H, W, L)
 
     return grad_energy
 
