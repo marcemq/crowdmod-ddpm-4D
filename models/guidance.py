@@ -7,46 +7,6 @@ def sparsityGradient(xnoisy: torch.Tensor, cfg, device) -> torch.Tensor:
     # Compute the gradient of the sparsity loss
     return grad
 
-import torch
-
-def compute_energy_slice(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
-    """
-    Compute the energy function E_c(x) for the given tensor x.
-    
-    Args:
-        x: Tensor of shape (B, 3, H, W, L)
-        delta_t: Time step difference
-        delta_l: Spatial step difference
-    
-    Returns:
-        Scalar tensor representing the total energy.
-    """
-    B, _, H, W, L = x.shape
-    
-    # Define inner grid range to avoid out-of-bounds access
-    i_range = slice(1, H - 1)
-    j_range = slice(1, W - 1)
-    t_range = slice(1, L - 1)
-    
-    # Compute terms inside the sum
-    term1 = (1 / delta_t) * (x[:, 0, i_range, j_range, 1:] - x[:, 0, i_range, j_range, :-1])
-    
-    term2 = (1 / delta_l) * x[:, 0, i_range, j_range, :-1] * (
-        x[:, 1, i_range + 1, j_range, :-1] - x[:, 1, i_range, j_range, :-1] +
-        x[:, 2, i_range, j_range + 1, :-1] - x[:, 2, i_range, j_range, :-1]
-    )
-    
-    term3 = (1 / delta_l) * (x[:, 0, i_range + 1, j_range, :-1] - x[:, 0, i_range, j_range, :-1]) * x[:, 1, i_range, j_range, :-1]
-    
-    term4 = (1 / delta_l) * (x[:, 0, i_range, j_range + 1, :-1] - x[:, 0, i_range, j_range, :-1]) * x[:, 2, i_range, j_range, :-1]
-    
-    # Compute energy sum
-    energy = 0.5 * torch.sum((term1 + term2 + term3 + term4) ** 2)
-    
-    return energy
-
-import torch
-
 def compute_energy_base(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     """
     Compute the energy function E_c(x) using explicit loops.
@@ -75,11 +35,6 @@ def compute_energy_base(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tens
                     energy[b] += 0.5 * f_x ** 2
     
     return energy
-
-
-import torch
-
-import torch
 
 def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     """
@@ -132,8 +87,7 @@ def preservationMassNumericalGradient(x, device, delta_t=0.5, delta_l=1.0, eps=0
 
     # Compute E(x) once
     E_x = compute_energy(x, delta_t, delta_l)  # Shape: (B,)
-    print(f'value range of E_x given batch of macroprops seqs')
-    print(E_x)
+    logging.infp(f'Value range of batched E_x {E_x}')
     # Flatten spatial dimensions for efficient perturbation indexing
     x_flat = x.view(B, N)  # Shape: (B, N)
     

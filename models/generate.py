@@ -28,7 +28,8 @@ def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:
             sparsity_grad = sparsityGradient(xnoisy, cfg, device)
             xnoisy-= 0.004*sigma*sparsity_grad
         if cfg.DIFFUSION.GUIDANCE == "mass_preservation":
-            mass_preserv_grad = preservationMassNumericalGradient(xnoisy, device, cfg.MACROPROPS.TIME_RES, cfg.MACROPROPS.DX*cfg.MACROPROPS.DY)
+            #mass_preserv_grad = preservationMassNumericalGradient(xnoisy, device, cfg.MACROPROPS.TIME_RES, cfg.MACROPROPS.DX*cfg.MACROPROPS.DY)
+            mass_preserv_grad = preservationMassNumericalGradient(xnoisy, device, 1.0, 1.0)
             xnoisy-= (1-alpha_t)*mass_preserv_grad
         if history:
             xnoisy_over_time.append(xnoisy)
