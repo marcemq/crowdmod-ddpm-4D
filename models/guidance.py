@@ -75,8 +75,33 @@ def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     
     return energy
 
-
 def preservationMassNumericalGradient(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
+    B, C, H, W, L = x.shape
+    grad_energy = torch.zeros_like(x)  # Store gradients
+
+    # Compute E(x) once
+    E_x = compute_energy(x, delta_t, delta_l)  # Shape: (B,)
+
+    # Expand x to (B, C, H, W, L, 1) for vectorized perturbation
+    x_expanded = x.unsqueeze(-1).expand(-1, -1, -1, -1, -1, C * H * W * L)
+
+    # Create perturbation mask: (B, C, H, W, L, C*H*W*L)
+    perturb_mask = torch.eye(C * H * W * L, device=x.device).view(C * H * W * L, C, H, W, L)
+    perturb_mask = perturb_mask.unsqueeze(0)  # Shape: (1, C*H*W*L, C, H, W, L)
+
+    # Apply perturbation in parallel
+    x_perturbed = x_expanded + eps * perturb_mask  # Shape: (B, C*H*W*L, C, H, W, L)
+
+    # Compute E(x + eps) in parallel
+    E_x_perturbed = compute_energy(x_perturbed.view(B * C * H * W * L, C, H, W, L), delta_t, delta_l)
+    E_x_perturbed = E_x_perturbed.view(B, C, H, W, L)
+
+    # Compute gradient
+    grad_energy = (E_x_perturbed - E_x.view(B, 1, 1, 1, 1)) / eps
+
+    return grad_energy
+
+def preservationMassNumericalGradient_base(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
     B, C, H, W, L = x.shape
     grad_energy = torch.zeros_like(x)  # Store gradients
 
