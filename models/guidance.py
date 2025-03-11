@@ -46,7 +46,7 @@ def compute_energy_slice(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Ten
 
 import torch
 
-def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
+def compute_energy_base(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     """
     Compute the energy function E_c(x) using explicit loops.
     
@@ -74,6 +74,42 @@ def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
                     energy[b] += 0.5 * f_x ** 2
     
     return energy
+
+
+def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
+    """
+    Compute the energy function E_c(x) without explicit loops.
+
+    Args:
+        x: Tensor of shape (B, 3, H, W, L)
+        delta_t: Time step difference
+        delta_l: Spatial step difference
+
+    Returns:
+        energy: Tensor of shape (B,) representing the computed energy for each batch.
+    """
+    B, _, H, W, L = x.shape
+
+    # Compute differences along time (t)
+    term1 = (1 / delta_t) * (x[:, 0, 1:-1, 1:-1, 1:] - x[:, 0, 1:-1, 1:-1, :-1])
+
+    # Compute spatial derivatives using slices
+    dX1 = x[:, 1, 2:, 1:-1, :-1] - x[:, 1, 1:-1, 1:-1, :-1]  # ∂X/∂x
+    dX2 = x[:, 2, 1:-1, 2:, :-1] - x[:, 2, 1:-1, 1:-1, :-1]  # ∂X/∂y
+
+    term2 = (1 / delta_l) * x[:, 0, 1:-1, 1:-1, :-1] * (dX1 + dX2)
+
+    dX3 = x[:, 0, 2:, 1:-1, :-1] - x[:, 0, 1:-1, 1:-1, :-1]  # ∂U/∂x
+    dX4 = x[:, 0, 1:-1, 2:, :-1] - x[:, 0, 1:-1, 1:-1, :-1]  # ∂U/∂y
+
+    term3 = (1 / delta_l) * dX3 * x[:, 1, 1:-1, 1:-1, :-1]
+    term4 = (1 / delta_l) * dX4 * x[:, 2, 1:-1, 1:-1, :-1]
+
+    # Compute energy function
+    f_x = term1 + term2 + term3 + term4
+    energy = 0.5 * torch.sum(f_x ** 2, dim=(1, 2, 3, 4))  # Sum over spatial and temporal dimensions
+
+    return energy  # Shape: (B,)
 
 def preservationMassNumericalGradient(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
     B, C, H, W, L = x.shape
