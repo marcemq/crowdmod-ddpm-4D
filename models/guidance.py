@@ -87,7 +87,7 @@ def preservationMassNumericalGradient(x, device, delta_t=0.5, delta_l=1.0, eps=0
 
     # Compute E(x) once
     E_x = compute_energy(x, delta_t, delta_l)  # Shape: (B,)
-    logging.infp(f'Value range of batched E_x {E_x}')
+    logging.info(f'Value range of batched E_x {E_x}')
     # Flatten spatial dimensions for efficient perturbation indexing
     x_flat = x.view(B, N)  # Shape: (B, N)
     
