@@ -122,7 +122,6 @@ def energy_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSe
     """
     mprops_factor = np.array(mprops_factor)[:mprops_count, np.newaxis, np.newaxis, np.newaxis]
     logging.info(f'mprops_factor shape: {mprops_factor.shape}')
-    logging.info(mprops_factor)
 
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
