@@ -130,8 +130,8 @@ def energy_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSe
     mprops_min_energy = np.zeros((nsamples//chunkRepdPastSeq, 2))
     mprops_factor = np.array(mprops_factor)
 
-    pred_seq_tensor = torch.stack(pred_seq_list).cpu().numpy()
-    gt_seq_tensor = torch.stack(gt_seq_list).cpu().numpy()
+    pred_seq_tensor = torch.stack(pred_seq_list).cpu()
+    gt_seq_tensor = torch.stack(gt_seq_list).cpu()
     logging.info(f'pred_seq_tensor shape: {pred_seq_tensor.shape}')
     logging.info(f'gt_seq_tensor shape: {gt_seq_tensor.shape}')
 
