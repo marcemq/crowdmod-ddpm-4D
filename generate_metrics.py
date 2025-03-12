@@ -46,7 +46,7 @@ def save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title):
         merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-PSNR'], df=metrics_df_dict['PSNR'], title=f"PSNR and MAX-PSNR of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_PSNR.png", ytick_step=5)
     if len(metrics_df_dict['MAX-SSIM']) != 0:
         merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-SSIM'], df=metrics_df_dict['SSIM'], title=f"SSIM and MAX-SSIM of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_SSIM.png", ytick_step=0.2)
-    if len(metrics_df_dict['MOTION_FEAT_MSE-PSNR']) != 0:
+    if len(metrics_df_dict['MOTION_FEAT_MSE']) != 0:
         createBoxPlot(metrics_df_dict['MOTION_FEAT_MSE'], title=f"MSE of Motion feature of {title}", columns_to_plot=metrics_header_dict["MOTION_FEAT_MSE"].split(","), save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_MF_MSE.png", ytick_step=0.0002)
     if len(metrics_df_dict['MOTION_FEAT_BHATT_COEF']) != 0:
         createBoxPlot_bhatt(metrics_df_dict['MOTION_FEAT_BHATT_COEF'], metrics_df_dict['MOTION_FEAT_BHATT_DIST'], title=f"BHATT of Motion feature of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_BHATT.png")
