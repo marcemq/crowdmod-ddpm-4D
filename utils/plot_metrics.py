@@ -44,8 +44,8 @@ def createBoxPlot_bhatt(df1, df2, title, save_path=None):
         plt.show()
     plt.close()
 
-def merge_and_plot_boxplot(df_max, df, title, save_path, ytick_step):
-  df_max = df_max.add_prefix('max-')
+def merge_and_plot_boxplot(df_max, df, title, save_path, ytick_step, prefix='max-'):
+  df_max = df_max.add_prefix(prefix)
   # Concatenate both DataFrames side by side
   overall_df = pd.concat([df, df_max], axis=1)
   # Get interleaved column names to reorder the columns
