@@ -25,6 +25,7 @@ def save_all_metrics(match, metrics_data_dict, metrics_header_dict, title):
     metrics_filenames_dict = {"title": title}
     # Stack metrics by epoch into an array
     for metric_name, metric_data_list in metrics_data_dict.items():
+        logging.info(f"Metric: {metric_name}, Number of Entries: {len(metric_data_list)}")
         metrics_data_dict[metric_name] = np.vstack(metric_data_list)
 
     # Save each non-empty metric with its required data
@@ -35,7 +36,7 @@ def save_all_metrics(match, metrics_data_dict, metrics_header_dict, title):
 
     with open(f"{cfg.MODEL.OUTPUT_DIR}/metrics_files.json", "w") as json_file:
         json.dump(metrics_filenames_dict, json_file)
-    print(f"Dictionary of metrics filenames saved to '{cfg.MODEL.OUTPUT_DIR}/metrics_files.json'")
+    logging.info(f"Dictionary of metrics filenames saved to '{cfg.MODEL.OUTPUT_DIR}/metrics_files.json'")
 
 def save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title):
     # Convert the dictionary of arrays into a dictionary of DataFrames
