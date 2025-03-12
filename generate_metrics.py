@@ -51,7 +51,7 @@ def save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title):
     if len(metrics_df_dict['MOTION_FEAT_BHATT_COEF']) != 0:
         createBoxPlot_bhatt(metrics_df_dict['MOTION_FEAT_BHATT_COEF'], metrics_df_dict['MOTION_FEAT_BHATT_DIST'], title=f"BHATT of Motion feature of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_BHATT.png")
     if len(metrics_df_dict['MIN-ENERGY']) != 0:
-        merge_and_plot_boxplot(df_max=metrics_df_dict['MIN-ENERGY'], df=metrics_df_dict['ENERGY'], title=f"ENERGY and MIN-ENERGY of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_ENERGY.png", ytick_step=5, prefix='min-')
+        merge_and_plot_boxplot(df_max=metrics_df_dict['MIN-ENERGY'], df=metrics_df_dict['ENERGY'], title=f"ENERGY and MIN-ENERGY of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_ENERGY.png", ytick_step=None, prefix='min-')
 
 def get_metrics_dicts():
     metrics_data_dict = {"PSNR" : [],

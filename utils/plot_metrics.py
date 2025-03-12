@@ -9,8 +9,9 @@ def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
     plt.ylabel('Values')
     # Set consistent y-axis ticks
     y_min, y_max = df[columns_to_plot].min().min(), df[columns_to_plot].max().max()
-    yticks = np.arange(y_min // ytick_step * ytick_step, (y_max // ytick_step + 1) * ytick_step, ytick_step)
-    plt.yticks(yticks)
+    if ytick_step is not None:
+        yticks = np.arange(y_min // ytick_step * ytick_step, (y_max // ytick_step + 1) * ytick_step, ytick_step)
+        plt.yticks(yticks)
     # Save or show the plot
     if save_path:
         plt.savefig(save_path, bbox_inches='tight')
