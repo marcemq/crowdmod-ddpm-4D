@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import json
 import os, re
+import logging
 from models.generate import generate_ddpm, generate_ddim
 
 from utils.myparser import getYamlConfig
@@ -155,9 +156,11 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
                 metrics_data_dict["MOTION_FEAT_BHATT_DIST"].append(mfeat_bhatt_dist)
                 metrics_data_dict["MOTION_FEAT_BHATT_COEF"].append(mfeat_bhatt_coef)
         if metric in ['ENERGY', 'ALL']:
-            mprops_energy, mprops_max_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
+            mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
+            logging.info(f'mprops_energy shape {mprops_energy.shape}')
+            logging.info(f'mprops_min_energy shape {mprops_min_energy.shape}')
             metrics_data_dict['ENERGY'].append(mprops_energy)
-            metrics_data_dict['MAX-ENERGY'].append(mprops_max_energy)
+            metrics_data_dict['MAX-ENERGY'].append(mprops_min_energy)
         count_batch += 1
         if count_batch == batches_to_use:
             break
