@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import logging
 from skimage.metrics import structural_similarity as ssim
 from sklearn.metrics import mean_squared_error
 from utils.motionFeatureExtractor import MotionFeatureExtractor, get_bhattacharyya_dist_coef
@@ -121,8 +120,6 @@ def energy_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSe
     Not sure if for energy we need to apply the factor to use an scaled version of sequences
     """
     mprops_factor = np.array(mprops_factor)[:mprops_count, np.newaxis, np.newaxis, np.newaxis]
-    logging.info(f'mprops_factor shape: {mprops_factor.shape}')
-
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
     mprops_nsamples_energy = np.zeros((nsamples, 2))
@@ -131,8 +128,6 @@ def energy_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSe
 
     pred_seq_tensor = torch.stack(pred_seq_list).cpu()
     gt_seq_tensor = torch.stack(gt_seq_list).cpu()
-    logging.info(f'pred_seq_tensor shape: {pred_seq_tensor.shape}')
-    logging.info(f'gt_seq_tensor shape: {gt_seq_tensor.shape}')
 
     pred_seq_tensor = pred_seq_tensor * mprops_factor[np.newaxis, ...]
     gt_seq_tensor = gt_seq_tensor * mprops_factor[np.newaxis, ...]
