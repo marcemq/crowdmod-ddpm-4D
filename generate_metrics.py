@@ -26,7 +26,8 @@ def save_all_metrics(match, metrics_data_dict, metrics_header_dict, title):
     # Stack metrics by epoch into an array
     for metric_name, metric_data_list in metrics_data_dict.items():
         logging.info(f"Metric: {metric_name}, Number of Entries: {len(metric_data_list)}")
-        metrics_data_dict[metric_name] = np.vstack(metric_data_list)
+        if len(metric_data_list) != 0:
+            metrics_data_dict[metric_name] = np.vstack(metric_data_list)
 
     # Save each non-empty metric with its required data
     for metric_name, metric_header in metrics_header_dict.items():
