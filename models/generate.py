@@ -25,10 +25,10 @@ def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:
         if cfg.DIFFUSION.GUIDANCE == "sparsity":
             # Update the noisy image with the sparsity guidance (TESTING!)
             sparsity_grad = sparsityGradient(xnoisy,cfg, device)
-            xnoisy-= 0.004*sigma*sparsity_grad
+            xnoisy-= 0.004*sigma*sparsity_grad # 0.004*sqrt(1-alpha_t)
         if cfg.DIFFUSION.GUIDANCE == "mass_preservation":
             #mass_preserv_grad = preservationMassNumericalGradient(xnoisy, device, cfg.MACROPROPS.TIME_RES, cfg.MACROPROPS.DX*cfg.MACROPROPS.DY)
-            mass_preserv_grad = preservationMassNumericalGradient_base(xnoisy, device, delta_t=1.0, delta_l=1.0, eps=0.1)
+            mass_preserv_grad = preservationMassNumericalGradient(xnoisy, device, delta_t=1.0, delta_l=1.0, eps=0.1)
             xnoisy-= (1-alpha_t)*mass_preserv_grad
         if history:
             xnoisy_over_time.append(xnoisy)
