@@ -3,7 +3,7 @@ import torch.nn as nn
 from tqdm import tqdm
 from models.diffusion.ddpm import DDPM
 from models.diffusion.forward import get_from_idx
-from models.guidance import sparsityGradient, preservationMassNumericalGradient
+from models.guidance import sparsityGradient, preservationMassNumericalGradient, preservationMassNumericalGradient_base
 
 # This is how we will use the model once trained
 @torch.inference_mode()
@@ -28,7 +28,7 @@ def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:
             xnoisy-= 0.004*sigma*sparsity_grad
         if cfg.DIFFUSION.GUIDANCE == "mass_preservation":
             #mass_preserv_grad = preservationMassNumericalGradient(xnoisy, device, cfg.MACROPROPS.TIME_RES, cfg.MACROPROPS.DX*cfg.MACROPROPS.DY)
-            mass_preserv_grad = preservationMassNumericalGradient(xnoisy, device, delta_t=1.0, delta_l=1.0, eps=0.1)
+            mass_preserv_grad = preservationMassNumericalGradient_base(xnoisy, device, delta_t=1.0, delta_l=1.0, eps=0.1)
             xnoisy-= (1-alpha_t)*mass_preserv_grad
         if history:
             xnoisy_over_time.append(xnoisy)

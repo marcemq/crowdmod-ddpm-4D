@@ -71,3 +71,29 @@ def preservationMassNumericalGradient(x, device, delta_t=0.5, delta_l=1.0, eps=0
     grad_energy = grad_flat.view(B, C, H, W, L)
 
     return grad_energy
+
+def preservationMassNumericalGradient_base(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
+    B, C, H, W, L = x.shape
+    grad_energy = torch.zeros_like(x)  # Store gradients
+
+    # Compute E(x)
+    E_x = compute_energy(x, delta_t, delta_l)
+    logging.info(f'Value range of batched E_x {E_x}')
+
+    # Loop through each voxel
+    for b in range(B):
+        for c in range(C):
+            for i in range(H):
+                for j in range(W):
+                    for t in range(L):
+                        # Perturb x[b, c, i, j, t] by eps
+                        x_perturbed = x.clone()
+                        x_perturbed[b, c, i, j, t] += eps
+
+                        # Compute E(x + eps)
+                        E_x_perturbed = compute_energy(x_perturbed, delta_t, delta_l)
+
+                        # Compute finite difference approximation of gradient
+                        grad_energy[b, c, i, j, t] = (E_x_perturbed[b] - E_x[b]) / eps
+
+    return grad_energy
