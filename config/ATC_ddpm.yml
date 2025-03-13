@@ -55,7 +55,7 @@ DIFFUSION:
   NSAMPLES: 1280      # Define number of predicted samples (64 BS * 20 rep, default values)
   NSAMPLES4PLOTS: 10  # Define number of predicted samples to plot static and dynamic seqs
   PRED_MPROPS_FACTOR: [1, 10, 10, 10]
-  GUIDANCE: 'sparsity'
+  GUIDANCE: 'mass_preservation' # Possible values: None, sparsity, mass_preservation
 METRICS:
   MOTION_FEATURE:
     f: 1    # Number of frames of each volume

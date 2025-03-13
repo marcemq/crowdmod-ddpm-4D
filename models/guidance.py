@@ -1,4 +1,5 @@
 import torch
+import logging
 
 def sparsityGradient(xnoisy: torch.Tensor, cfg, device) -> torch.Tensor:
     grad = torch.zeros(xnoisy.shape, device=device)
@@ -38,3 +39,35 @@ def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     energy = 0.5 * torch.sum(f_x ** 2, dim=(1, 2, 3, 4))  # Shape: (B,)
 
     return energy
+
+def preservationMassNumericalGradient(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
+    B, C, H, W, L = x.shape
+    N = C * H * W * L  # Total elements per sample
+    grad_energy = torch.zeros_like(x)  # Gradient tensor
+
+    # Compute E(x) once
+    E_x = compute_energy(x, delta_t, delta_l)  # Shape: (B,)
+    logging.info(f'Value range of batched E_x {E_x}')
+    # Flatten spatial dimensions for efficient perturbation indexing
+    x_flat = x.view(B, N)  # Shape: (B, N)
+
+    # Generate perturbation mask: Identity matrix for each sample
+    perturb_mask = torch.eye(N, device=device).unsqueeze(0).expand(B, -1, -1)  # (B, N, N)
+
+    # Create perturbed versions of x
+    x_perturbed = x_flat.unsqueeze(1) + eps * perturb_mask  # Shape: (B, N, N)
+
+    # Reshape back to (B, C, H, W, L) for compute_energy
+    x_perturbed = x_perturbed.view(B * N, C, H, W, L)
+
+    # Compute E(x + eps) in parallel
+    E_x_perturbed = compute_energy(x_perturbed, delta_t, delta_l)  # Shape: (B * N,)
+    E_x_perturbed = E_x_perturbed.view(B, N)  # Reshape back to (B, N)
+
+    # Compute finite difference gradient
+    grad_flat = (E_x_perturbed - E_x.unsqueeze(1)) / eps  # Shape: (B, N)
+
+    # Reshape back to (B, C, H, W, L)
+    grad_energy = grad_flat.view(B, C, H, W, L)
+
+    return grad_energy

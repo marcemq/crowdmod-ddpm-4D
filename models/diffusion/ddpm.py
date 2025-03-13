@@ -16,4 +16,4 @@ class DDPM(ForwardSampler):
             * (xnoise - (beta_t / sqrt_one_minus_alpha_bar_t) * predicted_noise)
             + torch.sqrt(beta_t) * z
         )
-        return xdenoised,torch.sqrt(beta_t) 
+        return xdenoised, torch.sqrt(beta_t), 1-beta_t
