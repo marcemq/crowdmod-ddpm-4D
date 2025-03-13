@@ -3,7 +3,7 @@ import torch.nn as nn
 from tqdm import tqdm
 from models.diffusion.ddpm import DDPM
 from models.diffusion.forward import get_from_idx
-from models.sparsityGuidance import sparsityGradient
+from models.guidance import sparsityGradient
 
 # This is how we will use the model once trained
 @torch.inference_mode()

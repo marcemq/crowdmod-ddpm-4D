@@ -9,8 +9,9 @@ def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
     plt.ylabel('Values')
     # Set consistent y-axis ticks
     y_min, y_max = df[columns_to_plot].min().min(), df[columns_to_plot].max().max()
-    yticks = np.arange(y_min // ytick_step * ytick_step, (y_max // ytick_step + 1) * ytick_step, ytick_step)
-    plt.yticks(yticks)
+    if ytick_step is not None:
+        yticks = np.arange(y_min // ytick_step * ytick_step, (y_max // ytick_step + 1) * ytick_step, ytick_step)
+        plt.yticks(yticks)
     # Save or show the plot
     if save_path:
         plt.savefig(save_path, bbox_inches='tight')
@@ -44,8 +45,8 @@ def createBoxPlot_bhatt(df1, df2, title, save_path=None):
         plt.show()
     plt.close()
 
-def merge_and_plot_boxplot(df_max, df, title, save_path, ytick_step):
-  df_max = df_max.add_prefix('max-')
+def merge_and_plot_boxplot(df_max, df, title, save_path, ytick_step, prefix='max-'):
+  df_max = df_max.add_prefix(prefix)
   # Concatenate both DataFrames side by side
   overall_df = pd.concat([df, df_max], axis=1)
   # Get interleaved column names to reorder the columns

@@ -1,7 +1,9 @@
 import numpy as np
+import torch
 from skimage.metrics import structural_similarity as ssim
 from sklearn.metrics import mean_squared_error
 from utils.motionFeatureExtractor import MotionFeatureExtractor, get_bhattacharyya_dist_coef
+from models.guidance import compute_energy
 
 def my_psnr(y_gt, y_hat, data_range, eps):
     # Compute mean squared error
@@ -112,6 +114,38 @@ def ssim_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq,
         mprops_max_ssim[i // chunkRepdPastSeq] = (max_rho, max_vx, max_vy)
 
     return mprops_nsamples_ssim, mprops_max_ssim
+
+def energy_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSeq, mprops_count):
+    """
+    Not sure if for energy we need to apply the factor to use an scaled version of sequences
+    """
+    mprops_factor = np.array(mprops_factor)[:mprops_count, np.newaxis, np.newaxis, np.newaxis]
+    nsamples = len(pred_seq_list)
+    _, _, _, pred_len = pred_seq_list[0].shape
+    mprops_nsamples_energy = np.zeros((nsamples, 2))
+    mprops_min_energy = np.zeros((nsamples//chunkRepdPastSeq, 2))
+    mprops_factor = np.array(mprops_factor)
+
+    pred_seq_tensor = torch.stack(pred_seq_list).cpu()
+    gt_seq_tensor = torch.stack(gt_seq_list).cpu()
+
+    pred_seq_tensor = pred_seq_tensor * mprops_factor[np.newaxis, ...]
+    gt_seq_tensor = gt_seq_tensor * mprops_factor[np.newaxis, ...]
+
+    pred_seq_energy = compute_energy(pred_seq_tensor, delta_t=1, delta_l=1)
+    gt_seq_energy = compute_energy(gt_seq_tensor, delta_t=1, delta_l=1)
+
+    mprops_nsamples_energy[:, 0] = gt_seq_energy
+    mprops_nsamples_energy[:, 1] = pred_seq_energy
+
+    # Compute the MIN energy by repeteaded seqs
+    for i in range(0, nsamples, chunkRepdPastSeq):
+        energy_chunk = mprops_nsamples_energy[i:i+chunkRepdPastSeq]
+        min_gt_energy = energy_chunk[:, 0].min()
+        min_pred_energy = energy_chunk[:, 1].min()
+        mprops_min_energy[i // chunkRepdPastSeq] = (min_gt_energy, min_pred_energy)
+
+    return mprops_nsamples_energy, mprops_min_energy
 
 def _save_mag_rho_data(all_mag_rho_vol, nameToUse):
     file_name = f"metrics/all_mag_rho_{nameToUse}.csv"
