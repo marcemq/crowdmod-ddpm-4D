@@ -37,6 +37,7 @@ def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     f_x = f_x.unsqueeze(1)  # Adds channel dimension (C=1)
     # Compute energy by summing over spatial and temporal dimensions
     energy = 0.5 * torch.sum(f_x ** 2, dim=(1, 2, 3, 4))  # Shape: (B,)
+    energy = energy/(H*W*L)
 
     return energy
 
