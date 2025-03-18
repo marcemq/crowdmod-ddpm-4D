@@ -1,5 +1,6 @@
 import torch
 import logging
+from autograd import grad
 
 def sparsityGradient(xnoisy: torch.Tensor, cfg, device) -> torch.Tensor:
     grad = torch.zeros(xnoisy.shape, device=device)
@@ -123,3 +124,7 @@ def preservationMassNumericalGradientOptimal(x, device, delta_t=0.5, delta_l=1.0
         grad_energy.view(B, N)[:, idx] = (E_x_perturbed - E_x) / eps
 
     return grad_energy
+
+def preservationMassNumericalGradientAutograd(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
+    gradAutograd  = grad(compute_energy)
+    return gradAutograd(x, delta_t, delta_l)
