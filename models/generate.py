@@ -6,7 +6,7 @@ from models.diffusion.forward import get_from_idx
 from models.guidance import sparsityGradient, preservationMassNumericalGradient, preservationMassNumericalGradient_base, preservationMassNumericalGradientOptimal, preservationMassNumericalGradientAutograd
 
 # This is how we will use the model once trained
-@torch.inference_mode()
+@torch.inference_mode(False)
 def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:DDPM, cfg, device, nsamples, history=False):
     # Set the model in evaluation mode
     denoiser_model.eval()
