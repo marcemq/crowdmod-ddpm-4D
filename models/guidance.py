@@ -126,7 +126,7 @@ def preservationMassNumericalGradientOptimal(x, device, delta_t=0.5, delta_l=1.0
     return grad_energy
 
 def preservationMassNumericalGradientAutograd(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
-    x = x.clone().detach().requires_grad_(True)  # Ensure autograd tracking
+    x.requires_grad_(True)
     energy = compute_energy(x, delta_t, delta_l)
 
     # Compute gradient
