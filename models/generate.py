@@ -12,6 +12,7 @@ def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:
     denoiser_model.eval()
     # Noise from a normal distribution
     xnoisy = torch.randn((nsamples, cfg.MACROPROPS.MPROPS_COUNT, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.FUTURE_LEN), device=device)
+    xnoisy.requires_grad_(True)  # Enable autograd tracking
     xnoisy_over_time = [xnoisy]
     # Now, to reverse the diffusion process, use a sequence of denoising steps
     for t in tqdm(iterable=reversed(range(0, backward_sampler.timesteps)),
