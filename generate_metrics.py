@@ -16,12 +16,12 @@ from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_featur
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
-def save_metric_data(cfg, match, data, metric, header):
-    file_name = f"{cfg.MODEL.OUTPUT_DIR}/mpSampling_{metric}_NS{cfg.DIFFUSION.NSAMPLES}_{match.group()}.csv"
+def save_metric_data(cfg, match, data, metric, header, samples_per_batch):
+    file_name = f"{cfg.MODEL.OUTPUT_DIR}/mpSampling_{metric}_NS{samples_per_batch}_{match.group()}.csv"
     np.savetxt(file_name, data, delimiter=",", header=header, comments="")
     return file_name
 
-def save_all_metrics(match, metrics_data_dict, metrics_header_dict, title):
+def save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch):
     metrics_filenames_dict = {"title": title}
     # Stack metrics by epoch into an array
     for metric_name, metric_data_list in metrics_data_dict.items():
@@ -32,7 +32,7 @@ def save_all_metrics(match, metrics_data_dict, metrics_header_dict, title):
     # Save each non-empty metric with its required data
     for metric_name, metric_header in metrics_header_dict.items():
         if len(metrics_data_dict[metric_name]) != 0:
-            file_name = save_metric_data(cfg, match, metrics_data_dict[metric_name], metric_name, metric_header)
+            file_name = save_metric_data(cfg, match, metrics_data_dict[metric_name], metric_name, metric_header, samples_per_batch)
             metrics_filenames_dict[metric_name] = file_name
 
     with open(f"{cfg.MODEL.OUTPUT_DIR}/metrics_files.json", "w") as json_file:
@@ -77,6 +77,12 @@ def get_metrics_dicts():
     return metrics_data_dict, metrics_header_dict
 
 def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
+    if chunkRepdPastSeq == None:
+        samples_per_batch = cfg.DIFFUSION.NSAMPLES
+        chunkRepdPastSeq = 20
+    else:
+        samples_per_batch = cfg.DATASET.BATCH_SIZE*chunkRepdPastSeq
+
     create_directory(cfg.MODEL.OUTPUT_DIR)
     torch.manual_seed(42)
     # Setting the device to work with
@@ -115,24 +121,24 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
         # Compute the idx of the past sequences to work on
-        if past_test.shape[0] < cfg.DIFFUSION.NSAMPLES:
+        if past_test.shape[0] < samples_per_batch:
             random_past_idx = torch.randperm(past_test.shape[0])
         else:
-            random_past_idx = torch.randperm(past_test.shape[0])[:cfg.DIFFUSION.NSAMPLES]
+            random_past_idx = torch.randperm(past_test.shape[0])[:samples_per_batch]
         expanded_random_past_idx = torch.repeat_interleave(random_past_idx, chunkRepdPastSeq)
-        random_past_idx = expanded_random_past_idx[:cfg.DIFFUSION.NSAMPLES]
+        random_past_idx = expanded_random_past_idx[:samples_per_batch]
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
 
         if cfg.DIFFUSION.SAMPLER == "DDPM":
-            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, cfg.DIFFUSION.NSAMPLES) # AR review .cpu() call here
+            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
             if cfg.DIFFUSION.GUIDANCE == "sparsity" or cfg.DIFFUSION.GUIDANCE=="mass_preservation" or cfg.DIFFUSION.GUIDANCE == "None":
                 l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
                 logging.info(f'L1 norm {l1:.2f} using {cfg.DIFFUSION.GUIDANCE} guidance')
         elif cfg.DIFFUSION.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.DIFFUSION.DDIM_DIVIDER)
             print(f'taus:{taus}')
-            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, cfg.DIFFUSION.NSAMPLES) # AR review .cpu() call here
+            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
         else:
             print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
@@ -170,12 +176,12 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
             break
 
     title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})"
-    save_all_metrics(match, metrics_data_dict, metrics_header_dict, title)
+    save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch)
     save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to generate metrics from a trained model.")
-    parser.add_argument('--chunk-repd-past-seq', type=int, default=5, help='Chunk of repeteaded past sequences to use when predict.')
+    parser.add_argument('--chunk-repd-past-seq', type=int, default=None, help='Chunk of repeteaded past sequences to use when predict.')
     parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute, options: PSNR|SSIM|MOTION_FEAT_BHATT|ENERGY|ALL')
     parser.add_argument('--batches-to-use', type=int, default=1, help='Total of batches to use to compute metrics.')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
