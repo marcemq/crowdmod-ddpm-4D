@@ -130,6 +130,6 @@ def preservationMassNumericalGradientAutograd(x, device, delta_t=0.5, delta_l=1.
     energy = compute_energy(x, delta_t, delta_l)
 
     # Compute gradient
-    grad_energy = torch.autograd.grad(energy.sum(), x, create_graph=True)[0]
+    grad_energy = torch.autograd.grad(energy.sum(), x, create_graph=False, retain_graph=False)[0]
 
     return grad_energy
