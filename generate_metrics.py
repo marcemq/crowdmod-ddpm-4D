@@ -132,9 +132,9 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
 
         if cfg.DIFFUSION.SAMPLER == "DDPM":
             x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
-            if cfg.DIFFUSION.GUIDANCE == "sparsity" or cfg.DIFFUSION.GUIDANCE == "none":
+            if cfg.DIFFUSION.GUIDANCE == "sparsity" or cfg.DIFFUSION.GUIDANCE=="mass_preservation" or cfg.DIFFUSION.GUIDANCE == "None":
                 l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
-                print('L1 norm {:.2f}'.format(l1))
+                logging.info(f'L1 norm {l1:.2f} using {cfg.DIFFUSION.GUIDANCE} guidance')
         elif cfg.DIFFUSION.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.DIFFUSION.DDIM_DIVIDER)
             print(f'taus:{taus}')

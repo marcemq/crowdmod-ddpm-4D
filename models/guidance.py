@@ -1,4 +1,5 @@
 import torch
+import logging
 
 def sparsityGradient(xnoisy: torch.Tensor, cfg, device) -> torch.Tensor:
     grad = torch.zeros(xnoisy.shape, device=device)
@@ -39,3 +40,31 @@ def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     energy = energy/(H*W*L)
 
     return energy
+
+def preservationMassNumericalGradientOptimal(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
+    """
+    Compute the gradient of energy from x tensor
+    """
+    B, C, H, W, L = x.shape
+    grad_energy = torch.zeros_like(x)  # Store gradients
+
+    # Compute E(x)
+    E_x = compute_energy(x, delta_t, delta_l)
+    #logging.info(f'Value range of batched E_x {E_x}')
+
+    # Flatten spatial dimensions
+    N = C * H * W * L
+
+    # Iterate over flatten spatial elements
+    for idx in range(N):
+        x_perturbed = x.clone().view(B, N)  # Flatten for efficient indexing
+        x_perturbed[:, idx] += eps  # Apply perturbation at one position per batch
+
+        # Compute energy for perturbed tensor
+        x_perturbed = x_perturbed.view(B, C, H, W, L)  # Reshape back
+        E_x_perturbed = compute_energy(x_perturbed, delta_t, delta_l)  # Shape: (B,)
+
+        # Compute finite difference gradient
+        grad_energy.view(B, N)[:, idx] = (E_x_perturbed - E_x) / eps
+
+    return grad_energy

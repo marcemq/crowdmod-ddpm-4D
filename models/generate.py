@@ -3,7 +3,7 @@ import torch.nn as nn
 from tqdm import tqdm
 from models.diffusion.ddpm import DDPM
 from models.diffusion.forward import get_from_idx
-from models.guidance import sparsityGradient
+from models.guidance import sparsityGradient, preservationMassNumericalGradientOptimal
 
 # This is how we will use the model once trained
 @torch.inference_mode()
@@ -21,11 +21,14 @@ def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:
         # Estimate the noise
         eps_pred = denoiser_model(xnoisy, t_tensor, past)
         # Denoise with the sampler and the estimation of the noise
-        xnoisy, sigma = backward_sampler.step(eps_pred, xnoisy, t)
+        xnoisy, sigma, alpha_t = backward_sampler.step(eps_pred, xnoisy, t)
         if cfg.DIFFUSION.GUIDANCE == "sparsity":
             # Update the noisy image with the sparsity guidance (TESTING!)
             sparsity_grad = sparsityGradient(xnoisy,cfg, device)
-            xnoisy-= 0.004*sigma*sparsity_grad
+            xnoisy-= 0.004*sigma*sparsity_grad # 0.004*sqrt(1-alpha_t)
+        if cfg.DIFFUSION.GUIDANCE == "mass_preservation":
+            mass_preserv_grad = preservationMassNumericalGradientOptimal(xnoisy, device, delta_t=1.0, delta_l=1.0, eps=0.1)
+            xnoisy-= (1-alpha_t)*mass_preserv_grad
         if history:
             xnoisy_over_time.append(xnoisy)
     if not history:
