@@ -19,7 +19,6 @@ def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
     Returns:
         energy: Tensor of shape (B,) representing the computed energy for each batch element.
     """
-    x.requires_grad_(True)
     B, _, H, W, L = x.shape
     
     # Compute finite differences
@@ -42,65 +41,10 @@ def compute_energy(x: torch.Tensor, delta_t=0.5, delta_l=1.0) -> torch.Tensor:
 
     return energy
 
-def preservationMassNumericalGradient(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
-    B, C, H, W, L = x.shape
-    N = C * H * W * L  # Total elements per sample
-    grad_energy = torch.zeros_like(x)  # Gradient tensor
-
-    # Compute E(x) once
-    E_x = compute_energy(x, delta_t, delta_l)  # Shape: (B,)
-    logging.info(f'Value range of batched E_x {E_x}')
-    # Flatten spatial dimensions for efficient perturbation indexing
-    x_flat = x.view(B, N)  # Shape: (B, N)
-
-    # Generate perturbation mask: Identity matrix for each sample
-    perturb_mask = torch.eye(N, device=device).unsqueeze(0).expand(B, -1, -1)  # (B, N, N)
-
-    # Create perturbed versions of x
-    x_perturbed = x_flat.unsqueeze(1) + eps * perturb_mask  # Shape: (B, N, N)
-
-    # Reshape back to (B, C, H, W, L) for compute_energy
-    x_perturbed = x_perturbed.view(B * N, C, H, W, L)
-
-    # Compute E(x + eps) in parallel
-    E_x_perturbed = compute_energy(x_perturbed, delta_t, delta_l)  # Shape: (B * N,)
-    E_x_perturbed = E_x_perturbed.view(B, N)  # Reshape back to (B, N)
-
-    # Compute finite difference gradient
-    grad_flat = (E_x_perturbed - E_x.unsqueeze(1)) / eps  # Shape: (B, N)
-
-    # Reshape back to (B, C, H, W, L)
-    grad_energy = grad_flat.view(B, C, H, W, L)
-
-    return grad_energy
-
-def preservationMassNumericalGradient_base(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
-    B, C, H, W, L = x.shape
-    grad_energy = torch.zeros_like(x)  # Store gradients
-
-    # Compute E(x)
-    E_x = compute_energy(x, delta_t, delta_l)
-    logging.info(f'Value range of batched E_x {E_x}')
-
-    # Loop through each voxel
-    for b in range(B):
-        for c in range(C):
-            for i in range(H):
-                for j in range(W):
-                    for t in range(L):
-                        # Perturb x[b, c, i, j, t] by eps
-                        x_perturbed = x.clone()
-                        x_perturbed[b, c, i, j, t] += eps
-
-                        # Compute E(x + eps)
-                        E_x_perturbed = compute_energy(x_perturbed, delta_t, delta_l)
-
-                        # Compute finite difference approximation of gradient
-                        grad_energy[b, c, i, j, t] = (E_x_perturbed[b] - E_x[b]) / eps
-
-    return grad_energy
-
 def preservationMassNumericalGradientOptimal(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
+    """
+    Compute the gradient of energy from x tensor
+    """
     B, C, H, W, L = x.shape
     grad_energy = torch.zeros_like(x)  # Store gradients
 
@@ -122,14 +66,5 @@ def preservationMassNumericalGradientOptimal(x, device, delta_t=0.5, delta_l=1.0
 
         # Compute finite difference gradient
         grad_energy.view(B, N)[:, idx] = (E_x_perturbed - E_x) / eps
-
-    return grad_energy
-
-def preservationMassNumericalGradientAutograd(x, device, delta_t=0.5, delta_l=1.0, eps=0.01) -> torch.Tensor:
-    x.requires_grad_(True)
-    energy = compute_energy(x, delta_t, delta_l)
-
-    # Compute gradient
-    grad_energy = torch.autograd.grad(energy.sum(), x, create_graph=False, retain_graph=False)[0]
 
     return grad_energy

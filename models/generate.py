@@ -3,16 +3,15 @@ import torch.nn as nn
 from tqdm import tqdm
 from models.diffusion.ddpm import DDPM
 from models.diffusion.forward import get_from_idx
-from models.guidance import sparsityGradient, preservationMassNumericalGradient, preservationMassNumericalGradient_base, preservationMassNumericalGradientOptimal, preservationMassNumericalGradientAutograd
+from models.guidance import sparsityGradient, preservationMassNumericalGradientOptimal
 
 # This is how we will use the model once trained
-@torch.inference_mode(False)
+@torch.inference_mode()
 def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:DDPM, cfg, device, nsamples, history=False):
     # Set the model in evaluation mode
     denoiser_model.eval()
     # Noise from a normal distribution
     xnoisy = torch.randn((nsamples, cfg.MACROPROPS.MPROPS_COUNT, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.FUTURE_LEN), device=device)
-    xnoisy.requires_grad_(True)  # Enable autograd tracking
     xnoisy_over_time = [xnoisy]
     # Now, to reverse the diffusion process, use a sequence of denoising steps
     for t in tqdm(iterable=reversed(range(0, backward_sampler.timesteps)),
@@ -28,9 +27,7 @@ def generate_ddpm(denoiser_model:nn.Module, past:torch.Tensor, backward_sampler:
             sparsity_grad = sparsityGradient(xnoisy,cfg, device)
             xnoisy-= 0.004*sigma*sparsity_grad # 0.004*sqrt(1-alpha_t)
         if cfg.DIFFUSION.GUIDANCE == "mass_preservation":
-            #mass_preserv_grad = preservationMassNumericalGradient(xnoisy, device, cfg.MACROPROPS.TIME_RES, cfg.MACROPROPS.DX*cfg.MACROPROPS.DY)
-            #mass_preserv_grad = preservationMassNumericalGradientOptimal(xnoisy, device, delta_t=1.0, delta_l=1.0, eps=0.1)
-            mass_preserv_grad = preservationMassNumericalGradientAutograd(xnoisy, device, delta_t=1.0, delta_l=1.0, eps=0.1)
+            mass_preserv_grad = preservationMassNumericalGradientOptimal(xnoisy, device, delta_t=1.0, delta_l=1.0, eps=0.1)
             xnoisy-= (1-alpha_t)*mass_preserv_grad
         if history:
             xnoisy_over_time.append(xnoisy)
