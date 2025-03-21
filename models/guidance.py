@@ -50,7 +50,7 @@ def preservationMassNumericalGradientOptimal(x, device, delta_t=0.5, delta_l=1.0
 
     # Compute E(x)
     E_x = compute_energy(x, delta_t, delta_l)
-    logging.info(f'Value range of batched E_x {E_x}')
+    #logging.info(f'Value range of batched E_x {E_x}')
 
     # Flatten spatial dimensions
     N = C * H * W * L
