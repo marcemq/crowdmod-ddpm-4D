@@ -1,3 +1,4 @@
+import logging
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -139,4 +140,31 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
         # Save each sequence as a separate GIF
         gif_name = f"{cfg.MODEL.OUTPUT_DIR}/mprops_GT_seq_{i // 2 + 1}.gif" if (i + 1) % 2 == 0 else f"{cfg.MODEL.OUTPUT_DIR}/mprops_seq_{i // 2 + 1}.gif"
         ani.save(gif_name, writer=PillowWriter(fps=2))
+        plt.close(fig)
+
+def plotDensityOverTime(seq_frames, cfg):
+    logging.info(f'Seq frame shape:{seq_frames[0].shape}')
+
+    for i in range(cfg.DIFFUSION.NSAMPLES4PLOTS * 2):
+        one_seq = seq_frames[i]
+
+        # Compute density sum over spatial dimensions for all time steps at once
+        rho_tmp = one_seq[0, :, :, :8].sum(dim=(0, 1)).cpu().numpy()  # Shape: (8,)
+
+        # Assign to prediction or ground truth based on even/odd index
+        if i % 2 == 0:
+            rho_pred = np.column_stack((np.arange(8), rho_tmp))  # Shape: (8, 2)
+            rho_gt = np.empty((0, 2))  # Empty array for consistency
+        else:
+            rho_gt = np.column_stack((np.arange(8), rho_tmp))
+            rho_pred = np.empty((0, 2))
+
+        plot_name = f"{cfg.MODEL.OUTPUT_DIR}/rho_GT_seq_{i // 2 + 1}.png" if (i + 1) % 2 == 0 else f"{cfg.MODEL.OUTPUT_DIR}/rho_seq_{i // 2 + 1}.png"
+        fig, ax = plt.subplots(figsize=(6,6))
+        ax.scatter(rho_pred[:, 0], rho_pred[:, 1], color="red", marker="o")
+        ax.scatter(rho_gt[:, 0], rho_gt[:, 1], color="green", marker="o")
+        ax.set_xlabel("Time Step")
+        ax.set_ylabel("Density ρ")
+        ax.legend()
+        fig.savefig(plot_name)
         plt.close(fig)
