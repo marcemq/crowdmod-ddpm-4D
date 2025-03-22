@@ -10,7 +10,7 @@ from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from utils.dataset import getDataset
 from utils.utils import create_directory
-from utils.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops
+from utils.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops, plotDensityOverTime
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
 
@@ -102,8 +102,8 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
             future_sample_gt_iv = random_future_samples[i]
             past_sample_iv = random_past_samples[i]
             seq_pred = torch.cat([past_sample_iv, future_sample_pred_iv], dim=3)
-            seq_frames.append(seq_pred)
             seq_gt = torch.cat([past_sample_iv, future_sample_gt_iv], dim=3)
+            seq_frames.append(seq_pred)
             seq_frames.append(seq_gt)
 
         match = re.search(r'E\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d', model_fullname)
@@ -112,6 +112,7 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
         elif plotType == "Dynamic":
             plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale)
 
+        plotDensityOverTime(seq_frames, cfg)
         break
 
 if __name__ == '__main__':

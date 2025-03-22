@@ -1,3 +1,4 @@
+import logging
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -140,3 +141,33 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
         gif_name = f"{cfg.MODEL.OUTPUT_DIR}/mprops_GT_seq_{i // 2 + 1}.gif" if (i + 1) % 2 == 0 else f"{cfg.MODEL.OUTPUT_DIR}/mprops_seq_{i // 2 + 1}.gif"
         ani.save(gif_name, writer=PillowWriter(fps=2))
         plt.close(fig)
+
+def plotDensityOverTime(seq_frames, cfg):
+    logging.info(f'Seq frame shape: {seq_frames[0].shape}')
+
+    _, _, _, L = seq_frames[0].shape  # Get sequence length dynamically
+    n_samples = cfg.DIFFUSION.NSAMPLES4PLOTS
+
+    for i in range(n_samples):
+        rho_pred = seq_frames[2 * i][0, :, :, :].sum(dim=(0, 1)).cpu().numpy()
+        rho_gt = seq_frames[2 * i + 1][0, :, :, :].sum(dim=(0, 1)).cpu().numpy()
+
+        # Create time steps
+        frames = np.arange(1, L + 1)
+
+        # Plot both in the same figure
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ax.scatter(frames[0:cfg.DATASET.PAST_LEN], rho_gt[0:cfg.DATASET.PAST_LEN], color="blue", marker="o", label="Past")
+        ax.scatter(frames[cfg.DATASET.PAST_LEN:], rho_pred[cfg.DATASET.PAST_LEN:], color="red", marker="o", label="Predicted")
+        ax.scatter(frames[cfg.DATASET.PAST_LEN:], rho_gt[cfg.DATASET.PAST_LEN:], color="green", marker="o", label="Ground Truth")
+
+        ax.set_xlabel("Frame")
+        ax.set_ylabel("Sum of density ρ")
+        ax.set_title("Sum of density over time")
+        ax.legend()
+
+        plot_name = f"{cfg.MODEL.OUTPUT_DIR}/rho_seq_{i + 1}.png"
+        fig.savefig(plot_name)
+        plt.close(fig)  # Avoid excessive memory usage
+
+    logging.info(f"Density plots saved in {cfg.MODEL.OUTPUT_DIR}")
