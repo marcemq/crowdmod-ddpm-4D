@@ -158,11 +158,12 @@ def plotDensityOverTime(seq_frames, cfg):
         # Plot both in the same figure
         fig, ax = plt.subplots(figsize=(6, 6))
         ax.scatter(timesteps[0:cfg.DATASET.PAST_LEN], rho_gt[0:cfg.DATASET.PAST_LEN], color="blue", marker="o", label="Past")
-        ax.scatter(timesteps[cfg.DATASET.PAST_LEN:], rho_pred[cfg.DATASET.PAST_LEN:], color="red", marker="o", label="Pred")
-        ax.scatter(timesteps[cfg.DATASET.PAST_LEN:], rho_gt[cfg.DATASET.PAST_LEN:], color="green", marker="o", label="GT")
+        ax.scatter(timesteps[cfg.DATASET.PAST_LEN:], rho_gt[cfg.DATASET.PAST_LEN:], color="green", marker="o", label="Ground Truth")
+        ax.scatter(timesteps[cfg.DATASET.PAST_LEN:], rho_pred[cfg.DATASET.PAST_LEN:], color="red", marker="o", label="Predicted")
 
-        ax.set_xlabel("Time Step")
-        ax.set_ylabel("Density ρ")
+        ax.set_xlabel("Frame")
+        ax.set_ylabel("Sum of density ρ")
+        ax.set_title("Sum of density over time")
         ax.legend()
 
         plot_name = f"{cfg.MODEL.OUTPUT_DIR}/rho_seq_{i + 1}.png"
