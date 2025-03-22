@@ -144,7 +144,7 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
 
 def plotDensityOverTime(seq_frames, cfg):
     logging.info(f'Seq frame shape: {seq_frames[0].shape}')
-    
+
     _, H, W, L = seq_frames[0].shape  # Get sequence length dynamically
     n_samples = cfg.DIFFUSION.NSAMPLES4PLOTS
 
@@ -157,8 +157,9 @@ def plotDensityOverTime(seq_frames, cfg):
 
         # Plot both in the same figure
         fig, ax = plt.subplots(figsize=(6, 6))
-        ax.scatter(timesteps, rho_pred, color="red", marker="o", label="Predicted")
-        ax.scatter(timesteps, rho_gt, color="green", marker="o", label="Ground Truth")
+        ax.scatter(timesteps[0:cfg.DATASET.PAST_LEN], rho_gt[0:cfg.DATASET.PAST_LEN], color="blue", marker="o", label="Past")
+        ax.scatter(timesteps[cfg.DATASET.PAST_LEN:], rho_pred[cfg.DATASET.PAST_LEN:], color="red", marker="o", label="Pred")
+        ax.scatter(timesteps[cfg.DATASET.PAST_LEN:], rho_gt[cfg.DATASET.PAST_LEN:], color="green", marker="o", label="GT")
 
         ax.set_xlabel("Time Step")
         ax.set_ylabel("Density ρ")
@@ -167,3 +168,5 @@ def plotDensityOverTime(seq_frames, cfg):
         plot_name = f"{cfg.MODEL.OUTPUT_DIR}/rho_seq_{i + 1}.png"
         fig.savefig(plot_name)
         plt.close(fig)  # Avoid excessive memory usage
+
+    logging.info(f"Density plots saved in {cfg.MODEL.OUTPUT_DIR}")
