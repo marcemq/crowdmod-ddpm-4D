@@ -143,28 +143,27 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
         plt.close(fig)
 
 def plotDensityOverTime(seq_frames, cfg):
-    logging.info(f'Seq frame shape:{seq_frames[0].shape}')
+    logging.info(f'Seq frame shape: {seq_frames[0].shape}')
+    
+    _, H, W, L = seq_frames[0].shape  # Get sequence length dynamically
+    n_samples = cfg.DIFFUSION.NSAMPLES4PLOTS
 
-    for i in range(cfg.DIFFUSION.NSAMPLES4PLOTS * 2):
-        one_seq = seq_frames[i]
+    for i in range(n_samples):
+        rho_pred = seq_frames[2 * i][0, :, :, :].sum(dim=(0, 1)).cpu().numpy()
+        rho_gt = seq_frames[2 * i + 1][0, :, :, :].sum(dim=(0, 1)).cpu().numpy()
 
-        # Compute density sum over spatial dimensions for all time steps at once
-        rho_tmp = one_seq[0, :, :, :8].sum(dim=(0, 1)).cpu().numpy()  # Shape: (8,)
+        # Create time steps
+        timesteps = np.arange(L)
 
-        # Assign to prediction or ground truth based on even/odd index
-        if i % 2 == 0:
-            rho_pred = np.column_stack((np.arange(8), rho_tmp))  # Shape: (8, 2)
-            rho_gt = np.empty((0, 2))  # Empty array for consistency
-        else:
-            rho_gt = np.column_stack((np.arange(8), rho_tmp))
-            rho_pred = np.empty((0, 2))
+        # Plot both in the same figure
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ax.scatter(timesteps, rho_pred, color="red", marker="o", label="Predicted")
+        ax.scatter(timesteps, rho_gt, color="green", marker="o", label="Ground Truth")
 
-        plot_name = f"{cfg.MODEL.OUTPUT_DIR}/rho_GT_seq_{i // 2 + 1}.png" if (i + 1) % 2 == 0 else f"{cfg.MODEL.OUTPUT_DIR}/rho_seq_{i // 2 + 1}.png"
-        fig, ax = plt.subplots(figsize=(6,6))
-        ax.scatter(rho_pred[:, 0], rho_pred[:, 1], color="red", marker="o")
-        ax.scatter(rho_gt[:, 0], rho_gt[:, 1], color="green", marker="o")
         ax.set_xlabel("Time Step")
         ax.set_ylabel("Density ρ")
         ax.legend()
+
+        plot_name = f"{cfg.MODEL.OUTPUT_DIR}/rho_seq_{i + 1}.png"
         fig.savefig(plot_name)
-        plt.close(fig)
+        plt.close(fig)  # Avoid excessive memory usage
