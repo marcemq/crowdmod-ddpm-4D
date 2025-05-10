@@ -1,8 +1,8 @@
 DATA_AGGREGATION:
-  RAW_DATA_DIR: 'datasets/ATC/rawData/'
-  AGG_DATA_DIR: 'datasets/ATC/aggData/'
+  RAW_DATA_DIR: 'datasets/HERMES-BO/rawData/'
+  AGG_DATA_DIR: 'datasets/HERMES-BO/aggData/'
 PICKLE:
-  PICKLE_DIR: 'datasets/ATC/processed/'
+  PICKLE_DIR: '/home/marcelamq/devel/macroprops-generator/datasets/HERMES-BO/processed'
   USE_PICKLE: False
 MACROPROPS:
   # Grid size
