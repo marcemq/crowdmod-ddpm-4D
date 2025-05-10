@@ -6,11 +6,11 @@ PICKLE:
   USE_PICKLE: False
 MACROPROPS:
   # Grid size
-  ROWS: 5
-  COLS: 12
+  ROWS: 10
+  COLS: 24
   # Grid resolution
-  DX: 1.0
-  DY: 1.0
+  DX: 0.5
+  DY: 0.5
   LU:
     - -6
     - 4
