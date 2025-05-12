@@ -113,6 +113,6 @@ if __name__ == '__main__':
     else:
         logging.info("Dataset not supported")
 
-    filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
+    #filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     train(cfg, filenames)
