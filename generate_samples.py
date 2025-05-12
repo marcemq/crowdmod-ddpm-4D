@@ -136,6 +136,7 @@ if __name__ == '__main__':
         filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
     else:
         logging.info("Dataset not supported")
+
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     generate_samples(cfg, filenames, plotType=args.plot_type, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, samePastSeq=args.same_past_seq)
 

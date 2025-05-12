@@ -6,7 +6,7 @@ PICKLE:
   USE_PICKLE: False
 MACROPROPS:
   # Grid size
-  ROWS: 10
+  ROWS: 12
   COLS: 24
   # Grid resolution
   DX: 0.5
