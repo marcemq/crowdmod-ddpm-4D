@@ -190,6 +190,13 @@ if __name__ == '__main__':
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
     filenames = cfg.DATA_LIST
-    filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
+
+    if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
+        filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
+    elif cfg.DATASET.NAME in ["HERMES-BO"]:
+        filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
+    else:
+        logging.info("Dataset not supported")
+
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     generate_metrics(cfg, filenames, chunkRepdPastSeq=args.chunk_repd_past_seq, metric=args.metric, batches_to_use=args.batches_to_use)
