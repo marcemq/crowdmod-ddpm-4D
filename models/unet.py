@@ -139,37 +139,25 @@ class MacropropsDenoiser(nn.Module):
             past_encodings = None
 
         h    = self.first(x)
-        print(f'h first shape: {h.shape}')
         outs = [h]
 
         # Encoder
-        el = 0
         for layer in self.encoder_blocks:
             h = layer(h, time_emb, past_encodings)
             outs.append(h)
-            print(f'{"\t" * el}Encoder level {el} h shape: {h.shape}')
-            el += 1
 
         # Bottleneck
-        b = 0
         for layer in self.bottleneck_blocks:
             h = layer(h, time_emb, past_encodings)
-            print(f'{"\t" * b}Bottleneck level {el} h shape: {h.shape}')
-            b += 1
 
         # Decoder
-        dl=0
         for layer in self.decoder_blocks:
             if isinstance(layer, ResnetBlock):
                 out = outs.pop()
                 h = torch.cat([h, out], dim=1)
-                print(f'{"\t" * b}Resnet instance level {dl} h shape: {h.shape}')
             h = layer(h, time_emb, past_encodings)
-            print(f'{"\t" * dl}Decoder level {dl} h shape: {h.shape}')
-            d += 1
 
         h = self.final(h)
-        print(f'h final shape: {h.shape}')
 
         if self.condition == "Past":
             h = h[:,:,:,:,past_len_frames:]
