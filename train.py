@@ -15,7 +15,7 @@ import gc,logging,os
 
 from matplotlib import pyplot as plt
 from utils.myparser import getYamlConfig
-from utils.dataset import getDataset
+from utils.dataset import getDataset, getClassicDataset
 from utils.model_details import count_trainable_params
 from models.diffusion.forward import ForwardSampler
 from models.unet import MacropropsDenoiser
@@ -42,8 +42,12 @@ def train(cfg, filenames, show_losses_plot=False):
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get batched datasets ready to iterate
-    batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
+    if cfg.DATASET.CLASSIC_SPLIT:
+        batched_train_data, _ = getClassicDataset(cfg, filenames)
+    else:
+        batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
 
+    logging.info(f"Batched Train dataset loaded.")
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
                                   output_channels = cfg.MACROPROPS.MPROPS_COUNT,
@@ -56,7 +60,7 @@ def train(cfg, filenames, show_losses_plot=False):
                                   condition               = cfg.MODEL.CONDITION)
     denoiser.to(device)
     trainable_params = count_trainable_params(denoiser)
-    print(f"Total trainable parameters at denoiser:{trainable_params}")
+    logging.info(f"Total trainable parameters at denoiser:{trainable_params}")
     # The optimizer (Adam with weight decay)
     optimizer = optim.Adam(denoiser.parameters(),lr=cfg.TRAIN.SOLVER.LR, betas=cfg.TRAIN.SOLVER.BETAS,weight_decay=cfg.TRAIN.SOLVER.WEIGHT_DECAY)
 

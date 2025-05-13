@@ -9,7 +9,7 @@ import logging
 from models.generate import generate_ddpm, generate_ddim
 
 from utils.myparser import getYamlConfig
-from utils.dataset import getDataset
+from utils.dataset import getDataset, getClassicDataset
 from utils.utils import create_directory
 from utils.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
 from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics, energy_mprops_seq
@@ -88,7 +88,12 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get batched datasets ready to iterate
-    _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
+    if cfg.DATASET.CLASSIC_SPLIT:
+        _, batched_test_data = getClassicDataset(cfg, filenames)
+    else:
+        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
+
+    logging.info(f"Batched Test dataset loaded.")
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
                                   output_channels = cfg.MACROPROPS.MPROPS_COUNT,
@@ -101,7 +106,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
                                   condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
-    print(f'model full name:{model_fullname}')
+    logging.info(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
     match = re.search(r'E\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d', model_fullname)
@@ -115,8 +120,8 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     metrics_data_dict, metrics_header_dict = get_metrics_dicts()
     # cicle over batched test data
     for batch in batched_test_data:
-        print("===" * 20)
-        print(f'Computing metrics on batch:{count_batch+1}')
+        logging.info("===" * 20)
+        logging.info(f'Computing metrics on batch:{count_batch+1}')
         past_test, future_test, stats = batch
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
@@ -137,10 +142,10 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
                 logging.info(f'L1 norm {l1:.2f} using {cfg.DIFFUSION.GUIDANCE} guidance')
         elif cfg.DIFFUSION.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.DIFFUSION.DDIM_DIVIDER)
-            print(f'taus:{taus}')
+            logging.info(f'taus:{taus}')
             x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
         else:
-            print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
+            logging.info(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
 
         future_samples_pred = x
         pred_seq_list, gt_seq_list = [], []
