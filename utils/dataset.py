@@ -158,3 +158,30 @@ def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False, test_data
         batched_test_data  = DataLoader(test_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
 
     return batched_train_data, batched_val_data, batched_test_data
+
+def getClassicDataset(cfg, filenames, split_ratio=0.8):
+    BATCH_SIZE = cfg.DATASET.BATCH_SIZE
+
+    # Load all sequences from all filenames
+    logging.info("Loading all macroprops sequences (no file partition)...")
+    all_data, _ = getMacropropsFromFilenames(filenames, cfg.MACROPROPS.MPROPS_COUNT)
+
+    logging.info(f"Total number of sequences loaded: {len(all_data)}")
+
+    # Torch dataset
+    dataset = MacropropsDataset(all_data, cfg, transform=CustomTransform())
+
+    # Calculate split sizes
+    train_len = int(split_ratio * len(dataset))
+    test_len = len(dataset) - train_len
+
+    # Shuffle & split
+    train_dataset, test_dataset = random_split(dataset, [train_len, test_len])
+
+    # Form DataLoaders
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, **cfg.DATASET.params)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, **cfg.DATASET.params)
+
+    logging.info(f"Train split: {len(train_dataset)}, Test split: {len(test_dataset)}")
+
+    return train_loader, test_loader

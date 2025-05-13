@@ -9,7 +9,7 @@ import logging
 from models.generate import generate_ddpm, generate_ddim
 
 from utils.myparser import getYamlConfig
-from utils.dataset import getDataset
+from utils.dataset import getDataset, getClassicDataset
 from utils.utils import create_directory
 from utils.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
 from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics, energy_mprops_seq
@@ -88,7 +88,11 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get batched datasets ready to iterate
-    _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
+    if cfg.DATASET.CLASSIC_SPLIT:
+        _, batched_test_data = getClassicDataset(cfg, filenames)
+    else:
+        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
+
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
                                   output_channels = cfg.MACROPROPS.MPROPS_COUNT,

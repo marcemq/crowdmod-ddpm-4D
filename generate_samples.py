@@ -8,7 +8,7 @@ from models.generate import generate_ddpm, generate_ddim
 
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
-from utils.dataset import getDataset
+from utils.dataset import getDataset, getClassicDataset
 from utils.utils import create_directory
 from utils.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops, plotDensityOverTime
 from utils.myparser import getYamlConfig
@@ -43,7 +43,10 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get batched datasets ready to iterate
-    _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
+    if cfg.DATASET.CLASSIC_SPLIT:
+        _, batched_test_data = getClassicDataset(cfg, filenames)
+    else:
+        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
 
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,

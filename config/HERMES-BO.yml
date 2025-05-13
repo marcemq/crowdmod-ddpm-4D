@@ -32,6 +32,7 @@ DATASET:
   params:
     shuffle: True
     num_workers: 6
+  CLASSIC_SPLIT: True
 MODEL:
   CONDITION: "Past"
   CONDITION_HANDLING: "embed"
