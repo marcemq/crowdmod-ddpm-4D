@@ -166,7 +166,7 @@ def getClassicDataset(cfg, filenames, split_ratio=0.8):
     logging.info("Loading all macroprops sequences (no file partition)...")
     all_data, _ = getMacropropsFromFilenames(filenames, cfg.MACROPROPS.MPROPS_COUNT)
 
-    logging.info(f"Total number of sequences loaded: {len(all_data)}")
+    logging.info(f"Total number of sequences loaded: {len(all_data)} of shape {all_data.shape}")
 
     # Torch dataset
     dataset = MacropropsDataset(all_data, cfg, transform=CustomTransform())

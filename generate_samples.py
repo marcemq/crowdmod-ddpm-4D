@@ -48,6 +48,7 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
     else:
         _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
 
+    logging.info(f"Batched Test dataset loaded.")
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
                                   output_channels = cfg.MACROPROPS.MPROPS_COUNT,
