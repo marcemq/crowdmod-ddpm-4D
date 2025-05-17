@@ -93,7 +93,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
         _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames4Test":
-        _, _, batched_test_data = getDataset4Test(cfg, filenames)
+        batched_test_data = getDataset4Test(cfg, filenames)
 
     logging.info(f"Batched Test dataset loaded.")
     # Instanciate the UNet for the reverse diffusion
