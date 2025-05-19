@@ -42,9 +42,9 @@ def train(cfg, filenames, show_losses_plot=False):
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Get batched datasets ready to iterate
-    if cfg.DATASET.CLASSIC_SPLIT:
+    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
         batched_train_data, _ = getClassicDataset(cfg, filenames)
-    else:
+    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
         batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
 
     logging.info(f"Batched Train dataset loaded.")

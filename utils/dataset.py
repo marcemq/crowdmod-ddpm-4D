@@ -159,6 +159,21 @@ def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False, test_data
 
     return batched_train_data, batched_val_data, batched_test_data
 
+def getDataset4Test(cfg, filenames):
+    BATCH_SIZE = cfg.DATASET.BATCH_SIZE
+    # Load all sequences from all filenames
+    logging.info("Loading all macroprops sequences (no file partition)...")
+    all_data, _ = getMacropropsFromFilenames(filenames, cfg.MACROPROPS.MPROPS_COUNT)
+    logging.info(f"Total number of sequences loaded for test: {len(all_data)} of shape {all_data.shape}")
+
+    # Torch dataset
+    test_dataset = MacropropsDataset(all_data, cfg, transform=CustomTransform())
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, **cfg.DATASET.params)
+
+    logging.info(f"Test sequences: {len(test_dataset)}")
+
+    return test_loader
+
 def getClassicDataset(cfg, filenames, split_ratio=0.8):
     BATCH_SIZE = cfg.DATASET.BATCH_SIZE
 

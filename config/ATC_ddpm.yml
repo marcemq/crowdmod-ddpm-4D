@@ -33,7 +33,7 @@ DATASET:
   params:
     shuffle: True
     num_workers: 6
-  CLASSIC_SPLIT: False
+  DATASET_TYPE: 'ByFilenames'    # Available options: ByFilenames|BySplitRatio|ByFilenames4Test
 MODEL:
   CONDITION: "Past"
   CONDITION_HANDLING: "embed"
