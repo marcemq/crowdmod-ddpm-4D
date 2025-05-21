@@ -185,7 +185,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
             metrics_data_dict['ENERGY'].append(mprops_energy)
             metrics_data_dict['MIN-ENERGY'].append(mprops_min_energy)
         if metric in ['DENSITY', 'ALL']:
-            mprops_density, mprops_max_density = density_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.MACROPROPS.MPROPS_COUNT)
+            mprops_density, mprops_max_density = density_mprops_seq(gt_seq_list, pred_seq_list, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
             metrics_data_dict['DENSITY'].append(mprops_density)
             metrics_data_dict['MAX-DENSITY'].append(mprops_max_density)
         count_batch += 1
