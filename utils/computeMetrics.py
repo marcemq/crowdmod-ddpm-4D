@@ -157,8 +157,11 @@ def re_density_mprops_seq(gt_seq_list, pred_seq_list, chunkRepdPastSeq, eps):
         one_pred_seq = pred_seq_list[i].cpu().numpy()
         one_gt_seq = gt_seq_list[i].cpu().numpy()
 
-        pred_total_density = one_pred_seq.sum(axis=(1, 2))
-        gt_total_density = one_gt_seq.sum(axis=(1, 2))
+        density_pred = one_pred_seq[0]  # shape: (R, C, L)
+        density_gt   = one_gt_seq[0]    # shape: (R, C, L)
+
+        pred_total_density = density_pred.sum(axis=(0, 1))
+        gt_total_density = density_gt.sum(axis=(0, 1))
         print(f'pred_total_density shape:{pred_total_density.shape}')
         print(f'gt_total_density shape:{gt_total_density.shape}')
 
