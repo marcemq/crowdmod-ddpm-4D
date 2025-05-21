@@ -184,7 +184,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
             mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
             metrics_data_dict['ENERGY'].append(mprops_energy)
             metrics_data_dict['MIN-ENERGY'].append(mprops_min_energy)
-        if metric in ['DENSITY', 'ALL']:
+        if metric in ['RE_DENSITY', 'ALL']:
             mprops_re_density, mprops_min_re_density = re_density_mprops_seq(gt_seq_list, pred_seq_list, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
             metrics_data_dict['RE_DENSITY'].append(mprops_re_density)
             metrics_data_dict['MIN_RE_DENSITY'].append(mprops_min_re_density)
@@ -199,7 +199,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to generate metrics from a trained model.")
     parser.add_argument('--chunk-repd-past-seq', type=int, default=None, help='Chunk of repeteaded past sequences to use when predict.')
-    parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute, options: PSNR|SSIM|MOTION_FEAT_BHATT|ENERGY|DENSITY|ALL')
+    parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute, options: PSNR|SSIM|MOTION_FEAT_BHATT|ENERGY|RE_DENSITY|ALL')
     parser.add_argument('--batches-to-use', type=int, default=1, help='Total of batches to use to compute metrics.')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
