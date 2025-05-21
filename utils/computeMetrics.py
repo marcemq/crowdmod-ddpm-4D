@@ -147,6 +147,31 @@ def energy_mprops_seq(gt_seq_list, pred_seq_list, mprops_factor, chunkRepdPastSe
 
     return mprops_nsamples_energy, mprops_min_energy
 
+def density_mprops_seq(gt_seq_list, pred_seq_list, chunkRepdPastSeq, eps):
+    nsamples = len(pred_seq_list)
+    _, _, _, pred_len = pred_seq_list[0].shape
+    mprops_nsamples_density = np.zeros((nsamples, pred_len))
+    mprops_max_density = np.zeros((nsamples//chunkRepdPastSeq, pred_len))
+
+    for i in range(nsamples):
+        one_pred_seq = pred_seq_list[i].cpu().numpy()
+        one_gt_seq = gt_seq_list[i].cpu().numpy()
+
+        pred_total_density = one_pred_seq.sum(axis=(1, 2))
+        gt_total_density = one_gt_seq.sum(axis=(1, 2))
+
+        rel_error = np.abs(pred_total_density - gt_total_density) / (gt_total_density + eps)
+        print(f'Relative error shape:{rel_error.shape}')
+        mprops_nsamples_density[i] = rel_error
+
+    # Compute the MAX DENSITY by repeteaded seqs on each macroprops
+    for i in range(0, nsamples, chunkRepdPastSeq):
+        density_chunk = mprops_nsamples_density[i:i+chunkRepdPastSeq]
+        max_rel_errors = density_chunk.max(axis=0)
+        mprops_max_density[i // chunkRepdPastSeq] = max_rel_errors
+
+    return mprops_nsamples_density, mprops_max_density
+
 def _save_mag_rho_data(all_mag_rho_vol, nameToUse):
     file_name = f"metrics/all_mag_rho_{nameToUse}.csv"
     np.savetxt(file_name, all_mag_rho_vol, delimiter=",", comments="")
