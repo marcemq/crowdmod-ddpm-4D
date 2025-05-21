@@ -53,7 +53,7 @@ def save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title):
     if len(metrics_df_dict['MIN-ENERGY']) != 0:
         merge_and_plot_boxplot(df_max=metrics_df_dict['MIN-ENERGY'], df=metrics_df_dict['ENERGY'], title=f"ENERGY and MIN-ENERGY of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_ENERGY.png", ytick_step=None, prefix='min-')
     if len(metrics_df_dict['MIN_RE_DENSITY']) != 0:
-        merge_and_plot_boxplot(df_max=metrics_df_dict['MIN_RE_DENSITY'], df=metrics_df_dict['RE_DENSITY'], title=f"Relative DENSITY and MIN_RE_DENSITY of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_RE_DENSITY.png", ytick_step=5)
+        merge_and_plot_boxplot(df_max=metrics_df_dict['MIN_RE_DENSITY'], df=metrics_df_dict['RE_DENSITY'], title=f"Relative DENSITY and MIN_RE_DENSITY of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_RE_DENSITY.png", ytick_step=2, prefix='min-')
 
 def get_metrics_dicts():
     metrics_data_dict = {"PSNR" : [],
