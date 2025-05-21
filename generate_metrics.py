@@ -12,7 +12,7 @@ from utils.myparser import getYamlConfig
 from utils.dataset import getDataset, getClassicDataset, getDataset4Test
 from utils.utils import create_directory
 from utils.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
-from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics, energy_mprops_seq
+from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics, energy_mprops_seq, re_density_mprops_seq
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
@@ -52,6 +52,8 @@ def save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title):
         createBoxPlot_bhatt(metrics_df_dict['MOTION_FEAT_BHATT_COEF'], metrics_df_dict['MOTION_FEAT_BHATT_DIST'], title=f"BHATT of Motion feature of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_BHATT.png")
     if len(metrics_df_dict['MIN-ENERGY']) != 0:
         merge_and_plot_boxplot(df_max=metrics_df_dict['MIN-ENERGY'], df=metrics_df_dict['ENERGY'], title=f"ENERGY and MIN-ENERGY of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_ENERGY.png", ytick_step=None, prefix='min-')
+    if len(metrics_df_dict['MIN_RE_DENSITY']) != 0:
+        merge_and_plot_boxplot(df_max=metrics_df_dict['MIN_RE_DENSITY'], df=metrics_df_dict['RE_DENSITY'], title=f"Relative DENSITY and MIN_RE_DENSITY of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_RE_DENSITY.png", ytick_step=2, prefix='min-')
 
 def get_metrics_dicts():
     metrics_data_dict = {"PSNR" : [],
@@ -62,7 +64,9 @@ def get_metrics_dicts():
                     "MOTION_FEAT_BHATT_DIST" : [],
                     "MOTION_FEAT_BHATT_COEF" : [],
                     "ENERGY" : [],
-                    "MIN-ENERGY" : []
+                    "MIN-ENERGY" : [],
+                    "RE_DENSITY" : [],
+                    "MIN_RE_DENSITY" : []
                     }
     metrics_header_dict = {"PSNR" : "rho,vx,vy",
                     "MAX-PSNR" : "rho,vx,vy",
@@ -72,7 +76,9 @@ def get_metrics_dicts():
                     "MOTION_FEAT_BHATT_DIST" : "BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based",
                     "MOTION_FEAT_BHATT_COEF" : "BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based",
                     "ENERGY" : "GT,PRED",
-                    "MIN-ENERGY" : "GT,PRED"
+                    "MIN-ENERGY" : "GT,PRED",
+                    "RE_DENSITY" : "re_f6,re_f7,re_f8",
+                    "MIN_RE_DENSITY" : "re_f6,re_f7,re_f8"
                     }
     return metrics_data_dict, metrics_header_dict
 
@@ -178,6 +184,10 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
             mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
             metrics_data_dict['ENERGY'].append(mprops_energy)
             metrics_data_dict['MIN-ENERGY'].append(mprops_min_energy)
+        if metric in ['RE_DENSITY', 'ALL']:
+            mprops_re_density, mprops_min_re_density = re_density_mprops_seq(gt_seq_list, pred_seq_list, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+            metrics_data_dict['RE_DENSITY'].append(mprops_re_density)
+            metrics_data_dict['MIN_RE_DENSITY'].append(mprops_min_re_density)
         count_batch += 1
         if count_batch == batches_to_use:
             break
@@ -189,7 +199,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to generate metrics from a trained model.")
     parser.add_argument('--chunk-repd-past-seq', type=int, default=None, help='Chunk of repeteaded past sequences to use when predict.')
-    parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute, options: PSNR|SSIM|MOTION_FEAT_BHATT|ENERGY|ALL')
+    parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute, options: PSNR|SSIM|MOTION_FEAT_BHATT|ENERGY|RE_DENSITY|ALL')
     parser.add_argument('--batches-to-use', type=int, default=1, help='Total of batches to use to compute metrics.')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
