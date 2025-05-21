@@ -159,6 +159,8 @@ def re_density_mprops_seq(gt_seq_list, pred_seq_list, chunkRepdPastSeq, eps):
 
         pred_total_density = one_pred_seq.sum(axis=(1, 2))
         gt_total_density = one_gt_seq.sum(axis=(1, 2))
+        print(f'pred_total_density shape:{pred_total_density.shape}')
+        print(f'gt_total_density shape:{gt_total_density.shape}')
 
         rel_error = np.abs(pred_total_density - gt_total_density) / (gt_total_density + eps)
         print(f'Relative error shape:{rel_error.shape}')
