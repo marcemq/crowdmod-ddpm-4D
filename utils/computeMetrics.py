@@ -162,11 +162,8 @@ def re_density_mprops_seq(gt_seq_list, pred_seq_list, chunkRepdPastSeq, eps):
 
         pred_total_density = density_pred.sum(axis=(0, 1))
         gt_total_density = density_gt.sum(axis=(0, 1))
-        print(f'pred_total_density shape:{pred_total_density.shape}')
-        print(f'gt_total_density shape:{gt_total_density.shape}')
 
         rel_error = np.abs(pred_total_density - gt_total_density) / (gt_total_density + eps)
-        print(f'Relative error shape:{rel_error.shape}')
         mprops_nsamples_re_density[i] = rel_error
 
     # Compute the MAX DENSITY by repeteaded seqs on each macroprops
