@@ -20,6 +20,54 @@ def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
         plt.show()
     plt.close()
 
+def createBoxPlotWithOutlierInfo(df, title, columns_to_plot, save_path=None, ytick_step=2):
+    data = [df[col].dropna().values for col in columns_to_plot]  # Get data as list of arrays
+    fig, ax = plt.subplots()
+
+    # Plot boxplot without fliers (outliers)
+    box = ax.boxplot(data, patch_artist=True, showfliers=False)
+
+    outlier_counts = []
+
+    # Manually compute outliers per column for annotation
+    for i, col_data in enumerate(data):
+        q1 = np.percentile(col_data, 25)
+        q3 = np.percentile(col_data, 75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        outliers = col_data[(col_data < lower_bound) | (col_data > upper_bound)]
+        outlier_counts.append(len(outliers))
+
+        # Add marker and text
+        ax.text(i + 1, upper_bound, f"{len(outliers)} outliers", ha='center', va='bottom', fontsize=9, color='red', rotation=90)
+
+    # Title and labels
+    ax.set_title(title, fontsize=16)
+    ax.set_ylabel("Values")
+    ax.set_xticks(range(1, len(columns_to_plot)+1))
+    ax.set_xticklabels(columns_to_plot, rotation=45)
+
+    # Hide spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    # Set consistent y-axis ticks
+    y_min = df[columns_to_plot].min().min()
+    y_max = df[columns_to_plot].max().max()
+    if ytick_step is not None:
+        yticks = np.arange(y_min // ytick_step * ytick_step, (y_max // ytick_step + 1) * ytick_step, ytick_step)
+        ax.set_yticks(yticks)
+
+    # Save or show
+    if save_path:
+        plt.savefig(save_path, bbox_inches='tight')
+        print(f"Boxplot saved to {save_path}")
+    else:
+        plt.show()
+
+    plt.close()
+
 def createBoxPlot_bhatt(df1, df2, title, save_path=None):
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     df1_cols = df1.columns.tolist()
@@ -45,12 +93,15 @@ def createBoxPlot_bhatt(df1, df2, title, save_path=None):
         plt.show()
     plt.close()
 
-def merge_and_plot_boxplot(df_max, df, title, save_path, ytick_step, prefix='max-'):
-  df_max = df_max.add_prefix(prefix)
-  # Concatenate both DataFrames side by side
-  overall_df = pd.concat([df, df_max], axis=1)
-  # Get interleaved column names to reorder the columns
-  reordered_columns = [item for pair in zip(df.columns, df_max.columns) for item in pair]
-  # Reorder the DataFrame with the interleaved columns
-  overall_df = overall_df[reordered_columns]
-  createBoxPlot(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path, ytick_step=ytick_step)
+def merge_and_plot_boxplot(df_max, df, title, save_path, ytick_step, prefix='max-', outliersFlag=False):
+    df_max = df_max.add_prefix(prefix)
+    # Concatenate both DataFrames side by side
+    overall_df = pd.concat([df, df_max], axis=1)
+    # Get interleaved column names to reorder the columns
+    reordered_columns = [item for pair in zip(df.columns, df_max.columns) for item in pair]
+    # Reorder the DataFrame with the interleaved columns
+    overall_df = overall_df[reordered_columns]
+    if outliersFlag:
+        createBoxPlotWithOutlierInfo(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path, ytick_step=ytick_step)
+    else:
+        createBoxPlot(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path, ytick_step=ytick_step)
