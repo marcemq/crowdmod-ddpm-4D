@@ -21,42 +21,16 @@ def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
     plt.close()
 
 def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5):
-    fig, (ax_main, ax_outlier) = plt.subplots(2, 1, sharex=True, figsize=(12, 6), gridspec_kw={'height_ratios': [4, 1], 'hspace': 0.05})
-    y_pos_text_outliers = 2.5
     data = [df[col].dropna().values for col in columns_to_plot]
+    y_text_pos = 2.5
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bp = ax.boxplot(data, showfliers=True)
 
-    # Main boxplot (limited y)
-    bp_main = ax_main.boxplot(data, showfliers=True)
-    ax_main.set_ylim(-0.1, y_limit)
-    ax_main.set_ylabel("Values")
-
-    # Outlier boxplot (zoomed out)
-    bp_outlier = ax_outlier.boxplot(data, showfliers=True)
-    ax_outlier.set_ylim(0, df[columns_to_plot].max().max() * 1.01)
-
-    for box in bp_main['boxes']:
-        box.set(color='lightblue', linewidth=1)
-
-    for median in bp_main['medians']:
-        median.set(color='lightgreen', linewidth=1)
-
-    # Set x-ticks
-    ax_outlier.set_xticks(np.arange(1, len(columns_to_plot) + 1))
-    ax_outlier.set_xticklabels(columns_to_plot)
-
-    # Remove spines
-    ax_main.spines['bottom'].set_visible(False)
-    ax_outlier.spines['top'].set_visible(False)
-
-    # Add diagonal lines for broken axis
-    #d = 0.015  # size of diagonal lines
-    #kwargs = dict(transform=ax_main.transAxes, color='k', clip_on=False)
-    #ax_main.plot((-d, +d), (-d, +d), **kwargs)
-    #ax_main.plot((1 - d, 1 + d), (-d, +d), **kwargs)
-
-    #kwargs.update(transform=ax_outlier.transAxes)
-    #ax_outlier.plot((-d, +d), (1 - d, 1 + d), **kwargs)
-    #ax_outlier.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)
+    ax.set_ylim(0, y_limit)
+    ax.set_ylabel("Values")
+    ax.set_title(title)
+    ax.set_xticks(np.arange(1, len(columns_to_plot) + 1))
+    ax.set_xticklabels(columns_to_plot, rotation=0)
 
     # Annotate outlier counts
     for i, col in enumerate(columns_to_plot):
@@ -65,10 +39,10 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5
         q3 = col_data.quantile(0.75)
         iqr = q3 - q1
         upper_bound = q3 + 1.5 * iqr
-        outliers = (col_data > upper_bound).sum()
-        ax_main.text(i + 1.1, y_pos_text_outliers, f"{outliers} outliers", ha='center', va='bottom', fontsize=9, color='red', rotation=90)
+        outlier_count = (col_data > upper_bound).sum()
 
-    ax_main.set_title(title, fontsize=14)
+        # Position text a little to the right of the box
+        ax.text(i + 1.1, y_text_pos, f"{outlier_count} outliers", ha='left', va='top', fontsize=9, rotation=90, color='red')
 
     if save_path:
         plt.savefig(save_path, bbox_inches='tight')
