@@ -20,7 +20,7 @@ def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
         plt.show()
     plt.close()
 
-def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=4.5):
+def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=4):
     data = [df[col].dropna().values for col in columns_to_plot]
     y_text_pos = 2.5
     fig, ax = plt.subplots(figsize=(12, 6))
