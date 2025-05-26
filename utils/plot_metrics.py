@@ -32,7 +32,7 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5
 
     # Outlier boxplot (zoomed out)
     bp_outlier = ax_outlier.boxplot(data, showfliers=True)
-    ax_outlier.set_ylim(0, df[columns_to_plot].max().max() * 0.9, df[columns_to_plot].max().max() * 1.01)
+    ax_outlier.set_ylim(0, df[columns_to_plot].max().max() * 1.01)
 
     for box in bp_main['boxes']:
         box.set(color='lightblue', linewidth=1)
@@ -49,14 +49,14 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5
     ax_outlier.spines['top'].set_visible(False)
 
     # Add diagonal lines for broken axis
-    d = 0.015  # size of diagonal lines
-    kwargs = dict(transform=ax_main.transAxes, color='k', clip_on=False)
-    ax_main.plot((-d, +d), (-d, +d), **kwargs)
-    ax_main.plot((1 - d, 1 + d), (-d, +d), **kwargs)
+    #d = 0.015  # size of diagonal lines
+    #kwargs = dict(transform=ax_main.transAxes, color='k', clip_on=False)
+    #ax_main.plot((-d, +d), (-d, +d), **kwargs)
+    #ax_main.plot((1 - d, 1 + d), (-d, +d), **kwargs)
 
-    kwargs.update(transform=ax_outlier.transAxes)
-    ax_outlier.plot((-d, +d), (1 - d, 1 + d), **kwargs)
-    ax_outlier.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)
+    #kwargs.update(transform=ax_outlier.transAxes)
+    #ax_outlier.plot((-d, +d), (1 - d, 1 + d), **kwargs)
+    #ax_outlier.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)
 
     # Annotate outlier counts
     for i, col in enumerate(columns_to_plot):
