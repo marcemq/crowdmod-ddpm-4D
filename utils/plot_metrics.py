@@ -22,18 +22,17 @@ def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
 
 def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5):
     fig, (ax_main, ax_outlier) = plt.subplots(2, 1, sharex=True, figsize=(12, 6), gridspec_kw={'height_ratios': [4, 1], 'hspace': 0.05})
-    
+    y_pos_text_outliers = 2.5
     data = [df[col].dropna().values for col in columns_to_plot]
 
     # Main boxplot (limited y)
-    bp_main = ax_main.boxplot(data, patch_artist=True, showfliers=True)
+    bp_main = ax_main.boxplot(data, showfliers=True)
     ax_main.set_ylim(-0.1, y_limit)
     ax_main.set_ylabel("Values")
 
     # Outlier boxplot (zoomed out)
-    bp_outlier = ax_outlier.boxplot(data, patch_artist=True, showfliers=True)
+    bp_outlier = ax_outlier.boxplot(data, showfliers=True)
     ax_outlier.set_ylim(df[columns_to_plot].max().max() * 0.9, df[columns_to_plot].max().max() * 1.01)
-    #ax_outlier.set_yticks([])
 
     # Set x-ticks
     ax_outlier.set_xticks(np.arange(1, len(columns_to_plot) + 1))
@@ -61,8 +60,7 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5
         iqr = q3 - q1
         upper_bound = q3 + 1.5 * iqr
         outliers = (col_data > upper_bound).sum()
-        y_pos = outliers.min() + (outliers.max() - outliers.min()) * 0.3
-        ax_main.text(i + 1, min(y_pos, 2.5), f"{outliers} outliers", ha='center', va='bottom', fontsize=9, color='red', rotation=90)
+        ax_main.text(i + 1.1, y_pos_text_outliers, f"{outliers} outliers", ha='center', va='bottom', fontsize=9, color='red', rotation=90)
 
     ax_main.set_title(title, fontsize=14)
 
