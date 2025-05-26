@@ -25,7 +25,8 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=4
     y_text_pos = 2.5
     fig, ax = plt.subplots(figsize=(9, 6))
     bp = ax.boxplot(data, showfliers=True)
-    plt.gca().spines[['top', 'right']].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
     ax.set_ylim(0, y_limit)
     ax.set_ylabel("Values")
