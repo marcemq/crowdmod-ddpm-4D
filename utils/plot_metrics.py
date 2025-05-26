@@ -23,7 +23,7 @@ def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
 def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=4):
     data = [df[col].dropna().values for col in columns_to_plot]
     y_text_pos = 2.5
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(9, 6))
     bp = ax.boxplot(data, showfliers=True)
 
     ax.set_ylim(0, y_limit)
@@ -31,6 +31,9 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=4
     ax.set_title(title)
     ax.set_xticks(np.arange(1, len(columns_to_plot) + 1))
     ax.set_xticklabels(columns_to_plot, rotation=0)
+
+    # Add horizontal grid lines like pandas
+    ax.yaxis.grid(True, linestyle='--', alpha=0.7)
 
     # Pandas-style color settings
     line_color = '#1f77b4'       # Light blue (default pandas box and whisker)
