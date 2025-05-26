@@ -33,7 +33,8 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=4
     ax.set_xticklabels(columns_to_plot, rotation=0)
 
     # Add horizontal grid lines like pandas
-    ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+    ax.yaxis.grid(True, alpha=0.7)
+    ax.xaxis.grid(True, alpha=0.7)
 
     # Pandas-style color settings
     line_color = '#1f77b4'       # Light blue (default pandas box and whisker)
