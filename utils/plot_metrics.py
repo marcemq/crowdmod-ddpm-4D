@@ -23,11 +23,11 @@ def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
 def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=4):
     data = [df[col].dropna().values for col in columns_to_plot]
     y_text_pos = 2.5
-    fig, ax = plt.subplots(figsize=(9, 6))
+    #fig, ax = plt.subplots(figsize=(9, 6))
+    fig, ax = plt.subplots(figsize=(len(columns_to_plot) * 1.2, 6))
     bp = ax.boxplot(data, showfliers=True)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.set_aspect('equal')
 
     ax.set_ylim(0, y_limit)
     ax.set_ylabel("Values")
