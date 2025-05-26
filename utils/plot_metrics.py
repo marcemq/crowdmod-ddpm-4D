@@ -27,6 +27,7 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=4
     bp = ax.boxplot(data, showfliers=True)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+    ax.set_aspect('equal')
 
     ax.set_ylim(0, y_limit)
     ax.set_ylabel("Values")
