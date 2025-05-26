@@ -62,7 +62,7 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5
         upper_bound = q3 + 1.5 * iqr
         outliers = (col_data > upper_bound).sum()
         y_pos = outliers.min() + (outliers.max() - outliers.min()) * 0.3
-        ax_main.text(i + 1, min(y_pos, y_limit * 0.95), f"{outliers} outliers", ha='center', va='bottom', fontsize=9, color='red', rotation=90)
+        ax_main.text(i + 1, min(y_pos, 2.5), f"{outliers} outliers", ha='center', va='bottom', fontsize=9, color='red', rotation=90)
 
     ax_main.set_title(title, fontsize=14)
 
