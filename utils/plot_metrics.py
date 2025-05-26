@@ -20,6 +20,56 @@ def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
         plt.show()
     plt.close()
 
+def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5):
+    fig, (ax_main, ax_outlier) = plt.subplots(2, 1, sharex=True, figsize=(12, 6), gridspec_kw={'height_ratios': [4, 1]})
+
+    # Plot boxplots
+    box = df[columns_to_plot].boxplot(ax=ax_main)
+    df[columns_to_plot].boxplot(ax=ax_outlier)
+
+    # Limit y-axis on the main plot to focus on interesting data
+    ax_main.set_ylim(-0.1, y_limit)
+    ax_outlier.set_ylim(df[columns_to_plot].max().max() * 0.9, df[columns_to_plot].max().max() * 1.01)
+
+    # Hide the spines between axes
+    ax_main.spines['bottom'].set_visible(False)
+    ax_outlier.spines['top'].set_visible(False)
+
+    # Diagonal lines to indicate axis break
+    d = .5
+    kwargs = dict(transform=ax_main.transAxes, color='k', clip_on=False)
+    ax_main.plot((-d, +d), (-d, +d), **kwargs)        # top-left diagonal
+    ax_main.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
+
+    kwargs.update(transform=ax_outlier.transAxes)  # switch to the bottom axes
+    ax_outlier.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
+    ax_outlier.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
+
+    # Remove ticks for outlier zone
+    ax_outlier.set_yticks([])
+
+    # Set titles and labels
+    ax_main.set_title(title, fontsize=14)
+    ax_main.set_ylabel('Values')
+
+    # Count and annotate outliers
+    for i, col in enumerate(columns_to_plot):
+        col_data = df[col]
+        q1 = col_data.quantile(0.25)
+        q3 = col_data.quantile(0.75)
+        iqr = q3 - q1
+        upper_bound = q3 + 1.5 * iqr
+        outliers = (col_data > upper_bound).sum()
+        ax_main.text(i + 1, y_limit, f"{outliers} outliers", ha='center', va='bottom', fontsize=9, color='red')
+
+    # Save or show
+    if save_path:
+        plt.savefig(save_path, bbox_inches='tight')
+        print(f"Boxplot saved to {save_path}")
+    else:
+        plt.show()
+    plt.close()
+
 def createBoxPlotWithOutlierInfo(df, title, columns_to_plot, save_path=None, ytick_step=2):
     data = [df[col].dropna().values for col in columns_to_plot]  # Get data as list of arrays
     fig, ax = plt.subplots()
@@ -102,6 +152,7 @@ def merge_and_plot_boxplot(df_max, df, title, save_path, ytick_step, prefix='max
     # Reorder the DataFrame with the interleaved columns
     overall_df = overall_df[reordered_columns]
     if outliersFlag:
-        createBoxPlotWithOutlierInfo(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path, ytick_step=ytick_step)
+        createBoxPlotCollapsed(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path)
+        #createBoxPlotWithOutlierInfo(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path, ytick_step=ytick_step)
     else:
         createBoxPlot(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path, ytick_step=ytick_step)
