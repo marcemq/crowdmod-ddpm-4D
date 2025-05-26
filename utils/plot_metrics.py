@@ -32,6 +32,14 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5
     ax.set_xticks(np.arange(1, len(columns_to_plot) + 1))
     ax.set_xticklabels(columns_to_plot, rotation=0)
 
+    # Use pandas-like color palette (color cycle from rcParams)
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    
+    for patch, color in zip(bp['boxes'], colors):
+        patch.set_facecolor(color)
+    for median in bp['medians']:
+        median.set(color='black', linewidth=1)
+
     # Annotate outlier counts
     for i, col in enumerate(columns_to_plot):
         col_data = df[col]
