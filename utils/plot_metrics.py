@@ -33,7 +33,7 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5
     # Outlier boxplot (zoomed out)
     bp_outlier = ax_outlier.boxplot(data, patch_artist=True, showfliers=True)
     ax_outlier.set_ylim(df[columns_to_plot].max().max() * 0.9, df[columns_to_plot].max().max() * 1.01)
-    ax_outlier.set_yticks([])
+    #ax_outlier.set_yticks([])
 
     # Set x-ticks
     ax_outlier.set_xticks(np.arange(1, len(columns_to_plot) + 1))
@@ -61,7 +61,8 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5
         iqr = q3 - q1
         upper_bound = q3 + 1.5 * iqr
         outliers = (col_data > upper_bound).sum()
-        ax_main.text(i + 1, y_limit, f"{outliers} outliers", ha='center', va='bottom', fontsize=9, color='red')
+        y_pos = outliers.min() + (outliers.max() - outliers.min()) * 0.8
+        ax_main.text(i + 1, min(y_pos, y_limit * 0.95), f"{outliers} outliers", ha='center', va='bottom', fontsize=9, color='red', rotation=90)
 
     ax_main.set_title(title, fontsize=14)
 
@@ -99,7 +100,7 @@ def createBoxPlotWithOutlierInfo(df, title, columns_to_plot, save_path=None, yti
     ax.set_title(title, fontsize=16)
     ax.set_ylabel("Values")
     ax.set_xticks(range(1, len(columns_to_plot)+1))
-    ax.set_xticklabels(columns_to_plot, rotation=45)
+    ax.set_xticklabels(columns_to_plot)
 
     # Hide spines
     ax.spines['top'].set_visible(False)
