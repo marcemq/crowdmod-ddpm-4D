@@ -20,7 +20,7 @@ def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
         plt.show()
     plt.close()
 
-def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5):
+def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=4.5):
     data = [df[col].dropna().values for col in columns_to_plot]
     y_text_pos = 2.5
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -33,24 +33,25 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5
     ax.set_xticklabels(columns_to_plot, rotation=0)
 
     # Pandas-style color settings
-    box_fill_color = '#1f77b4'    # Light blue fill (same as pandas)
-    edge_color = '#1f77b4'        # Same as fill (box border)
-    median_color = '#2ca02c'      # Green
-    whisker_color = 'black'
-    cap_color = 'black'
+    line_color = '#1f77b4'       # Light blue (default pandas box and whisker)
+    median_color = '#2ca02c'     # Green (default pandas median)
+    cap_color = 'black'          # Default cap color in pandas
 
-    for patch in bp['boxes']:
-        patch.set_facecolor(box_fill_color)
-        patch.set_edgecolor(edge_color)
-        patch.set_linewidth(1)
+    for box in bp['boxes']:
+        box.set_color(line_color)
+        box.set_linewidth(1)
 
-    for line in bp['whiskers']:
-        line.set_color(whisker_color)
-    for line in bp['caps']:
-        line.set_color(cap_color)
-    for line in bp['medians']:
-        line.set_color(median_color)
-        line.set_linewidth(2)
+    for whisker in bp['whiskers']:
+        whisker.set_color(line_color)
+        whisker.set_linewidth(1)
+
+    for cap in bp['caps']:
+        cap.set_color(cap_color)
+        cap.set_linewidth(1)
+
+    for median in bp['medians']:
+        median.set_color(median_color)
+        median.set_linewidth(2)
 
     # Annotate outlier counts
     for i, col in enumerate(columns_to_plot):
