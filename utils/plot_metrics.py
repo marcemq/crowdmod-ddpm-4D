@@ -24,7 +24,7 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5
     data = [df[col].dropna().values for col in columns_to_plot]
     y_text_pos = 2.5
     fig, ax = plt.subplots(figsize=(12, 6))
-    bp = ax.boxplot(data, showfliers=True)
+    bp = ax.boxplot(data, showfliers=True, patch_artist=True)
 
     ax.set_ylim(0, y_limit)
     ax.set_ylabel("Values")
