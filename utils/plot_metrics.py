@@ -32,13 +32,13 @@ def createBoxPlotCollapsed(df, title, columns_to_plot, save_path=None, y_limit=5
 
     # Outlier boxplot (zoomed out)
     bp_outlier = ax_outlier.boxplot(data, showfliers=True)
-    ax_outlier.set_ylim(df[columns_to_plot].max().max() * 0.9, df[columns_to_plot].max().max() * 1.01)
+    ax_outlier.set_ylim(0, df[columns_to_plot].max().max() * 0.9, df[columns_to_plot].max().max() * 1.01)
 
     for box in bp_main['boxes']:
-        box.set(color='blue', linewidth=1.5)
+        box.set(color='lightblue', linewidth=1)
 
     for median in bp_main['medians']:
-        median.set(color='green', linewidth=2)
+        median.set(color='lightgreen', linewidth=1)
 
     # Set x-ticks
     ax_outlier.set_xticks(np.arange(1, len(columns_to_plot) + 1))
