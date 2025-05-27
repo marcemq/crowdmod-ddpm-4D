@@ -174,7 +174,7 @@ def getDataset4Test(cfg, filenames):
 
     return test_loader
 
-def getClassicDataset(cfg, filenames, split_ratio=0.8):
+def getClassicDataset(cfg, filenames, split_ratio=0.9):
     BATCH_SIZE = cfg.DATASET.BATCH_SIZE
 
     # Load all sequences from all filenames
