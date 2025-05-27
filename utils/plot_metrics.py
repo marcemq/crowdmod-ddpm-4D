@@ -57,7 +57,7 @@ def createBoxPlotWithOutlierInfo(df, title, columns_to_plot, save_path=None, y_l
 
     for median in bp['medians']:
         median.set_color(median_color)
-        median.set_linewidth(2)
+        median.set_linewidth(1)
 
     # Annotate outlier counts
     for i, col in enumerate(columns_to_plot):
