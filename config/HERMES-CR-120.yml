@@ -6,14 +6,14 @@ PICKLE:
   USE_PICKLE: False
 MACROPROPS:
   # Grid size
-  ROWS: 26
+  ROWS: 28
   COLS: 24
   # Grid resolution
   DX: 0.5
   DY: 0.5
   LU:
     - -5
-    - 7
+    - 8
   # EPSILON value to avoid division by cero
   EPS: 0.000001
   OVERLAP: False
