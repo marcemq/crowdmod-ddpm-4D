@@ -96,7 +96,12 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
 
     # Iterate over each sequence to create a GIF for each
     for i in range(cfg.DIFFUSION.NSAMPLES4PLOTS*2):
-        fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
+        if cfg.DATASET.NAME in ["ATC", "HERMES-BO"]:
+            fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
+        elif cfg.DATASET.NAME in ["HERMES-CR-120", "HERMES-CR-120-OBS"]:
+            fig, ax = plt.subplots(1, 1, figsize=(4, 4.5), facecolor='white')
+        else:
+            logging.info("Dataset not supported")
         fig.subplots_adjust(hspace=0.1, wspace=0.1)
 
         # Set up the initial plot and color bar
