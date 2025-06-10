@@ -99,7 +99,7 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
         if cfg.DATASET.NAME in ["ATC", "HERMES-BO"]:
             fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
         elif cfg.DATASET.NAME in ["HERMES-CR-120", "HERMES-CR-120-OBS"]:
-            fig, ax = plt.subplots(1, 1, figsize=(4, 4.5), facecolor='white')
+            fig, ax = plt.subplots(1, 1, figsize=(4, 5), facecolor='white')
         else:
             logging.info("Dataset not supported")
         fig.subplots_adjust(hspace=0.1, wspace=0.1)
