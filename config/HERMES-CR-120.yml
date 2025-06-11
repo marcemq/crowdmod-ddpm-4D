@@ -2,7 +2,7 @@ DATA_AGGREGATION:
   RAW_DATA_DIR: 'datasets/HERMES-CR-120/rawData/'
   AGG_DATA_DIR: 'datasets/HERMES-CR-120/aggData/'
 PICKLE:
-  PICKLE_DIR: '/datasets/HERMES-CR-120/processed'
+  PICKLE_DIR: '/datasets/HERMES-CR-120/processed/'
   USE_PICKLE: False
 MACROPROPS:
   # Grid size
