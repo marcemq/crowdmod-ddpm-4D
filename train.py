@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
         filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
-    elif cfg.DATASET.NAME in ["HERMES-BO"]:
+    elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBS"]:
         filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
     else:
         logging.info("Dataset not supported")
