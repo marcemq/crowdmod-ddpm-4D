@@ -89,7 +89,7 @@ def plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, 
     plt.axis("off")
     fig.savefig(figName, format='svg', bbox_inches='tight')
 
-def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
+def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale, headwidth):
     j_indexes = _get_j_indexes(cfg, plotPast="All")
     rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
     title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
@@ -113,7 +113,7 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale):
 
         # Initial plot and color bar
         axp = ax.matshow(rho, cmap=plt.cm.Blues, vmin=rho_min, vmax=rho_max)
-        Q = ax.quiver(mu_v[0, :, :], -mu_v[1, :, :], color='green', angles='xy', scale_units='xy', scale=velScale, minshaft=3.5, width=0.009, headwidth=5)
+        Q = ax.quiver(mu_v[0, :, :], -mu_v[1, :, :], color='green', angles='xy', scale_units='xy', scale=velScale, minshaft=3.5, width=0.009, headwidth=headwidth)
         # color bar setup
         cbar = fig.colorbar(axp, ax=ax, orientation='vertical', fraction=0.015)
         cbar.set_label('Density rho', fontsize=11)
