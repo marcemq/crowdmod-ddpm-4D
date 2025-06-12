@@ -37,7 +37,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
         plt.show()
     return grid_img
 
-def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1, samePastSeq=False):
+def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1, samePastSeq=False, headwidth=5):
     create_directory(cfg.MODEL.OUTPUT_DIR)
     torch.manual_seed(42)
     # Setting the device to work with
@@ -116,7 +116,7 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
         if plotType == "Static":
             plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale)
         elif plotType == "Dynamic":
-            plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale)
+            plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale, headwidth)
 
         plotDensityOverTime(seq_frames, cfg)
         break
@@ -126,6 +126,7 @@ if __name__ == '__main__':
     parser.add_argument('--plot-mprop', type=str, default='Density', help='Macroprops to be plotted')
     parser.add_argument('--plot-past', type=str, default='Last2', help='Past macroprops to be plotted')
     parser.add_argument('--vel-scale', type=float, default=0.5, help='Scale to be applied to velocity mprops vectors')
+    parser.add_argument('--headwidth', type=int, default=5, help='Headwidth to be applied to velocity mprops vectors')
     parser.add_argument('--vel-unc-scale', type=int, default=1, help='Scale to be applied to velocity uncertainty mprops vectors')
     parser.add_argument('--plot-type', type=str, default='Static', help='Macroprops plot type can be static (.svg) or dinamic (.gif)')
     parser.add_argument('--same-past-seq', type=bool, default=False, help='Use the same past sequence to predict different mprops from it.')
@@ -144,7 +145,7 @@ if __name__ == '__main__':
         logging.info("Dataset not supported")
 
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    generate_samples(cfg, filenames, plotType=args.plot_type, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, samePastSeq=args.same_past_seq)
+    generate_samples(cfg, filenames, plotType=args.plot_type, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, samePastSeq=args.same_past_seq, headwidth=args.headwidth)
 
 # execution example:
 # python3 generate_samples.py --plot-mprop="Density" --plot-past="Last2"
