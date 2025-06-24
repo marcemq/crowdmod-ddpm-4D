@@ -114,11 +114,16 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
 
         match = re.search(r'E\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d', model_fullname)
         if plotType == "Static":
+            logging.info("Plot macroprops dynamic view.")
             plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale)
         elif plotType == "Dynamic":
+            logging.info("Plot macroprops dynamic view.")
             plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale, headwidth)
         elif plotType == "Raw":
+            logging.info("Plot raw images for further process.")
             plotMacroprops_rawImgs(seq_frames, cfg, velScale, headwidth)
+        else:
+            logging.info("Plot type not supported.")
 
         plotDensityOverTime(seq_frames, cfg)
         break
