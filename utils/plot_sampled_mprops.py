@@ -147,6 +147,46 @@ def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale, headwid
         ani.save(gif_name, writer=PillowWriter(fps=2))
         plt.close(fig)
 
+def plotMacroprops_rawImgs(seq_frames, cfg, velScale, headwidth):
+    j_indexes = _get_j_indexes(cfg, plotPast="All")
+    rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
+
+    for i in range(cfg.DIFFUSION.NSAMPLES4PLOTS*2):
+        one_seq_img = seq_frames[i]
+
+        for frame_idx, j in enumerate(j_indexes):
+            if cfg.DATASET.NAME in ["ATC", "HERMES-BO"]:
+                fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
+            elif cfg.DATASET.NAME in ["HERMES-CR-120", "HERMES-CR-120-OBS"]:
+                fig, ax = plt.subplots(1, 1, figsize=(4, 5), facecolor='white')
+            else:
+                logging.info("Dataset not supported")
+
+            fig.subplots_adjust(hspace=0.1, wspace=0.1)
+
+            one_sample_img = one_seq_img[:, :, :, j].cpu()
+            rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
+            mu_v = torch.squeeze(one_sample_img[1:3, :, :], axis=0)
+
+            axp = ax.matshow(rho, cmap=plt.cm.Blues, vmin=rho_min, vmax=rho_max)
+            ax.quiver(mu_v[0, :, :], -mu_v[1, :, :], color='green', angles='xy', scale_units='xy', scale=velScale, minshaft=3.5, width=0.009, headwidth=headwidth)
+            # Add colorbar only to the last frame
+            if frame_idx == len(j_indexes) - 1:
+                cbar = fig.colorbar(axp, ax=ax, orientation='vertical', fraction=0.015)
+                cbar.set_label('Density rho', fontsize=11)
+                cbar.ax.tick_params(labelsize=10)
+
+            ax.text(0.5, -0.15, '', transform=ax.transAxes, ha='center', fontsize=11, fontweight='bold')
+            ax.text(0.5, -0.15, f'Frame: {frame_idx + 1}/{len(j_indexes)}',
+                    transform=ax.transAxes, ha='center', fontsize=11, fontweight='bold',
+                    color='blue' if (i + 1) % 2 != 0 and frame_idx >= cfg.DATASET.PAST_LEN else 'black')
+
+            # Save the image
+            prefix = "mprops_GT_seq" if (i + 1) % 2 == 0 else "mprops_seq"
+            figsName = f"{cfg.MODEL.OUTPUT_DIR}/{prefix}_{i // 2 + 1}_frame_{frame_idx + 1}.png"
+            plt.savefig(figsName, bbox_inches='tight')
+            plt.close(fig)
+
 def plotDensityOverTime(seq_frames, cfg):
     logging.info(f'Seq frame shape: {seq_frames[0].shape}')
 

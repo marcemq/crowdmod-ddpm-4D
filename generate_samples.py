@@ -10,7 +10,7 @@ from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from utils.dataset import getDataset, getClassicDataset, getDataset4Test
 from utils.utils import create_directory
-from utils.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops, plotDensityOverTime
+from utils.plot_sampled_mprops import plotMacroprops_rawImgs, plotStaticMacroprops, plotDynamicMacroprops, plotDensityOverTime
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
 
@@ -117,6 +117,8 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
             plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale)
         elif plotType == "Dynamic":
             plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale, headwidth)
+        elif plotType == "Raw":
+            plotMacroprops_rawImgs(seq_frames, cfg, velScale, headwidth)
 
         plotDensityOverTime(seq_frames, cfg)
         break
@@ -128,7 +130,7 @@ if __name__ == '__main__':
     parser.add_argument('--vel-scale', type=float, default=0.5, help='Scale to be applied to velocity mprops vectors')
     parser.add_argument('--headwidth', type=int, default=5, help='Headwidth to be applied to velocity mprops vectors')
     parser.add_argument('--vel-unc-scale', type=int, default=1, help='Scale to be applied to velocity uncertainty mprops vectors')
-    parser.add_argument('--plot-type', type=str, default='Static', help='Macroprops plot type can be static (.svg) or dinamic (.gif)')
+    parser.add_argument('--plot-type', type=str, default='Static', help='Macroprops plot type can be static (.svg), dynamic (.gif) or raw frames(.png)')
     parser.add_argument('--same-past-seq', type=bool, default=False, help='Use the same past sequence to predict different mprops from it.')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
