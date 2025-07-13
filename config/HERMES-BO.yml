@@ -17,7 +17,7 @@ MACROPROPS:
   # EPSILON value to avoid division by cero
   EPS: 0.000001
   OVERLAP: False
-  WINDOWSIZE: 1
+  WINDOWSIZE: 5
   THETA: 0
   TIME_RES: 0.25
   MPROPS_COUNT: 3
