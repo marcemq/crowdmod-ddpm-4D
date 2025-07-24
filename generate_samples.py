@@ -63,7 +63,7 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
                                   condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     if re.search(r"[{}]", cfg.MODEL.MODEL_NAME):
-        model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
+        model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, cfg.DATASET.VELOCITY_NORM))
     else:
         model_fullname = cfg.MODEL.SAVE_DIR+cfg.MODEL.MODEL_NAME
     logging.info(f'model full name:{model_fullname}')
