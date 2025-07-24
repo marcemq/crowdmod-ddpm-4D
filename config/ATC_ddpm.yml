@@ -34,6 +34,7 @@ DATASET:
     shuffle: True
     num_workers: 6
   DATASET_TYPE: 'ByFilenames'    # Available options: ByFilenames|BySplitRatio|ByFilenames4Test
+  VELOCITY_NORM: True
 MODEL:
   CONDITION: "Past"
   CONDITION_HANDLING: "embed"

@@ -12,9 +12,11 @@ class CustomTransform():
         stats = np.empty((cfg.MACROPROPS.MPROPS_COUNT, 4))
         for i in range(cfg.MACROPROPS.MPROPS_COUNT):
             stats[i, 0], stats[i, 1], stats[i, 2], stats[i, 3] = np.mean(tensor[:,i,:,:]), np.std(tensor[:,i,:,:]), np.min(tensor[:,i,:,:]), np.max(tensor[:,i,:,:])
-        # only velocity channels gets normalized
-        for channel in [1, 2]:
-            tensor[:,channel,:,:,:]=((tensor[:, channel, :, :] - stats[channel,2]) / (stats[channel,3] - stats[channel,2])) * 2 - 1
+
+        if cfg.DATASET.VELOCITY_NORM:
+            # only velocity channels gets normalized in [-1,1] range
+            for channel in [1, 2]:
+                tensor[:,channel,:,:,:]=((tensor[:, channel, :, :] - stats[channel,2]) / (stats[channel,3] - stats[channel,2])) * 2 - 1
 
         return tensor, stats
 
