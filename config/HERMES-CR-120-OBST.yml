@@ -44,7 +44,8 @@ MODEL:
   TIME_EMB_MULT: 4 # 128
   SAVE_DIR: "saved_models/"
   OUTPUT_DIR : "output_hermes_cr_120_obst"
-  MODEL_NAME: "UNet_Mprops4D_SizeS_HERMESCR_OBST_E{}_LR{}_TFC{}_PL{}_FL{}.pth"
+  MODEL_NAME: "UNet_Mprops4D_HERMESCR_OBST_TE{}_LR{}_TFC{}_PL{}_FL{}_CE{}.pth"
+  MODEL_SAMPLES: 7
   RETRAIN: False
   MIN_RHO_4_PRED: 20
 DIFFUSION:

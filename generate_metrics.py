@@ -82,7 +82,7 @@ def get_metrics_dicts():
                     }
     return metrics_data_dict, metrics_header_dict
 
-def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
+def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, epoch):
     if chunkRepdPastSeq == None:
         samples_per_batch = cfg.DIFFUSION.NSAMPLES
         chunkRepdPastSeq = 20
@@ -113,7 +113,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use):
                                   time_multiple           = cfg.MODEL.TIME_EMB_MULT,
                                   condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
-    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
+    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch))
     logging.info(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
@@ -203,6 +203,7 @@ if __name__ == '__main__':
     parser.add_argument('--batches-to-use', type=int, default=1, help='Total of batches to use to compute metrics.')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
+    parser.add_argument('--model-sample-to-load', type=int, help='Model sample to be used for generate mprops samples.')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
@@ -216,4 +217,4 @@ if __name__ == '__main__':
         logging.info("Dataset not supported")
 
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    generate_metrics(cfg, filenames, chunkRepdPastSeq=args.chunk_repd_past_seq, metric=args.metric, batches_to_use=args.batches_to_use)
+    generate_metrics(cfg, filenames, chunkRepdPastSeq=args.chunk_repd_past_seq, metric=args.metric, batches_to_use=args.batches_to_use, epoch=args.model_sample_to_load)

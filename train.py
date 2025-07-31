@@ -23,6 +23,16 @@ from models.diffusion.ddpm import DDPM
 from models.training import train_one_epoch
 from functools import partial
 
+def save_checkpoint(optimizer, denoiser, epoch, cfg):
+    checkpoint_dict = {
+        "opt": optimizer.state_dict(),
+        "model": denoiser.state_dict()
+    }
+    lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
+    save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch))
+    torch.save(checkpoint_dict, save_path)
+    del checkpoint_dict
+
 def train(cfg, filenames, show_losses_plot=False):
     wandb.init(
         project="macroprops-predict-4D",
@@ -38,6 +48,10 @@ def train(cfg, filenames, show_losses_plot=False):
         "solver_betas": cfg.TRAIN.SOLVER.BETAS,
         }
     )
+    # Create a new directory if it does not exist
+    if not os.path.exists(cfg.MODEL.SAVE_DIR):
+        os.makedirs(cfg.MODEL.SAVE_DIR)
+
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -71,6 +85,7 @@ def train(cfg, filenames, show_losses_plot=False):
 
     best_loss      = 1e6
     consecutive_nan_count = 0
+    epoch_model_samples = np.random.randint(150, cfg.TRAIN.EPOCHS + 1, size=cfg.MODEL.MODEL_SAMPLES)
     # Training loop
     for epoch in range(1,cfg.TRAIN.EPOCHS + 1):
         torch.cuda.empty_cache()
@@ -79,27 +94,26 @@ def train(cfg, filenames, show_losses_plot=False):
         # One epoch of training
         epoch_loss = train_one_epoch(denoiser,diffusionmodel,batched_train_data,optimizer,device,epoch=epoch,total_epochs=cfg.TRAIN.EPOCHS)
         wandb.log({"loss": epoch_loss})
-        # Check for consecutives nans
+        # NaN handling / early stopping
         if np.isnan(epoch_loss):
             consecutive_nan_count += 1
-            if consecutive_nan_count >=3:
+            logging.warning(f"Epoch {epoch}: loss is NaN ({consecutive_nan_count} consecutive)")
+            if consecutive_nan_count >= 3:
+                logging.error("Loss has been NaN for 3 consecutive epochs; terminating training early.")
                 wandb.finish()
                 break
+        else:
+            consecutive_nan_count = 0  # reset on valid loss
 
+        # Save best checkpoint from all training
         if epoch_loss < best_loss:
             best_loss = epoch_loss
-            # Save best checkpoints -> AR, shouldn't we save diffusionmodel too?? I think it also has weigths, isn't?
-            checkpoint_dict = {
-                "opt": optimizer.state_dict(),
-                "model": denoiser.state_dict()
-            }
-            if not os.path.exists(cfg.MODEL.SAVE_DIR):
-                # Create a new directory if it does not exist
-                os.makedirs(cfg.MODEL.SAVE_DIR)
-            lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
-            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
-            torch.save(checkpoint_dict, save_path)
-            del checkpoint_dict
+            save_checkpoint(optimizer, denoiser, epoch, cfg)
+
+        # Save model samples at stable loss
+        if epoch in epoch_model_samples:
+            logging.info(f"Epoch {epoch}: in sample set, saving model sample.")
+            save_checkpoint(optimizer, denoiser, epoch, cfg)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
