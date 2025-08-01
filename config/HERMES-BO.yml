@@ -65,7 +65,7 @@ METRICS:
     GAMMA: 2.0 # Exponent of the power function for 1D-histogram
 TRAIN:
   INITIAL_LR: 0.0005
-  EPOCHS: 250
+  EPOCHS: 200
   SOLVER:
     LR: 0.00005
     WEIGHT_DECAY: 0.003
