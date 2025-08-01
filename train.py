@@ -23,13 +23,18 @@ from models.diffusion.ddpm import DDPM
 from models.training import train_one_epoch
 from functools import partial
 
-def save_checkpoint(optimizer, denoiser, epoch, cfg):
+def save_checkpoint(optimizer, denoiser, epoch, cfg, best_flag=False):
     checkpoint_dict = {
         "opt": optimizer.state_dict(),
         "model": denoiser.state_dict()
     }
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
-    save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch))
+
+    if best_flag:
+        save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, "best"))
+    else:
+        save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch))
+
     torch.save(checkpoint_dict, save_path)
     del checkpoint_dict
 
@@ -108,7 +113,7 @@ def train(cfg, filenames, show_losses_plot=False):
         # Save best checkpoint from all training
         if epoch_loss < best_loss:
             best_loss = epoch_loss
-            save_checkpoint(optimizer, denoiser, epoch, cfg)
+            save_checkpoint(optimizer, denoiser, epoch, cfg, best_flag=True)
 
         # Save model samples at stable loss
         if epoch in epoch_model_samples:
