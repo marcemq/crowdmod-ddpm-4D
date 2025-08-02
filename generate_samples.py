@@ -37,7 +37,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
         plt.show()
     return grid_img
 
-def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1, samePastSeq=False, headwidth=5):
+def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1, samePastSeq=False, headwidth=5):
     create_directory(cfg.MODEL.OUTPUT_DIR)
     torch.manual_seed(42)
     # Setting the device to work with
@@ -63,7 +63,7 @@ def generate_samples(cfg, filenames, plotType, plotMprop="Density", plotPast="La
                                   condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     if re.search(r"[{}]", cfg.MODEL.MODEL_NAME):
-        model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
+        model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch))
     else:
         model_fullname = cfg.MODEL.SAVE_DIR+cfg.MODEL.MODEL_NAME
     logging.info(f'model full name:{model_fullname}')
@@ -132,6 +132,7 @@ if __name__ == '__main__':
     parser.add_argument('--same-past-seq', type=bool, default=False, help='Use the same past sequence to predict different mprops from it.')
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
+    parser.add_argument('--model-sample-to-load', type=int, help='Model sample to be used for generate mprops samples.')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
@@ -145,7 +146,7 @@ if __name__ == '__main__':
         logging.info("Dataset not supported")
 
     filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    generate_samples(cfg, filenames, plotType=args.plot_type, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, samePastSeq=args.same_past_seq, headwidth=args.headwidth)
+    generate_samples(cfg, filenames, plotType=args.plot_type, epoch=args.model_sample_to_load, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, samePastSeq=args.same_past_seq, headwidth=args.headwidth)
 
 # execution example:
 # python3 generate_samples.py --plot-mprop="Density" --plot-past="Last2"

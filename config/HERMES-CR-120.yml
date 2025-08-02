@@ -42,9 +42,10 @@ MODEL:
   APPLY_ATTENTION: [False, False, True, False]
   DROPOUT_RATE: 0.1
   TIME_EMB_MULT: 4 # 128
-  SAVE_DIR: "saved_models/"
+  SAVE_DIR: "saved_models/hermes_cr_120/"
   OUTPUT_DIR : "output_hermes_cr_120"
-  MODEL_NAME: "UNet_Mprops4D_SizeS_HERMESCR_E{}_LR{}_TFC{}_PL{}_FL{}.pth"
+  MODEL_NAME: "UNet_Mprops4D_HERMESCR_TE{}_LR{}_TFC{}_PL{}_FL{}_CE{}.pth"
+  MODEL_SAMPLES: 7
   RETRAIN: False
   MIN_RHO_4_PRED: 20
 DIFFUSION:
@@ -64,7 +65,7 @@ METRICS:
     GAMMA: 2.0 # Exponent of the power function for 1D-histogram
 TRAIN:
   INITIAL_LR: 0.0005
-  EPOCHS: 250
+  EPOCHS: 200
   SOLVER:
     LR: 0.00005
     WEIGHT_DECAY: 0.003
