@@ -42,7 +42,7 @@ MODEL:
   APPLY_ATTENTION: [False, False, True, False]
   DROPOUT_RATE: 0.1
   TIME_EMB_MULT: 4 # 128
-  SAVE_DIR: "saved_models/"
+  SAVE_DIR: "saved_models/hermes_bo/"
   OUTPUT_DIR : "output_hermes_bo"
   MODEL_NAME: "UNet_Mprops4D_HERMESBO_TE{}_LR{}_TFC{}_PL{}_FL{}_CE{}.pth"
   MODEL_SAMPLES: 7
