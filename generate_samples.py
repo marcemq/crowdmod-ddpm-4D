@@ -10,7 +10,7 @@ from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from utils.dataset import getDataset, getClassicDataset, getDataset4Test
 from utils.utils import create_directory
-from utils.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops, plotDensityOverTime
+from utils.plot.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops, plotDensityOverTime
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
 
