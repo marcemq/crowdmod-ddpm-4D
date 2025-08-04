@@ -2,7 +2,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from utils.myparser import getYamlConfig
-from utils.plot import plotPeopleDensity, plotDataAndItsRotation, drawMacroProps
+from utils.plot.plot import plotPeopleDensity, plotDataAndItsRotation, drawMacroProps
 from utils.crowd import Crowd
 pd.options.mode.chained_assignment = None  # default='warn'
 

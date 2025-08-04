@@ -11,17 +11,17 @@ from models.generate import generate_ddpm, generate_ddim
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset, getClassicDataset, getDataset4Test
 from utils.utils import create_directory
-from utils.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
-from utils.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics, energy_mprops_seq, re_density_mprops_seq
+from utils.plot.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
+from utils.metrics.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics, energy_mprops_seq, re_density_mprops_seq
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 
-def save_metric_data(cfg, match, data, metric, header, samples_per_batch):
-    file_name = f"{cfg.MODEL.OUTPUT_DIR}/mpSampling_{metric}_NS{samples_per_batch}_{match.group()}.csv"
+def save_metric_data(match, data, metric, header, samples_per_batch, output_dir):
+    file_name = f"{output_dir}/mpSampling_{metric}_NS{samples_per_batch}_{match.group()}.csv"
     np.savetxt(file_name, data, delimiter=",", header=header, comments="")
     return file_name
 
-def save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch):
+def save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch, output_dir):
     metrics_filenames_dict = {"title": title}
     # Stack metrics by epoch into an array
     for metric_name, metric_data_list in metrics_data_dict.items():
@@ -32,28 +32,28 @@ def save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, sampl
     # Save each non-empty metric with its required data
     for metric_name, metric_header in metrics_header_dict.items():
         if len(metrics_data_dict[metric_name]) != 0:
-            file_name = save_metric_data(cfg, match, metrics_data_dict[metric_name], metric_name, metric_header, samples_per_batch)
+            file_name = save_metric_data(match, metrics_data_dict[metric_name], metric_name, metric_header, samples_per_batch, output_dir)
             metrics_filenames_dict[metric_name] = file_name
 
-    with open(f"{cfg.MODEL.OUTPUT_DIR}/metrics_files.json", "w") as json_file:
+    with open(f"{output_dir}/metrics_files.json", "w") as json_file:
         json.dump(metrics_filenames_dict, json_file)
-    logging.info(f"Dictionary of metrics filenames saved to '{cfg.MODEL.OUTPUT_DIR}/metrics_files.json'")
+    logging.info(f"Dictionary of metrics filenames saved to '{output_dir}/metrics_files.json'")
 
-def save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title):
+def save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title, output_dir):
     # Convert the dictionary of arrays into a dictionary of DataFrames
     metrics_df_dict = {key: pd.DataFrame(value, columns=metrics_header_dict[key].split(",")) for key, value in metrics_data_dict.items()}
     if len(metrics_df_dict['MAX-PSNR']) != 0:
-        merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-PSNR'], df=metrics_df_dict['PSNR'], title=f"PSNR and MAX-PSNR of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_PSNR.png", ytick_step=5)
+        merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-PSNR'], df=metrics_df_dict['PSNR'], title=f"PSNR and MAX-PSNR of {title}", save_path=f"{output_dir}/BP_PSNR.png", ytick_step=5)
     if len(metrics_df_dict['MAX-SSIM']) != 0:
-        merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-SSIM'], df=metrics_df_dict['SSIM'], title=f"SSIM and MAX-SSIM of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_SSIM.png", ytick_step=0.2)
+        merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-SSIM'], df=metrics_df_dict['SSIM'], title=f"SSIM and MAX-SSIM of {title}", save_path=f"{output_dir}/BP_SSIM.png", ytick_step=0.2)
     if len(metrics_df_dict['MOTION_FEAT_MSE']) != 0:
-        createBoxPlot(metrics_df_dict['MOTION_FEAT_MSE'], title=f"MSE of Motion feature of {title}", columns_to_plot=metrics_header_dict["MOTION_FEAT_MSE"].split(","), save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_MF_MSE.png", ytick_step=0.0002)
+        createBoxPlot(metrics_df_dict['MOTION_FEAT_MSE'], title=f"MSE of Motion feature of {title}", columns_to_plot=metrics_header_dict["MOTION_FEAT_MSE"].split(","), save_path=f"{output_dir}/BP_MF_MSE.png", ytick_step=0.0002)
     if len(metrics_df_dict['MOTION_FEAT_BHATT_COEF']) != 0:
-        createBoxPlot_bhatt(metrics_df_dict['MOTION_FEAT_BHATT_COEF'], metrics_df_dict['MOTION_FEAT_BHATT_DIST'], title=f"BHATT of Motion feature of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_BHATT.png")
+        createBoxPlot_bhatt(metrics_df_dict['MOTION_FEAT_BHATT_COEF'], metrics_df_dict['MOTION_FEAT_BHATT_DIST'], title=f"BHATT of Motion feature of {title}", save_path=f"{output_dir}/BP_BHATT.png")
     if len(metrics_df_dict['MIN-ENERGY']) != 0:
-        merge_and_plot_boxplot(df_max=metrics_df_dict['MIN-ENERGY'], df=metrics_df_dict['ENERGY'], title=f"ENERGY and MIN-ENERGY of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_ENERGY.png", ytick_step=None, prefix='min-')
+        merge_and_plot_boxplot(df_max=metrics_df_dict['MIN-ENERGY'], df=metrics_df_dict['ENERGY'], title=f"ENERGY and MIN-ENERGY of {title}", save_path=f"{output_dir}/BP_ENERGY.png", ytick_step=None, prefix='min-')
     if len(metrics_df_dict['MIN_RE_DENSITY']) != 0:
-        merge_and_plot_boxplot(df_max=metrics_df_dict['MIN_RE_DENSITY'], df=metrics_df_dict['RE_DENSITY'], title=f"Relative DENSITY and MIN_RE_DENSITY of {title}", save_path=f"{cfg.MODEL.OUTPUT_DIR}/BP_RE_DENSITY.png", ytick_step=2, prefix='min-', outliersFlag=True)
+        merge_and_plot_boxplot(df_max=metrics_df_dict['MIN_RE_DENSITY'], df=metrics_df_dict['RE_DENSITY'], title=f"Relative DENSITY and MIN_RE_DENSITY of {title}", save_path=f"{output_dir}/BP_RE_DENSITY.png", ytick_step=2, prefix='min-', outliersFlag=True)
 
 def get_metrics_dicts():
     metrics_data_dict = {"PSNR" : [],
@@ -89,7 +89,8 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
     else:
         samples_per_batch = cfg.DATASET.BATCH_SIZE*chunkRepdPastSeq
 
-    create_directory(cfg.MODEL.OUTPUT_DIR)
+    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_modelE{epoch}"
+    create_directory(output_dir)
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -117,7 +118,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
     logging.info(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
-    match = re.search(r'E\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d', model_fullname)
+    match = re.search(r'TE\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d+_CE\d', model_fullname)
 
     # Instantiate the diffusion model
     timesteps=cfg.DIFFUSION.TIMESTEPS
@@ -180,10 +181,10 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
             if bhatt_flag:
                 metrics_data_dict["MOTION_FEAT_BHATT_DIST"].append(mfeat_bhatt_dist)
                 metrics_data_dict["MOTION_FEAT_BHATT_COEF"].append(mfeat_bhatt_coef)
-        if metric in ['ENERGY', 'ALL']:
-            mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
-            metrics_data_dict['ENERGY'].append(mprops_energy)
-            metrics_data_dict['MIN-ENERGY'].append(mprops_min_energy)
+        #if metric in ['ENERGY', 'ALL']:
+        #    mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
+        #    metrics_data_dict['ENERGY'].append(mprops_energy)
+        #    metrics_data_dict['MIN-ENERGY'].append(mprops_min_energy)
         if metric in ['RE_DENSITY', 'ALL']:
             mprops_re_density, mprops_min_re_density = re_density_mprops_seq(gt_seq_list, pred_seq_list, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
             metrics_data_dict['RE_DENSITY'].append(mprops_re_density)
@@ -193,8 +194,8 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
             break
 
     title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})"
-    save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch)
-    save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title)
+    save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch, output_dir)
+    save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title, output_dir)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to generate metrics from a trained model.")

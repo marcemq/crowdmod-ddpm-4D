@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from skimage.metrics import structural_similarity as ssim
 from sklearn.metrics import mean_squared_error
-from utils.motionFeatureExtractor import MotionFeatureExtractor, get_bhattacharyya_dist_coef
+from utils.metrics.motionFeatureExtractor import MotionFeatureExtractor, get_bhattacharyya_dist_coef
 from models.guidance import compute_energy
 
 def my_psnr(y_gt, y_hat, data_range, eps):

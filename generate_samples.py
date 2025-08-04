@@ -10,7 +10,7 @@ from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from utils.dataset import getDataset, getClassicDataset, getDataset4Test
 from utils.utils import create_directory
-from utils.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops, plotDensityOverTime
+from utils.plot.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops, plotDensityOverTime
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
 
@@ -38,7 +38,8 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
     return grid_img
 
 def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1, samePastSeq=False, headwidth=5):
-    create_directory(cfg.MODEL.OUTPUT_DIR)
+    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_modelE{epoch}"
+    create_directory(output_dir)
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -112,13 +113,13 @@ def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotP
             seq_frames.append(seq_pred)
             seq_frames.append(seq_gt)
 
-        match = re.search(r'E\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d', model_fullname)
+        match = re.search(r'TE\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d+_CE\d', model_fullname)
         if plotType == "Static":
-            plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale)
+            plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale, output_dir)
         elif plotType == "Dynamic":
-            plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale, headwidth)
+            plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale, headwidth, output_dir)
 
-        plotDensityOverTime(seq_frames, cfg)
+        plotDensityOverTime(seq_frames, cfg, output_dir)
         break
 
 if __name__ == '__main__':
