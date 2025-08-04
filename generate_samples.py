@@ -38,7 +38,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
     return grid_img
 
 def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1, samePastSeq=False, headwidth=5):
-    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_modelE{epoch}"
+    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_VN{cfg.DATASET.VELOCITY_NORM}_modelE{epoch}"
     create_directory(output_dir)
     torch.manual_seed(42)
     # Setting the device to work with
@@ -64,7 +64,7 @@ def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotP
                                   condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     if re.search(r"[{}]", cfg.MODEL.MODEL_NAME):
-        model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch))
+        model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     else:
         model_fullname = cfg.MODEL.SAVE_DIR+cfg.MODEL.MODEL_NAME
     logging.info(f'model full name:{model_fullname}')
@@ -113,7 +113,7 @@ def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotP
             seq_frames.append(seq_pred)
             seq_frames.append(seq_gt)
 
-        match = re.search(r'TE\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d+_CE\d', model_fullname)
+        match = re.search(r'TE\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
         if plotType == "Static":
             plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale, output_dir)
         elif plotType == "Dynamic":

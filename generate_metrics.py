@@ -89,7 +89,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
     else:
         samples_per_batch = cfg.DATASET.BATCH_SIZE*chunkRepdPastSeq
 
-    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_modelE{epoch}"
+    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_VN{cfg.DATASET.VELOCITY_NORM}_modelE{epoch}"
     create_directory(output_dir)
     torch.manual_seed(42)
     # Setting the device to work with
@@ -114,11 +114,11 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
                                   time_multiple           = cfg.MODEL.TIME_EMB_MULT,
                                   condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
-    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch))
+    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     logging.info(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
-    match = re.search(r'TE\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d+_CE\d', model_fullname)
+    match = re.search(r'TE\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
 
     # Instantiate the diffusion model
     timesteps=cfg.DIFFUSION.TIMESTEPS

@@ -22,7 +22,7 @@ MACROPROPS:
   TIME_RES: 0.5
   MPROPS_COUNT: 3
 DATASET:
-  NAME: "ATC4TEST-4D"
+  NAME: "ATC4TEST"
   PAST_LEN: 5
   FUTURE_LEN: 3 # predicted sequence by difussion at training ang generation
   TRAIN_FILE_COUNT: 3
