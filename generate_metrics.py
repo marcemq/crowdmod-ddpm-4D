@@ -89,7 +89,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
     else:
         samples_per_batch = cfg.DATASET.BATCH_SIZE*chunkRepdPastSeq
 
-    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_modelE{epoch}"
+    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_VN{cfg.DATASET.VELOCITY_NORM}_modelE{epoch}"
     create_directory(output_dir)
     torch.manual_seed(42)
     # Setting the device to work with

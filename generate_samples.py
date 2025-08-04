@@ -38,7 +38,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
     return grid_img
 
 def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1, samePastSeq=False, headwidth=5):
-    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_modelE{epoch}"
+    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_VN{cfg.DATASET.VELOCITY_NORM}_modelE{epoch}"
     create_directory(output_dir)
     torch.manual_seed(42)
     # Setting the device to work with
