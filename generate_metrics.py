@@ -181,10 +181,10 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
             if bhatt_flag:
                 metrics_data_dict["MOTION_FEAT_BHATT_DIST"].append(mfeat_bhatt_dist)
                 metrics_data_dict["MOTION_FEAT_BHATT_COEF"].append(mfeat_bhatt_coef)
-        if metric in ['ENERGY', 'ALL']:
-            mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
-            metrics_data_dict['ENERGY'].append(mprops_energy)
-            metrics_data_dict['MIN-ENERGY'].append(mprops_min_energy)
+        #if metric in ['ENERGY', 'ALL']:
+        #    mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
+        #    metrics_data_dict['ENERGY'].append(mprops_energy)
+        #    metrics_data_dict['MIN-ENERGY'].append(mprops_min_energy)
         if metric in ['RE_DENSITY', 'ALL']:
             mprops_re_density, mprops_min_re_density = re_density_mprops_seq(gt_seq_list, pred_seq_list, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
             metrics_data_dict['RE_DENSITY'].append(mprops_re_density)
