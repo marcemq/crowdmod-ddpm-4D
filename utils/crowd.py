@@ -5,7 +5,7 @@ import numpy as np
 import logging
 import pickle
 import sys
-from utils.plot import drawMacroProps, drawPredMacroProps
+from utils.plot.plot import drawMacroProps, drawPredMacroProps
 from datetime import datetime
 from matplotlib import pyplot as plt
 import imageio

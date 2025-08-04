@@ -43,9 +43,10 @@ MODEL:
   APPLY_ATTENTION: [False, False, True, False]
   DROPOUT_RATE: 0.1
   TIME_EMB_MULT: 4 # 128
-  SAVE_DIR: "saved_models/"
+  SAVE_DIR: "saved_models/hermes_bo/"
   OUTPUT_DIR : "output_hermes_bo"
-  MODEL_NAME: "UNet_Mprops4D_SizeS_HERMESBO_E{}_LR{}_TFC{}_PL{}_FL{}_VN{}.pth"
+  MODEL_NAME: "UNet_Mprops4D_HERMESBO_TE{}_LR{}_TFC{}_PL{}_FL{}_CE{}_VN{}.pth"
+  MODEL_SAMPLES: 7
   RETRAIN: False
   MIN_RHO_4_PRED: 20
 DIFFUSION:
@@ -55,7 +56,7 @@ DIFFUSION:
   DDIM_DIVIDER: 90    # Define number of timesteps to divide by
   NSAMPLES: 1280      # Define number of predicted samples (64 BS * 20 rep, default values)
   NSAMPLES4PLOTS: 20  # Define number of predicted samples to plot static and dynamic seqs
-  PRED_MPROPS_FACTOR: [1, 10, 10, 10] # QA: not sure if we still needs this
+  PRED_MPROPS_FACTOR: [1, 1, 1, 1] # QA: not sure if we still needs this
   GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
 METRICS:
   MOTION_FEATURE:
