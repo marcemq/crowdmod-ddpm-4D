@@ -25,15 +25,15 @@ if __name__ == '__main__':
     cfg = getYamlConfig(args.config_yml_file)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    denoiser_model = MacropropsDenoiser(num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
-                                base_channels           = cfg.MODEL.BASE_CH,
-                                base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
-                                apply_attention         = cfg.MODEL.APPLY_ATTENTION,
-                                dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                time_multiple           = cfg.MODEL.TIME_EMB_MULT,
-                                condition               = cfg.MODEL.CONDITION)
+    denoiser_model = MacropropsDenoiser(num_res_blocks = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
+                                base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
+                                base_channels_multiples = cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
+                                apply_attention         = cfg.MODEL.DDPM.UNET.APPLY_ATTENTION,
+                                dropout_rate            = cfg.MODEL.DDPM.UNET.DROPOUT_RATE,
+                                time_multiple           = cfg.MODEL.DDPM.UNET.TIME_EMB_MULT,
+                                condition               = cfg.MODEL.DDPM.UNET.CONDITION)
 
-    diffusion_model = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS, scale=cfg.DIFFUSION.SCALE)
+    diffusion_model = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS, scale=cfg.MODEL.DDPM.SCALE)
 
     denoiser_model.to(device)
     diffusion_model.to(device)

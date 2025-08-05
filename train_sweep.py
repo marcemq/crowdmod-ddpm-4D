@@ -47,13 +47,13 @@ def train(cfg, filenames, show_losses_plot=False):
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(input_channels = cfg.MACROPROPS.MPROPS_COUNT,
                                   output_channels = cfg.MACROPROPS.MPROPS_COUNT,
-                                  num_res_blocks = cfg.MODEL.NUM_RES_BLOCKS,
+                                  num_res_blocks = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
                                   base_channels           = wandb.config.base_ch,
-                                  base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
-                                  apply_attention         = cfg.MODEL.APPLY_ATTENTION,
+                                  base_channels_multiples = cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.DDPM.UNET.APPLY_ATTENTION,
                                   dropout_rate            = wandb.config.dropout_rate,
                                   time_multiple           = wandb.config.time_emb_mult,
-                                  condition               = cfg.MODEL.CONDITION)
+                                  condition               = cfg.MODEL.DDPM.UNET.CONDITION)
     denoiser.to(device)
     #specific_timesteps = [250]
     #t = torch.as_tensor(specific_timesteps, dtype=torch.long)
@@ -87,7 +87,7 @@ def train(cfg, filenames, show_losses_plot=False):
                 # Create a new directory if it does not exist
                 os.makedirs(cfg.DATA_FS.SAVE_DIR)
             lr_str = "{:.0e}".format(wandb.config.learning_rate)
-            save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(wandb.config.epochs, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
+            save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(wandb.config.epochs, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
             torch.save(checkpoint_dict, save_path)
             del checkpoint_dict
 

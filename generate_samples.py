@@ -55,26 +55,23 @@ def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotP
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
                                   output_channels = cfg.MACROPROPS.MPROPS_COUNT,
-                                  num_res_blocks  = cfg.MODEL.NUM_RES_BLOCKS,
-                                  base_channels           = cfg.MODEL.BASE_CH,
-                                  base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
-                                  apply_attention         = cfg.MODEL.APPLY_ATTENTION,
-                                  dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                  time_multiple           = cfg.MODEL.TIME_EMB_MULT,
-                                  condition               = cfg.MODEL.CONDITION)
-    lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
-    if re.search(r"[{}]", cfg.MODEL.MODEL_NAME):
-        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
-    else:
-        model_fullname = cfg.DATA_FS.SAVE_DIR+cfg.MODEL.MODEL_NAME
+                                  num_res_blocks  = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
+                                  base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
+                                  base_channels_multiples = cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.DDPM.UNET.APPLY_ATTENTION,
+                                  dropout_rate            = cfg.MODEL.DDPM.UNET.DROPOUT_RATE,
+                                  time_multiple           = cfg.MODEL.DDPM.UNET.TIME_EMB_MULT,
+                                  condition               = cfg.MODEL.DDPM.UNET.CONDITION)
+
+    model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format("UNet", cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     logging.info(f'model full name:{model_fullname}')
 
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
 
     # Instantiate the diffusion model 
-    timesteps=cfg.DIFFUSION.TIMESTEPS
-    diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS)
+    timesteps=cfg.MODEL.DDPM.TIMESTEPS
+    diffusionmodel = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS)
     diffusionmodel.to(device)
     seq_frames = []
     taus = 1
@@ -83,7 +80,7 @@ def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotP
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
         #x_train, y_train, stats = batch
-        random_past_idx = torch.randperm(past_test.shape[0])[:cfg.DIFFUSION.NSAMPLES4PLOTS]
+        random_past_idx = torch.randperm(past_test.shape[0])[:cfg.MODEL.NSAMPLES4PLOTS]
         # Predict different sequences for the same past sequence
         if samePastSeq:
             fixed_past_idx = random_past_idx[0]
@@ -91,17 +88,17 @@ def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotP
 
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
-        if cfg.DIFFUSION.SAMPLER == "DDPM":
-            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, cfg.DIFFUSION.NSAMPLES4PLOTS) # AR review .cpu() call here
-            if cfg.DIFFUSION.GUIDANCE == "sparsity" or cfg.DIFFUSION.GUIDANCE == "none":
+        if cfg.MODEL.DDPM.SAMPLER == "DDPM":
+            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS) # AR review .cpu() call here
+            if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE == "none":
                 l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
-                print('L1 norm {:.2f}'.format(l1))
-        elif cfg.DIFFUSION.SAMPLER == "DDIM":
-            taus = np.arange(0,timesteps,cfg.DIFFUSION.DDIM_DIVIDER)
-            print(f'taus:{taus}')
-            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, cfg.DIFFUSION.NSAMPLES4PLOTS) # AR review .cpu() call here
+                logging.info('L1 norm {:.2f}'.format(l1))
+        elif cfg.MODEL.DDPM.SAMPLER == "DDIM":
+            taus = np.arange(0,timesteps,cfg.MODEL.DDPM.DDIM_DIVIDER)
+            logging.info(f'taus:{taus}')
+            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS) # AR review .cpu() call here
         else:
-            print(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
+            logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
         future_sample_pred = x
         for i in range(len(random_past_idx)):

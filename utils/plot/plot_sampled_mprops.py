@@ -25,7 +25,7 @@ def _get_j_indexes(cfg, plotPast):
 def _get_rho_limits(cfg, seq_frames, j_indexes):
     rho_min, rho_max = 0, float('-inf')  # Set the color limits here
 
-    for i in range(cfg.DIFFUSION.NSAMPLES4PLOTS * 2):
+    for i in range(cfg.MODEL.NSAMPLES4PLOTS * 2):
         one_seq_img = seq_frames[i]
         for j in j_indexes:
             one_sample_img = one_seq_img[:, :, :, j]
@@ -36,27 +36,27 @@ def _get_rho_limits(cfg, seq_frames, j_indexes):
 
 def plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale, output_dir):
     if plotMprop=="Density":
-        title = f"Sampling density for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
-        figName = f"{output_dir}/mpSampling_{cfg.DIFFUSION.SAMPLER}_4Density_{match.group()}.svg"
+        title = f"Sampling density for diffusion process using {cfg.MODEL.DDPM.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
+        figName = f"{output_dir}/mpSampling_{cfg.MODEL.DDPM.SAMPLER}_4Density_{match.group()}.svg"
     elif plotMprop=="Uncertainty":
-        title = f"Sampling uncertainty for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
-        figName = f"{output_dir}/mpSampling_{cfg.DIFFUSION.SAMPLER}_4Uncertainty_{match.group()}.svg"
+        title = f"Sampling uncertainty for diffusion process using {cfg.MODEL.DDPM.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
+        figName = f"{output_dir}/mpSampling_{cfg.MODEL.DDPM.SAMPLER}_4Uncertainty_{match.group()}.svg"
     else:
-        title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
-        figName= f"{output_dir}/mpSampling_{cfg.DIFFUSION.SAMPLER}_{match.group()}.svg"
+        title =  f"Sampling for diffusion process using {cfg.MODEL.DDPM.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
+        figName= f"{output_dir}/mpSampling_{cfg.MODEL.DDPM.SAMPLER}_{match.group()}.svg"
 
     j_indexes = _get_j_indexes(cfg, plotPast)
     rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
 
-    fig, ax = plt.subplots(cfg.DIFFUSION.NSAMPLES4PLOTS*2, len(j_indexes), figsize=(10,8), facecolor='white')
+    fig, ax = plt.subplots(cfg.MODEL.NSAMPLES4PLOTS*2, len(j_indexes), figsize=(10,8), facecolor='white')
     fig.subplots_adjust(hspace=0.1, wspace=0.1)
 
-    for i in range(cfg.DIFFUSION.NSAMPLES4PLOTS*2):
+    for i in range(cfg.MODEL.NSAMPLES4PLOTS*2):
         one_seq_img = seq_frames[i]
         for ind, j in enumerate(j_indexes):
             if ind == 0:
                 label = f"GT\nseq-{i // 2 + 1}" if (i + 1) % 2 == 0 else f"Pred\nseq-{i // 2 + 1}"
-                fig.text(0.11, 0.845 - i / (cfg.DIFFUSION.NSAMPLES4PLOTS * 2 + 4.6), label, fontsize=8, ha='center', va='center', rotation=90)
+                fig.text(0.11, 0.845 - i / (cfg.MODEL.NSAMPLES4PLOTS * 2 + 4.6), label, fontsize=8, ha='center', va='center', rotation=90)
 
             one_sample_img = one_seq_img[:,:,:,j].cpu()
             rho = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
@@ -92,10 +92,10 @@ def plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, 
 def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale, headwidth, output_dir):
     j_indexes = _get_j_indexes(cfg, plotPast="All")
     rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
-    title =  f"Sampling for diffusion process using {cfg.DIFFUSION.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
+    title =  f"Sampling for diffusion process using {cfg.MODEL.DDPM.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
 
     # Iterate over each sequence to create a GIF for each
-    for i in range(cfg.DIFFUSION.NSAMPLES4PLOTS*2):
+    for i in range(cfg.MODEL.NSAMPLES4PLOTS*2):
         if cfg.DATASET.NAME in ["ATC", "HERMES-BO"]:
             fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
         elif cfg.DATASET.NAME in ["HERMES-CR-120", "HERMES-CR-120-OBST"]:
@@ -151,7 +151,7 @@ def plotDensityOverTime(seq_frames, cfg, output_dir):
     logging.info(f'Seq frame shape: {seq_frames[0].shape}')
 
     _, _, _, L = seq_frames[0].shape  # Get sequence length dynamically
-    n_samples = cfg.DIFFUSION.NSAMPLES4PLOTS
+    n_samples = cfg.MODEL.NSAMPLES4PLOTS
 
     for i in range(n_samples):
         rho_pred = seq_frames[2 * i][0, :, :, :].sum(dim=(0, 1)).cpu().numpy()
