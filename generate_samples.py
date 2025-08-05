@@ -110,7 +110,7 @@ def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotP
             seq_frames.append(seq_pred)
             seq_frames.append(seq_gt)
 
-        match = re.search(r'TE\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
+        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
         if plotType == "Static":
             plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale, output_dir)
         elif plotType == "Dynamic":
