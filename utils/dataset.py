@@ -86,8 +86,8 @@ def getMacropropsFromFilenames(filenames, mprops_count):
     return data[:, 0:mprops_count, :, :, :], stats
 
 def dataHelper(cfg, filenames, mprops_count, train_data_only=False, test_data_only=False):
-    "Compute macroprops sequences and split data by filecount defined at config file."
-    if not cfg.PICKLE.USE_PICKLE:
+    "Load macroprops sequences and split data by filecount defined at config file."
+    if not cfg.DATA_FS.USE_PICKLE:
         logging.info("Read macroproperties data to define train, validation and test sets.")
 
         random.shuffle(filenames)
@@ -105,14 +105,14 @@ def dataHelper(cfg, filenames, mprops_count, train_data_only=False, test_data_on
             train_data, train_stats = getMacropropsFromFilenames(train_filenames, mprops_count)
             val_data, val_stats = getMacropropsFromFilenames(val_filenames, mprops_count)
             test_data, test_stats = getMacropropsFromFilenames(test_filenames, mprops_count)
-        #saveData(train_data, val_data, test_data, cfg.PICKLE.PICKLE_DIR)
+
     else:
         logging.info("Unpickling data...")
-        pickle_in = open(cfg.PICKLE.PICKLE_DIR+"train_data.pkl","rb")
+        pickle_in = open(cfg.DATA_FS.PICKLE_DIR+"train_data.pkl","rb")
         train_data = pickle.load(pickle_in)
-        pickle_in = open(cfg.PICKLE.PICKLE_DIR+"val_data.pkl","rb")
+        pickle_in = open(cfg.DATA_FS.PICKLE_DIR+"val_data.pkl","rb")
         val_data = pickle.load(pickle_in)
-        pickle_in = open(cfg.PICKLE.PICKLE_DIR+"test_data.pkl","rb")
+        pickle_in = open(cfg.DATA_FS.PICKLE_DIR+"test_data.pkl","rb")
         test_data = pickle.load(pickle_in)
 
     if train_data_only:

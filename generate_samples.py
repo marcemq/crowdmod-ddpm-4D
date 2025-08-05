@@ -38,7 +38,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
     return grid_img
 
 def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1, samePastSeq=False, headwidth=5):
-    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_VN{cfg.DATASET.VELOCITY_NORM}_modelE{epoch}"
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/DDPM_UNet_VN{cfg.DATASET.VELOCITY_NORM}_modelE{epoch}"
     create_directory(output_dir)
     torch.manual_seed(42)
     # Setting the device to work with
@@ -64,9 +64,9 @@ def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotP
                                   condition               = cfg.MODEL.CONDITION)
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
     if re.search(r"[{}]", cfg.MODEL.MODEL_NAME):
-        model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     else:
-        model_fullname = cfg.MODEL.SAVE_DIR+cfg.MODEL.MODEL_NAME
+        model_fullname = cfg.DATA_FS.SAVE_DIR+cfg.MODEL.MODEL_NAME
     logging.info(f'model full name:{model_fullname}')
 
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     else:
         logging.info("Dataset not supported")
 
-    filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     generate_samples(cfg, filenames, plotType=args.plot_type, epoch=args.model_sample_to_load, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, samePastSeq=args.same_past_seq, headwidth=args.headwidth)
 
 # execution example:

@@ -31,9 +31,9 @@ def save_checkpoint(optimizer, denoiser, epoch, cfg, best_flag=False):
     lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
 
     if best_flag:
-        save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, "best", cfg.DATASET.VELOCITY_NORM))
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, "best", cfg.DATASET.VELOCITY_NORM))
     else:
-        save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
 
     torch.save(checkpoint_dict, save_path)
     del checkpoint_dict
@@ -54,8 +54,8 @@ def train(cfg, filenames, show_losses_plot=False):
         }
     )
     # Create a new directory if it does not exist
-    if not os.path.exists(cfg.MODEL.SAVE_DIR):
-        os.makedirs(cfg.MODEL.SAVE_DIR)
+    if not os.path.exists(cfg.DATA_FS.SAVE_DIR):
+        os.makedirs(cfg.DATA_FS.SAVE_DIR)
 
     torch.manual_seed(42)
     # Setting the device to work with
@@ -136,5 +136,5 @@ if __name__ == '__main__':
     else:
         logging.info("Dataset not supported")
 
-    filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     train(cfg, filenames)

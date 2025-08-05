@@ -1,8 +1,9 @@
-DATA_AGGREGATION:
+DATA_FS:
   RAW_DATA_DIR: 'datasets/HERMES-CR-120/rawData/'
   AGG_DATA_DIR: 'datasets/HERMES-CR-120/aggData/'
-PICKLE:
-  PICKLE_DIR: '/datasets/HERMES-CR-120/processed/'
+  PICKLE_DIR: 'datasets/HERMES-CR-120/processed/'
+  OUTPUT_DIR : "output_hermes_cr_120"
+  SAVE_DIR: "saved_models/hermes_cr_120/"
   USE_PICKLE: False
 MACROPROPS:
   # Grid size
@@ -43,12 +44,12 @@ MODEL:
   APPLY_ATTENTION: [False, False, True, False]
   DROPOUT_RATE: 0.1
   TIME_EMB_MULT: 4 # 128
-  SAVE_DIR: "saved_models/hermes_cr_120/"
-  OUTPUT_DIR : "output_hermes_cr_120"
   MODEL_NAME: "UNet_Mprops4D_HERMESCR_TE{}_LR{}_TFC{}_PL{}_FL{}_CE{}_VN{}.pth"
   MODEL_SAMPLES: 7
   RETRAIN: False
   MIN_RHO_4_PRED: 20
+CONVGRU_MODEL:
+  MODEL_NAME: "convGRU_Mprops4D_HERMESCR_TE{}_LR{}_TFC{}_PL{}_FL{}_CE{}_VN{}.pth"
 DIFFUSION:
   SAMPLER: "DDPM"
   TIMESTEPS: 1000     # Define canonical number of diffusion timesteps

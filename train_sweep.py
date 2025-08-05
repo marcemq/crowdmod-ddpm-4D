@@ -83,11 +83,11 @@ def train(cfg, filenames, show_losses_plot=False):
                 "opt": optimizer.state_dict(),
                 "model": denoiser.state_dict()
             }
-            if not os.path.exists(cfg.MODEL.SAVE_DIR):
+            if not os.path.exists(cfg.DATA_FS.SAVE_DIR):
                 # Create a new directory if it does not exist
-                os.makedirs(cfg.MODEL.SAVE_DIR)
+                os.makedirs(cfg.DATA_FS.SAVE_DIR)
             lr_str = "{:.0e}".format(wandb.config.learning_rate)
-            save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(wandb.config.epochs, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
+            save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(wandb.config.epochs, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN))
             torch.save(checkpoint_dict, save_path)
             del checkpoint_dict
 
@@ -116,6 +116,6 @@ if __name__ == '__main__':
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
     filenames = cfg.SUNDAY_DATA_LIST
     filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
-    filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ddpm4D")
     wandb.agent(sweep_id, function=functools.partial(train, cfg, filenames), count=50)
