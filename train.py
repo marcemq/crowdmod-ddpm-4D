@@ -28,12 +28,11 @@ def save_checkpoint(optimizer, denoiser, epoch, cfg, best_flag=False):
         "opt": optimizer.state_dict(),
         "model": denoiser.state_dict()
     }
-    lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
 
     if best_flag:
-        save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, "best", cfg.DATASET.VELOCITY_NORM))
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format("UNet", cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, "best", cfg.DATASET.VELOCITY_NORM))
     else:
-        save_path = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format("UNet", cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
 
     torch.save(checkpoint_dict, save_path)
     del checkpoint_dict
@@ -54,8 +53,8 @@ def train(cfg, filenames, show_losses_plot=False):
         }
     )
     # Create a new directory if it does not exist
-    if not os.path.exists(cfg.MODEL.SAVE_DIR):
-        os.makedirs(cfg.MODEL.SAVE_DIR)
+    if not os.path.exists(cfg.DATA_FS.SAVE_DIR):
+        os.makedirs(cfg.DATA_FS.SAVE_DIR)
 
     torch.manual_seed(42)
     # Setting the device to work with
@@ -70,13 +69,13 @@ def train(cfg, filenames, show_losses_plot=False):
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
                                   output_channels = cfg.MACROPROPS.MPROPS_COUNT,
-                                  num_res_blocks  = cfg.MODEL.NUM_RES_BLOCKS,
-                                  base_channels           = cfg.MODEL.BASE_CH,
-                                  base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
-                                  apply_attention         = cfg.MODEL.APPLY_ATTENTION,
-                                  dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                  time_multiple           = cfg.MODEL.TIME_EMB_MULT,
-                                  condition               = cfg.MODEL.CONDITION)
+                                  num_res_blocks  = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
+                                  base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
+                                  base_channels_multiples = cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.DDPM.UNET.APPLY_ATTENTION,
+                                  dropout_rate            = cfg.MODEL.DDPM.UNET.DROPOUT_RATE,
+                                  time_multiple           = cfg.MODEL.DDPM.UNET.TIME_EMB_MULT,
+                                  condition               = cfg.MODEL.DDPM.UNET.CONDITION)
     denoiser.to(device)
     trainable_params = count_trainable_params(denoiser)
     logging.info(f"Total trainable parameters at denoiser:{trainable_params}")
@@ -84,13 +83,13 @@ def train(cfg, filenames, show_losses_plot=False):
     optimizer = optim.Adam(denoiser.parameters(),lr=cfg.TRAIN.SOLVER.LR, betas=cfg.TRAIN.SOLVER.BETAS,weight_decay=cfg.TRAIN.SOLVER.WEIGHT_DECAY)
 
     # Instantiate the diffusion model
-    diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS, scale=cfg.DIFFUSION.SCALE)
+    diffusionmodel = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS, scale=cfg.MODEL.DDPM.SCALE)
     diffusionmodel.to(device)
 
 
     best_loss      = 1e6
     consecutive_nan_count = 0
-    epoch_model_samples = np.random.randint(150, cfg.TRAIN.EPOCHS + 1, size=cfg.MODEL.MODEL_SAMPLES)
+    epoch_model_samples = np.random.randint(150, cfg.TRAIN.EPOCHS + 1, size=cfg.MODEL.DDPM.MODEL_SAMPLES)
     # Training loop
     for epoch in range(1,cfg.TRAIN.EPOCHS + 1):
         torch.cuda.empty_cache()
@@ -136,5 +135,5 @@ if __name__ == '__main__':
     else:
         logging.info("Dataset not supported")
 
-    filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     train(cfg, filenames)

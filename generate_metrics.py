@@ -84,12 +84,12 @@ def get_metrics_dicts():
 
 def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, epoch):
     if chunkRepdPastSeq == None:
-        samples_per_batch = cfg.DIFFUSION.NSAMPLES
+        samples_per_batch = cfg.MODEL.NSAMPLES
         chunkRepdPastSeq = 20
     else:
         samples_per_batch = cfg.DATASET.BATCH_SIZE*chunkRepdPastSeq
 
-    output_dir = f"{cfg.MODEL.OUTPUT_DIR}/DDPM_UNet_VN{cfg.DATASET.VELOCITY_NORM}_modelE{epoch}"
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/DDPM_UNet_VN{cfg.DATASET.VELOCITY_NORM}_modelE{epoch}"
     create_directory(output_dir)
     torch.manual_seed(42)
     # Setting the device to work with
@@ -106,23 +106,23 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
                                   output_channels = cfg.MACROPROPS.MPROPS_COUNT,
-                                  num_res_blocks  = cfg.MODEL.NUM_RES_BLOCKS,
-                                  base_channels           = cfg.MODEL.BASE_CH,
-                                  base_channels_multiples = cfg.MODEL.BASE_CH_MULT,
-                                  apply_attention         = cfg.MODEL.APPLY_ATTENTION,
-                                  dropout_rate            = cfg.MODEL.DROPOUT_RATE,
-                                  time_multiple           = cfg.MODEL.TIME_EMB_MULT,
-                                  condition               = cfg.MODEL.CONDITION)
-    lr_str = "{:.0e}".format(cfg.TRAIN.SOLVER.LR)
-    model_fullname = cfg.MODEL.SAVE_DIR+(cfg.MODEL.MODEL_NAME.format(cfg.TRAIN.EPOCHS, lr_str, cfg.DATASET.TRAIN_FILE_COUNT, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+                                  num_res_blocks  = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
+                                  base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
+                                  base_channels_multiples = cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.DDPM.UNET.APPLY_ATTENTION,
+                                  dropout_rate            = cfg.MODEL.DDPM.UNET.DROPOUT_RATE,
+                                  time_multiple           = cfg.MODEL.DDPM.UNET.TIME_EMB_MULT,
+                                  condition               = cfg.MODEL.DDPM.UNET.CONDITION)
+
+    model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format("UNet", cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     logging.info(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
-    match = re.search(r'TE\d+_LR\de-\d+_TFC\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
+    match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
 
     # Instantiate the diffusion model
-    timesteps=cfg.DIFFUSION.TIMESTEPS
-    diffusionmodel = DDPM(timesteps=cfg.DIFFUSION.TIMESTEPS)
+    timesteps=cfg.MODEL.DDPM.TIMESTEPS
+    diffusionmodel = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS)
     diffusionmodel.to(device)
     taus = 1
     count_batch = 0
@@ -144,17 +144,17 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
 
-        if cfg.DIFFUSION.SAMPLER == "DDPM":
+        if cfg.MODEL.DDPM.SAMPLER == "DDPM":
             x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
-            if cfg.DIFFUSION.GUIDANCE == "sparsity" or cfg.DIFFUSION.GUIDANCE=="mass_preservation" or cfg.DIFFUSION.GUIDANCE == "None":
+            if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE=="mass_preservation" or cfg.MODEL.DDPM.GUIDANCE == "None":
                 l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
-                logging.info(f'L1 norm {l1:.2f} using {cfg.DIFFUSION.GUIDANCE} guidance')
-        elif cfg.DIFFUSION.SAMPLER == "DDIM":
-            taus = np.arange(0,timesteps,cfg.DIFFUSION.DDIM_DIVIDER)
+                logging.info(f'L1 norm {l1:.2f} using {cfg.MODEL.DDPM.GUIDANCE} guidance')
+        elif cfg.MODEL.DDPM.SAMPLER == "DDIM":
+            taus = np.arange(0,timesteps,cfg.MODEL.DDPM.DDIM_DIVIDER)
             logging.info(f'taus:{taus}')
             x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
         else:
-            logging.info(f"{cfg.DIFFUSION.SAMPLER} sampler not supported")
+            logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
         future_samples_pred = x
         pred_seq_list, gt_seq_list = [], []
@@ -163,11 +163,11 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
             gt_seq_list.append(random_future_samples[i])
 
         if metric in ['PSNR', 'ALL']:
-            mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.MACROPROPS.MPROPS_COUNT)
+            mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.MACROPROPS.MPROPS_COUNT)
             metrics_data_dict['PSNR'].append(mprops_psnr)
             metrics_data_dict['MAX-PSNR'].append(mprops_max_psnr)
         if metric in ['SSIM', 'ALL']:
-            mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
+            mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
             metrics_data_dict['SSIM'].append(mprops_ssim)
             metrics_data_dict['MAX-SSIM'].append(mprops_max_ssim)
         if metric in ['MOTION_FEAT_MSE', 'MOTION_FEAT_BHATT', 'ALL']:
@@ -182,7 +182,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
                 metrics_data_dict["MOTION_FEAT_BHATT_DIST"].append(mfeat_bhatt_dist)
                 metrics_data_dict["MOTION_FEAT_BHATT_COEF"].append(mfeat_bhatt_coef)
         #if metric in ['ENERGY', 'ALL']:
-        #    mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.DIFFUSION.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
+        #    mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
         #    metrics_data_dict['ENERGY'].append(mprops_energy)
         #    metrics_data_dict['MIN-ENERGY'].append(mprops_min_energy)
         if metric in ['RE_DENSITY', 'ALL']:
@@ -217,5 +217,5 @@ if __name__ == '__main__':
     else:
         logging.info("Dataset not supported")
 
-    filenames = [ os.path.join(cfg.PICKLE.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     generate_metrics(cfg, filenames, chunkRepdPastSeq=args.chunk_repd_past_seq, metric=args.metric, batches_to_use=args.batches_to_use, epoch=args.model_sample_to_load)
