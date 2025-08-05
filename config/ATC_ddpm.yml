@@ -37,29 +37,32 @@ DATASET:
   DATASET_TYPE: 'ByFilenames'    # Available options: ByFilenames|BySplitRatio|ByFilenames4Test
   VELOCITY_NORM: True
 MODEL:
-  CONDITION: "Past"
-  CONDITION_HANDLING: "embed"
-  NUM_RES_BLOCKS: 1
-  BASE_CH: 32  # 64, 128, 256, 512
-  BASE_CH_MULT: [1, 2, 4] # 32, 16, 8, 4
-  APPLY_ATTENTION: [False, False, True, False]
-  DROPOUT_RATE: 0.1
-  TIME_EMB_MULT: 4 # 128
-  MODEL_NAME: "UNet_Mprops4D_ATC_TE{}_LR{}_TFC{}_PL{}_FL{}_CE{}_VN{}.pth"
-  MODEL_SAMPLES: 7
-  RETRAIN: False
-  MIN_RHO_4_PRED: 20
-CONVGRU_MODEL:
-  MODEL_NAME: "convGRU_Mprops4D_ATC_TE{}_LR{}_TFC{}_PL{}_FL{}_CE{}_VN{}.pth"
-DIFFUSION:
-  SAMPLER: "DDPM"
-  TIMESTEPS: 1000     # Define canonical number of diffusion timesteps
-  SCALE: 0.5          # Define scale for betas in model
-  DDIM_DIVIDER: 90    # Define number of timesteps to divide by
+  NAME: "ARCH-{}_ATC_TE{}_PL{}_FL{}_CE{}_VN{}.pth"
   NSAMPLES: 1280      # Define number of predicted samples (64 BS * 20 rep, default values)
   NSAMPLES4PLOTS: 20  # Define number of predicted samples to plot static and dynamic seqs
-  PRED_MPROPS_FACTOR: [1, 10, 10, 10]
-  GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
+  DDPM:
+    SAMPLER: "DDPM"
+    TIMESTEPS: 1000     # Define canonical number of diffusion timesteps
+    SCALE: 0.5          # Define scale for betas in model
+    DDIM_DIVIDER: 90    # Define number of timesteps to divide by
+    PRED_MPROPS_FACTOR: [1, 10, 10, 10]
+    GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
+    MODEL_SAMPLES: 7
+    UNET:
+      CONDITION: "Past"
+      CONDITION_HANDLING: "embed"
+      NUM_RES_BLOCKS: 1
+      BASE_CH: 32  # 64, 128, 256, 512
+      BASE_CH_MULT: [1, 2, 4] # 32, 16, 8, 4
+      APPLY_ATTENTION: [False, False, True, False]
+      DROPOUT_RATE: 0.1
+      TIME_EMB_MULT: 4 # 128
+    VIT:
+      TMP_VAR: "Placeholder"
+  FLOW_MATCHING:
+    TMP_VAR: "Placeholder"
+  CONVGRU:
+    TMP_VAR: "Placeholder"
 METRICS:
   MOTION_FEATURE:
     f: 1    # Number of frames of each volume
