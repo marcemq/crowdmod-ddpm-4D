@@ -1,7 +1,7 @@
 DATA_FS:
   RAW_DATA_DIR: 'datasets/HERMES-CR-120/rawData/'
   AGG_DATA_DIR: 'datasets/HERMES-CR-120/aggData/'
-  PICKLE_DIR: 'datasets/HERMES-CR-120/processed/'
+  PICKLE_DIR: '/datasets/HERMES-CR-120/processed/'
   OUTPUT_DIR : "output_hermes_cr_120"
   SAVE_DIR: "saved_models/hermes_cr_120/"
   USE_PICKLE: False
