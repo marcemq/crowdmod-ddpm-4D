@@ -73,7 +73,7 @@ def train_one_epoch_convGRU(convGRU_model, train_data_loader, val_data_loader, o
             past_train, future_train = past_train.float(), future_train.float()
             past_train, future_train = past_train.to(device=device), future_train.to(device=device)
             # Evaluate losses
-            rloss, vloss = evaluate_loss(convGRU_model, past_train, future_train,device, teacher_forcing)
+            rloss, vloss = evaluate_loss(convGRU_model, past_train, future_train, teacher_forcing)
             # Total loss
             loss = rloss + vloss
            # Backward pass
@@ -98,7 +98,7 @@ def train_one_epoch_convGRU(convGRU_model, train_data_loader, val_data_loader, o
                 past_val, future_val, stats = batched_val_data
                 past_val, future_val = past_val.float(), future_val.float()
                 past_val, future_val = past_val.to(device=device), future_train.to(device=device)
-                rloss, vloss = evaluate_loss(convGRU_model, past_val, future_val, device, teacher_forcing)
+                rloss, vloss = evaluate_loss(convGRU_model, past_val, future_val, teacher_forcing)
                 val_loss = rloss + vloss
                 # Total loss
                 val_loss = rloss + vloss

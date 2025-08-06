@@ -12,13 +12,9 @@ def divKLGaussianLoss(mu_hat, sigma_hat, mu_gt, sigma_gt):
     loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + sigma_gt*div - torch.log(sigma_gt*div) - 1
     return loss
 
-def evaluate_loss(model, x, y, device, teacher_forcing):
-    # Send batch to device
-    x, y = x.float(), y.float()
-    x    = x.to(device=device)
-    y    = y.to(device=device)
+def evaluate_loss(model, x, y, teacher_forcing):
     # Forward pass
-    yhat = model(x, y, device=device, teacher_forcing=teacher_forcing)
+    yhat = model(x, y, teacher_forcing=teacher_forcing)
     # Estimated density
     rho_hat = torch.clamp(torch.exp(yhat[:,0:1,:,:,:]), min=1e-8, max=20)
     # Ground truth density

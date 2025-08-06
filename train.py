@@ -84,7 +84,7 @@ def train_ddpm(cfg, filenames, arch):
 
         # One epoch of training
         epoch_loss = train_one_epoch(denoiser,diffusionmodel,batched_train_data,optimizer,device,epoch=epoch,total_epochs=cfg.TRAIN.EPOCHS)
-        wandb.log({"loss": epoch_loss})
+        wandb.log({"train_loss": epoch_loss})
         # NaN handling / early stopping
         if np.isnan(epoch_loss):
             consecutive_nan_count += 1
@@ -137,7 +137,7 @@ def train_convGRU(cfg, filenames, arch):
     for epoch in range(1,cfg.TRAIN.EPOCHS + 1):
         torch.cuda.empty_cache()
         gc.collect()
-        epoch_train_loss, epoch_val_loss = train_one_epoch_convGRU(convGRU_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=cfg.TRAIN.EPOCHS)
+        epoch_train_loss, epoch_val_loss = train_one_epoch_convGRU(convGRU_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=cfg.TRAIN.EPOCHS, teacher_forcing=cfg.MODEL.CONVGRU.TEACHER_FORCING)
         wandb.log({"train_loss": epoch_train_loss})
         wandb.log({"val_loss": epoch_val_loss})
         # NaN handling / early stopping
@@ -196,9 +196,9 @@ def training_mgmt(args, cfg):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
-    parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
-    parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
-    parser.add_argument('--arch', type=str, default='DDPM-UNet',help='Architecture to be used, options: DDPM-UNet|ConvGRU')
+    parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
+    parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
+    parser.add_argument('--arch', type=str, default='ConvGRU',help='Architecture to be used, options: DDPM-UNet|ConvGRU')
     args = parser.parse_args()
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
     training_mgmt(args, cfg)

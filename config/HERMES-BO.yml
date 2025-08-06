@@ -33,6 +33,7 @@ DATASET:
   params:
     shuffle: True
     num_workers: 6
+    drop_last: True
   DATASET_TYPE: 'BySplitRatio'    # Available options: ByFilenames|BySplitRatio|ByFilenames4Test
   VELOCITY_NORM: False
 MODEL:

@@ -22,7 +22,7 @@ MACROPROPS:
   WINDOWSIZE: 1
   THETA: 2.5647
   TIME_RES: 0.5
-  MPROPS_COUNT: 3
+  MPROPS_COUNT: 4   # 3 for DDPM and Flow Matching models
 DATASET:
   NAME: "ATC4TEST"
   PAST_LEN: 5
@@ -34,6 +34,7 @@ DATASET:
   params:
     shuffle: True
     num_workers: 6
+    drop_last: True
   DATASET_TYPE: 'ByFilenames'    # Available options: ByFilenames|BySplitRatio|ByFilenames4Test
   VELOCITY_NORM: True
 MODEL:

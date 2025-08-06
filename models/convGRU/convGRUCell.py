@@ -5,7 +5,7 @@ from torch import nn
 from torch.autograd import Variable
 
 class ConvGRUCell(nn.Module):
-    def __init__(self, input_size, input_dim, hidden_dim, kernel_size, bias, dtype):
+    def __init__(self, input_size, input_dim, hidden_dim, kernel_size, bias):
         """
         Initialize the ConvGRU cell.
 
@@ -15,14 +15,12 @@ class ConvGRUCell(nn.Module):
             hidden_dim int: Number of channels of hidden state.
             kernel_size (int, int): Size of the convolutional kernel.
             bias bool: Whether or not to add the bias.
-            dtype torch.cuda.FloatTensor or torch.FloatTensor: Whether or not to use cuda.
         """
         super(ConvGRUCell, self).__init__()
         self.height, self.width = input_size
         self.padding = 1, 1
         self.hidden_dim = hidden_dim
         self.bias = bias
-        self.dtype = dtype
         self.tanh = nn.Tanh()
         self.sigmoid = nn.Sigmoid()
         self.reset_gate = nn.Conv2d(in_channels=input_dim + hidden_dim,
