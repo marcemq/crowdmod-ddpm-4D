@@ -5,6 +5,7 @@ from torch.cuda import amp
 from torchmetrics import MeanMetric
 from tqdm import tqdm
 from models.diffusion.ddpm import DDPM
+from utils.loss import evaluate_loss
 
 
 # Apply one training step
@@ -55,3 +56,57 @@ def train_one_epoch(denoiser_model:nn.Module,sampler:nn.Module,loader,optimizer,
         tq.set_postfix_str(s=f"Epoch Loss: {mean_loss:.4f}")
 
     return mean_loss
+
+def train_one_epoch_convGRU(convGRU_model, train_data_loader, val_data_loader, optimizer, device, epoch, total_epochs, teacher_forcing):
+    convGRU_model.to(device)
+    convGRU_model.train()
+    train_loss_record = MeanMetric()
+    val_loss_record = MeanMetric()
+
+    with tqdm(total=len(train_data_loader), dynamic_ncols=True) as tq:
+        tq.set_description(f"Train :: Epoch: {epoch}/{total_epochs}")
+        # Scan the training batches
+        for batched_train_data in train_data_loader:
+            tq.update(1)
+            # Take a batch of macropros sequences
+            past_train, future_train, stats = batched_train_data
+            past_train, future_train = past_train.float(), future_train.float()
+            past_train, future_train = past_train.to(device=device), future_train.to(device=device)
+            # Evaluate losses
+            rloss, vloss = evaluate_loss(convGRU_model, past_train, future_train,device, teacher_forcing)
+            # Total loss
+            loss = rloss + vloss
+           # Backward pass
+            optimizer.zero_grad()
+            loss.backward()
+            # Update weights
+            optimizer.step()
+            train_loss_value = loss.detach().item()
+            train_loss_record.update(train_loss_value)
+            tq.set_postfix_str(s=f" Training Loss: {train_loss_value:.4f}")
+
+        train_mean_loss = train_loss_record.compute().item()
+        tq.set_postfix_str(s=f"Epoch Loss: {train_mean_loss:.4f}")
+
+    with torch.no_grad():
+        with tqdm(total=len(val_data_loader), dynamic_ncols=True) as tq:
+            tq.set_description(f"Val :: Epoch: {epoch}/{total_epochs}")
+            # Scan the validation batches
+            for batched_val_data in val_data_loader:
+                tq.update(1)
+                # Take a batch of macropros sequences
+                past_val, future_val, stats = batched_val_data
+                past_val, future_val = past_val.float(), future_val.float()
+                past_val, future_val = past_val.to(device=device), future_train.to(device=device)
+                rloss, vloss = evaluate_loss(convGRU_model, past_val, future_val, device, teacher_forcing)
+                val_loss = rloss + vloss
+                # Total loss
+                val_loss = rloss + vloss
+                val_loss_value = val_loss.detach().item()
+                val_loss_record.update(val_loss_value)
+                tq.set_postfix_str(s=f" Val Loss: {val_loss_value:.4f}")
+
+        val_mean_loss = val_loss_record.compute().item()
+        tq.set_postfix_str(s=f"Epoch Loss: {val_mean_loss:.4f}")
+
+    return train_mean_loss, val_mean_loss
