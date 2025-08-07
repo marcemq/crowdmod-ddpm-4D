@@ -89,7 +89,7 @@ def plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, 
     plt.axis("off")
     fig.savefig(figName, format='svg', bbox_inches='tight')
 
-def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale, headwidth, output_dir):
+def plotDynamicMacroprops(seq_frames, cfg, velScale, headwidth, output_dir):
     j_indexes = _get_j_indexes(cfg, plotPast="All")
     rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
     title =  f"Sampling for diffusion process using {cfg.MODEL.DDPM.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"

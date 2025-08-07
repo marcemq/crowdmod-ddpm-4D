@@ -64,3 +64,9 @@ def generate_ddim(denoiser_model:nn.Module, past:torch.Tensor, taus, backward_sa
         sqrt_one_minus_alpha_bar_t      = sqrt_one_minus_alpha_bar_t_prev
         xnoisy_over_time.append(xnoisy)
     return xnoisy, xnoisy_over_time
+
+@torch.inference_mode()
+def generate_convGRU(convGRU_model):
+    # Set the model in evaluation mode
+    convGRU_model.eval()
+    return 1

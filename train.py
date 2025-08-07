@@ -2,7 +2,6 @@ import argparse
 import sys
 import os, re
 
-from models.convGRU.forecaster import Forecaster
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
@@ -24,6 +23,7 @@ from models.diffusion.forward import ForwardSampler
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from models.training import train_one_epoch, train_one_epoch_convGRU
+from models.convGRU.forecaster import Forecaster
 from functools import partial
 
 def save_checkpoint(optimizer, model, epoch, cfg, arch, best_flag=False):
@@ -50,7 +50,7 @@ def train_ddpm(cfg, filenames, arch):
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
         batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
     else:
-        logging.info(f"Dataset type not supported.")
+        logging.error(f"Dataset type not supported.")
 
     logging.info(f"Batched Train dataset loaded.")
     # Instanciate the UNet for the reverse diffusion
@@ -116,7 +116,7 @@ def train_convGRU(cfg, filenames, arch):
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
         batched_train_data, batched_val_data, _ = getDataset(cfg, filenames)
     else:
-        logging.info(f"Dataset type not supported.")
+        logging.error(f"Dataset type not supported.")
 
     logging.info(f"Batched Traininig  and Validation dataset loaded.")
 
@@ -138,8 +138,10 @@ def train_convGRU(cfg, filenames, arch):
         torch.cuda.empty_cache()
         gc.collect()
         epoch_train_loss, epoch_val_loss = train_one_epoch_convGRU(convGRU_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=cfg.TRAIN.EPOCHS, teacher_forcing=cfg.MODEL.CONVGRU.TEACHER_FORCING)
-        wandb.log({"train_loss": epoch_train_loss})
-        wandb.log({"val_loss": epoch_val_loss})
+        wandb.log({
+            "train_loss": epoch_train_loss,
+            "val_loss": epoch_val_loss
+        }, step=epoch)
         # NaN handling / early stopping
         if np.isnan(epoch_train_loss):
             consecutive_nan_count += 1
@@ -169,6 +171,7 @@ def training_mgmt(args, cfg):
         logging.info("Dataset not supported")
 
     filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    create_directory(cfg.DATA_FS.SAVE_DIR)
 
     # Initialize W&B
     wandb.init(
@@ -185,7 +188,6 @@ def training_mgmt(args, cfg):
             "solver_betas": cfg.TRAIN.SOLVER.BETAS,
         }
     )
-    create_directory(cfg.DATA_FS.SAVE_DIR)
 
     if args.arch == "DDPM-UNet":
         train_ddpm(cfg, filenames, arch=args.arch)
@@ -198,7 +200,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
-    parser.add_argument('--arch', type=str, default='DDPM-UNet',help='Architecture to be used, options: DDPM-UNet|ConvGRU')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|ConvGRU')
     args = parser.parse_args()
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
     training_mgmt(args, cfg)

@@ -4,10 +4,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os, re
 import logging
-from models.generate import generate_ddpm, generate_ddim
+from models.generate import generate_ddpm, generate_ddim, generate_convGRU
 
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
+from models.convGRU.forecaster import Forecaster
 from utils.dataset import getDataset, getClassicDataset, getDataset4Test
 from utils.utils import create_directory
 from utils.plot.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops, plotDensityOverTime
@@ -37,21 +38,10 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
         plt.show()
     return grid_img
 
-def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotPast="Last2", velScale=0.5, velUncScale=1, samePastSeq=False, headwidth=5):
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/DDPM_UNet_VN{cfg.DATASET.VELOCITY_NORM}_modelE{epoch}"
-    create_directory(output_dir)
+def generate_samples_ddpm(cfg, batched_test_data, plotType, output_dir, model_fullname, plotMprop, plotPast, velScale, velUncScale, samePastSeq, headwidth):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # Get batched datasets ready to iterate
-    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        _, batched_test_data = getClassicDataset(cfg, filenames)
-    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
-    elif cfg.DATASET.DATASET_TYPE == "ByFilenames4Test":
-        batched_test_data = getDataset4Test(cfg, filenames)
-
-    logging.info(f"Batched Test dataset loaded.")
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
                                   output_channels = cfg.MACROPROPS.MPROPS_COUNT,
@@ -63,9 +53,7 @@ def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotP
                                   time_multiple           = cfg.MODEL.DDPM.UNET.TIME_EMB_MULT,
                                   condition               = cfg.MODEL.DDPM.UNET.CONDITION)
 
-    model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format("UNet", cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     logging.info(f'model full name:{model_fullname}')
-
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
 
@@ -73,8 +61,8 @@ def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotP
     timesteps=cfg.MODEL.DDPM.TIMESTEPS
     diffusionmodel = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS)
     diffusionmodel.to(device)
-    seq_frames = []
     taus = 1
+
     for batch in batched_test_data:
         past_test, future_test, stats = batch
         past_test, future_test = past_test.float(), future_test.float()
@@ -100,24 +88,97 @@ def generate_samples(cfg, filenames, plotType, epoch, plotMprop="Density", plotP
         else:
             logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
-        future_sample_pred = x
-        for i in range(len(random_past_idx)):
-            future_sample_pred_iv = future_sample_pred[i]
-            future_sample_gt_iv = random_future_samples[i]
-            past_sample_iv = random_past_samples[i]
-            seq_pred = torch.cat([past_sample_iv, future_sample_pred_iv], dim=3)
-            seq_gt = torch.cat([past_sample_iv, future_sample_gt_iv], dim=3)
-            seq_frames.append(seq_pred)
-            seq_frames.append(seq_gt)
-
-        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
-        if plotType == "Static":
-            plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale, output_dir)
-        elif plotType == "Dynamic":
-            plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale, headwidth, output_dir)
-
-        plotDensityOverTime(seq_frames, cfg, output_dir)
+        set_predictions_plot(x, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir)
         break
+
+def set_predictions_plot(x, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir):
+    seq_frames = []
+    future_sample_pred = x
+    for i in range(len(random_past_idx)):
+        future_sample_pred_iv = future_sample_pred[i]
+        future_sample_gt_iv = random_future_samples[i]
+        past_sample_iv = random_past_samples[i]
+        seq_pred = torch.cat([past_sample_iv, future_sample_pred_iv], dim=3)
+        seq_gt = torch.cat([past_sample_iv, future_sample_gt_iv], dim=3)
+        seq_frames.append(seq_pred)
+        seq_frames.append(seq_gt)
+
+    match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
+    if plotType == "Static":
+        plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale, output_dir)
+    elif plotType == "Dynamic":
+        plotDynamicMacroprops(seq_frames, cfg, velScale, headwidth, output_dir)
+
+    plotDensityOverTime(seq_frames, cfg, output_dir)
+
+def generate_samples_convGRU(cfg, batched_test_data, plotType, output_dir, model_fullname, plotMprop, plotPast, velScale, velUncScale, samePastSeq, headwidth):
+    torch.manual_seed(42)
+    # Setting the device to work with
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Instanciate the convGRU forcaster model
+    convGRU_model = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
+                               input_channels       = cfg.MACROPROPS.MPROPS_COUNT,
+                               enc_hidden_channels  = cfg.MODEL.CONVGRU.ENC_HIDDEN_CH,
+                               forc_hidden_channels = cfg.MODEL.CONVGRU.FORC_HIDDEN_CH,
+                               enc_kernels          = cfg.MODEL.CONVGRU.ENC_KERNELS,
+                               forc_kernels         = cfg.MODEL.CONVGRU.FORC_KERNELS,
+                               device               = device,
+                               bias                 = False)
+
+    logging.info(f'model full name:{model_fullname}')
+    convGRU_model.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
+    convGRU_model.to(device)
+
+    for batch in batched_test_data:
+        past_test, future_test, stats = batch
+        past_test, future_test = past_test.float(), future_test.float()
+        past_test, future_test = past_test.to(device=device), future_test.to(device=device)
+        #x_train, y_train, stats = batch
+        random_past_idx = torch.randperm(past_test.shape[0])[:cfg.MODEL.NSAMPLES4PLOTS]
+        # Predict different sequences for the same past sequence
+        if samePastSeq:
+            fixed_past_idx = random_past_idx[0]
+            random_past_idx.fill_(fixed_past_idx)
+
+        random_past_samples = past_test[random_past_idx]
+        random_future_samples = future_test[random_past_idx]
+        x = generate_convGRU(convGRU_model, random_past_samples)
+        set_predictions_plot(x, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir)
+        break
+
+def sampling_mgmt(args, cfg):
+    """
+    Sampling management function.
+    """
+    filenames = cfg.DATA_LIST
+
+    if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
+        filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
+    elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
+        filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
+    else:
+        logging.info("Dataset not supported")
+
+    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(args.arch, cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, args.model_sample_to_load, cfg.DATASET.VELOCITY_NORM))
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_VN{cfg.DATASET.VELOCITY_NORM}_modelE{args.model_sample_to_load}"
+    create_directory(output_dir)
+
+    # Get batched datasets ready to iterate
+    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
+        _, batched_test_data = getClassicDataset(cfg, filenames)
+    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
+        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
+    else:
+        logging.error(f"Dataset type not supported.")
+    logging.info(f"Batched Test dataset loaded.")
+
+    if args.arch == "DDPM-UNet":
+        generate_samples_ddpm(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth)
+    elif args.arch == "ConvGRU":
+        generate_samples_convGRU(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth)
+    else:
+        logging.info("Architecture not supported.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to sample crowd macroprops from trained model.")
@@ -131,20 +192,11 @@ if __name__ == '__main__':
     parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
     parser.add_argument('--model-sample-to-load', type=int, help='Model sample to be used for generate mprops samples.')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|ConvGRU')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
-    filenames = cfg.DATA_LIST
-
-    if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
-        filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
-    elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
-        filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
-    else:
-        logging.info("Dataset not supported")
-
-    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    generate_samples(cfg, filenames, plotType=args.plot_type, epoch=args.model_sample_to_load, plotMprop=args.plot_mprop, plotPast=args.plot_past, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, samePastSeq=args.same_past_seq, headwidth=args.headwidth)
+    sampling_mgmt(args, cfg)
 
 # execution example:
 # python3 generate_samples.py --plot-mprop="Density" --plot-past="Last2"
