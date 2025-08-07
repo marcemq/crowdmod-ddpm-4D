@@ -1,6 +1,6 @@
 DATA_FS:
-  RAW_DATA_DIR: 'datasets/ATC/rawData/'
-  AGG_DATA_DIR: 'datasets/ATC/aggData/'
+  RAW_DATA_DIR: '/datasets/ATC/rawData/'
+  AGG_DATA_DIR: '/datasets/ATC/aggData/'
   PICKLE_DIR: '/datasets/ATC/processed/'
   OUTPUT_DIR : "output_atc"
   SAVE_DIR: "saved_models/atc/"
