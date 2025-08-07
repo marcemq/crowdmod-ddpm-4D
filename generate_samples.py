@@ -77,29 +77,29 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, output_dir, model_fu
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
         if cfg.MODEL.DDPM.SAMPLER == "DDPM":
-            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS) # AR review .cpu() call here
+            predictions, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS) # AR review .cpu() call here
             if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE == "none":
-                l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
+                l1 = torch.mean(torch.abs(predictions[:,0,:,:,:])).cpu().detach().numpy()
                 logging.info('L1 norm {:.2f}'.format(l1))
         elif cfg.MODEL.DDPM.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.MODEL.DDPM.DDIM_DIVIDER)
             logging.info(f'taus:{taus}')
-            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS) # AR review .cpu() call here
+            predictions, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS) # AR review .cpu() call here
         else:
             logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
-        set_predictions_plot(x, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir)
+        set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir)
         break
 
 def set_predictions_plot(x, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir):
     seq_frames = []
     future_sample_pred = x
     for i in range(len(random_past_idx)):
-        future_sample_pred_iv = future_sample_pred[i]
-        future_sample_gt_iv = random_future_samples[i]
-        past_sample_iv = random_past_samples[i]
-        seq_pred = torch.cat([past_sample_iv, future_sample_pred_iv], dim=3)
-        seq_gt = torch.cat([past_sample_iv, future_sample_gt_iv], dim=3)
+        future_sample_pred = future_sample_pred[i]
+        future_sample_gt = random_future_samples[i]
+        past_sample = random_past_samples[i]
+        seq_pred = torch.cat([past_sample, future_sample_pred], dim=3)
+        seq_gt = torch.cat([past_sample, future_sample_gt], dim=3)
         seq_frames.append(seq_pred)
         seq_frames.append(seq_gt)
 
@@ -142,8 +142,8 @@ def generate_samples_convGRU(cfg, batched_test_data, plotType, output_dir, model
 
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
-        x = generate_convGRU(convGRU_model, random_past_samples)
-        set_predictions_plot(x, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir)
+        predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, cfg.MODEL.TEACHER_FORCING)
+        set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir)
         break
 
 def sampling_mgmt(args, cfg):
