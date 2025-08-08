@@ -85,11 +85,11 @@ def get_metrics_dicts():
 
 def compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq):
     if metric in ['PSNR', 'ALL']:
-        mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.MACROPROPS.MPROPS_COUNT)
+        mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.METRICS.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.METRICS.MPROPS_COUNT)
         metrics_data_dict['PSNR'].append(mprops_psnr)
         metrics_data_dict['MAX-PSNR'].append(mprops_max_psnr)
     if metric in ['SSIM', 'ALL']:
-        mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
+        mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.METRICS.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.METRICS.MPROPS_COUNT)
         metrics_data_dict['SSIM'].append(mprops_ssim)
         metrics_data_dict['MAX-SSIM'].append(mprops_max_ssim)
     if metric in ['MOTION_FEAT_MSE', 'MOTION_FEAT_BHATT', 'ALL']:
@@ -104,7 +104,7 @@ def compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunk
             metrics_data_dict["MOTION_FEAT_BHATT_DIST"].append(mfeat_bhatt_dist)
             metrics_data_dict["MOTION_FEAT_BHATT_COEF"].append(mfeat_bhatt_coef)
     #if metric in ['ENERGY', 'ALL']:
-    #    mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
+    #    mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.METRICS.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.METRICS.MPROPS_COUNT)
     #    metrics_data_dict['ENERGY'].append(mprops_energy)
     #    metrics_data_dict['MIN-ENERGY'].append(mprops_min_energy)
     if metric in ['RE_DENSITY', 'ALL']:
@@ -202,6 +202,7 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
     convGRU_model.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     convGRU_model.to(device)
 
+    count_batch = 0
     metrics_data_dict, metrics_header_dict = get_metrics_dicts()
     for batch in batched_test_data:
         past_test, future_test, stats = batch
@@ -217,6 +218,10 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
         predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, cfg.MODEL.CONVGRU.TEACHER_FORCING)
+
+        # mprops setup for metrics compute
+        random_future_samples = random_future_samples[:, :cfg.METRICS.MPROPS_COUNT, :, :, :]
+        predictions = predictions[:, :cfg.METRICS.MPROPS_COUNT, :, :, :]
 
         pred_seq_list, gt_seq_list = [], []
         for i in range(len(random_past_idx)):
@@ -279,7 +284,7 @@ def metricss_mgmt(args, cfg):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to generate metrics from a trained model.")
     parser.add_argument('--chunk-repd-past-seq', type=int, default=None, help='Chunk of repeteaded past sequences to use when predict.')
-    parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute, options: PSNR|SSIM|MOTION_FEAT_BHATT|ENERGY|RE_DENSITY|ALL')
+    parser.add_argument('--metric', type=str, default='ALL', help='Name of the metric to compute, options: PSNR|SSIM|MOTION_FEAT_BHATT|ENERGY|RE_DENSITY|ALL')
     parser.add_argument('--batches-to-use', type=int, default=1, help='Total of batches to use to compute metrics.')
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
