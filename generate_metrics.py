@@ -206,7 +206,7 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
 
     count_batch = 0
     metrics_data_dict, metrics_header_dict = get_metrics_dicts()
-    with tqdm(total=len(batches_to_use), dynamic_ncols=True) as tq:
+    with tqdm(total=batches_to_use) as tq:
         tq.set_description(f"Compute Metrics :: batch: {count_batch+1}/{batches_to_use}")
         # scan test batches
         for batch in batched_test_data:
