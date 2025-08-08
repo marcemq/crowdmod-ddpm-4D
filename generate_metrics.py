@@ -88,7 +88,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
         chunkRepdPastSeq = 20
     else:
         samples_per_batch = cfg.DATASET.BATCH_SIZE*chunkRepdPastSeq
-
+    # Where to save the output
     output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/DDPM_UNet_VN{cfg.DATASET.VELOCITY_NORM}_modelE{epoch}"
     create_directory(output_dir)
     torch.manual_seed(42)
@@ -113,10 +113,10 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
                                   dropout_rate            = cfg.MODEL.DDPM.UNET.DROPOUT_RATE,
                                   time_multiple           = cfg.MODEL.DDPM.UNET.TIME_EMB_MULT,
                                   condition               = cfg.MODEL.DDPM.UNET.CONDITION)
-
+    # Load model
     model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format("UNet", cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     logging.info(f'model full name:{model_fullname}')
-    denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
+    denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'),weights_only=True)['model'])
     denoiser.to(device)
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
 
@@ -145,14 +145,14 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
         random_future_samples = future_test[random_past_idx]
 
         if cfg.MODEL.DDPM.SAMPLER == "DDPM":
-            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
+            x, __  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
             if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE=="mass_preservation" or cfg.MODEL.DDPM.GUIDANCE == "None":
                 l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
                 logging.info(f'L1 norm {l1:.2f} using {cfg.MODEL.DDPM.GUIDANCE} guidance')
         elif cfg.MODEL.DDPM.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.MODEL.DDPM.DDIM_DIVIDER)
             logging.info(f'taus:{taus}')
-            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
+            x, __ = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
         else:
             logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
@@ -161,7 +161,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
         for i in range(len(random_past_idx)):
             pred_seq_list.append(future_samples_pred[i])
             gt_seq_list.append(random_future_samples[i])
-
+        print(len(pred_seq_list))
         if metric in ['PSNR', 'ALL']:
             mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.MACROPROPS.MPROPS_COUNT)
             metrics_data_dict['PSNR'].append(mprops_psnr)
@@ -207,9 +207,11 @@ if __name__ == '__main__':
     parser.add_argument('--model-sample-to-load', type=int, help='Model sample to be used for generate mprops samples.')
     args = parser.parse_args()
 
+    # Load configuration file
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
     filenames = cfg.DATA_LIST
 
+    # Filenames
     if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
         filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:

@@ -8,6 +8,7 @@ class MotionFeatureExtractor:
         self.gamma = gamma
         self.nsamples = len(seq_list)
         self.seq_list = seq_list
+        # r,c: spatial dimensions, F: temporal dimension
         self._, self.r, self.c, self.F = seq_list[0].shape
         self.N = self.r * self.c
         self.num_magnitude_bins = num_magnitude_bins
@@ -36,24 +37,19 @@ class MotionFeatureExtractor:
         for sample in range(self.nsamples):
             one_pred_seq = self.seq_list[sample].cpu().numpy()
             U = self.get_vel_vector_field(one_pred_seq)
-            mag_rho[sample] = np.sqrt(U[..., 0]**2 + U[..., 1]**2)  # Shape (F, N)
-            angle_phi[sample] = np.abs(np.arctan2(U[..., 1], U[..., 0]))
+            mag_rho[sample]   = np.sqrt(U[..., 0]**2 + U[..., 1]**2)  # Shape (F, N)
+            angle_phi[sample] = np.arctan2(U[..., 1], U[..., 0])
         return mag_rho, angle_phi
 
     def mag_rho_transform(self):
         mag_rho_transf = np.zeros((self.nsamples, self.F, self.N))
-        total_clipped = 0
+        #total_clipped = 0
         for sample in range(self.nsamples):
             mag_rho_sample = self.mag_rho[sample]
-            mag_rho_clipped = np.clip(mag_rho_sample, 0, 255)
-            mag_rho_normalized = self.scaler.fit_transform(mag_rho_clipped).reshape(self.F, self.N)
+            mag_rho_normalized = self.scaler.fit_transform(mag_rho_sample).reshape(self.F, self.N)
+            # Range here is [0,8]
             mag_rho_log = np.log2(mag_rho_normalized + 1)
             mag_rho_transf[sample] = mag_rho_log
-            # Count clipped values to have a sense of information loss
-            clipped_values = np.sum((mag_rho_sample < 0) | (mag_rho_sample > 255))
-            total_clipped += clipped_values
-        #print(f'Total clipped values at mag_rho_transform:{total_clipped}')
-
         return mag_rho_transf
 
     def motion_feature_2D_hist(self):
@@ -70,7 +66,8 @@ class MotionFeatureExtractor:
                         mag_volume = mag_rho_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
                         angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
                         # Compute 2D histogram (quantized magnitude vs angle)
-                        hist_2D, _, _ = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 255], [0, 2*np.pi]])
+                        hist_2D, _, _ = np.histogram2d(mag_volume, angle_volume, 
+                        bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
                         # Flatten and add to the motion feature vector
                         hist_2D = hist_2D.flatten()
                         motion_feature_vector.append(hist_2D)
