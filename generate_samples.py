@@ -91,11 +91,10 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, output_dir, model_fu
         set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir)
         break
 
-def set_predictions_plot(x, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir):
+def set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir):
     seq_frames = []
-    future_sample_pred = x
     for i in range(len(random_past_idx)):
-        future_sample_pred = future_sample_pred[i]
+        future_sample_pred = predictions[i]
         future_sample_gt = random_future_samples[i]
         past_sample = random_past_samples[i]
         seq_pred = torch.cat([past_sample, future_sample_pred], dim=3)
@@ -142,7 +141,7 @@ def generate_samples_convGRU(cfg, batched_test_data, plotType, output_dir, model
 
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
-        predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, cfg.MODEL.TEACHER_FORCING)
+        predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, cfg.MODEL.CONVGRU.TEACHER_FORCING)
         set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir)
         break
 
@@ -150,21 +149,21 @@ def sampling_mgmt(args, cfg):
     """
     Sampling management function.
     """
+    # === Prepare file paths ===
     filenames = cfg.DATA_LIST
-
     if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
         filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
         filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
     else:
-        logging.info("Dataset not supported")
+        logging.error("Dataset not supported")
 
     filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(args.arch, cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, args.model_sample_to_load, cfg.DATASET.VELOCITY_NORM))
     output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_VN{cfg.DATASET.VELOCITY_NORM}_modelE{args.model_sample_to_load}"
     create_directory(output_dir)
 
-    # Get batched datasets ready to iterate
+    # === Load test dataset ===
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
         _, batched_test_data = getClassicDataset(cfg, filenames)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
@@ -173,12 +172,13 @@ def sampling_mgmt(args, cfg):
         logging.error(f"Dataset type not supported.")
     logging.info(f"Batched Test dataset loaded.")
 
+    # === Generate samples ===
     if args.arch == "DDPM-UNet":
         generate_samples_ddpm(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth)
     elif args.arch == "ConvGRU":
         generate_samples_convGRU(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth)
     else:
-        logging.info("Architecture not supported.")
+        logging.error("Architecture not supported.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to sample crowd macroprops from trained model.")
@@ -189,9 +189,9 @@ if __name__ == '__main__':
     parser.add_argument('--vel-unc-scale', type=int, default=1, help='Scale to be applied to velocity uncertainty mprops vectors')
     parser.add_argument('--plot-type', type=str, default='Static', help='Macroprops plot type can be static (.svg) or dinamic (.gif)')
     parser.add_argument('--same-past-seq', type=bool, default=False, help='Use the same past sequence to predict different mprops from it.')
-    parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
-    parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
-    parser.add_argument('--model-sample-to-load', type=int, help='Model sample to be used for generate mprops samples.')
+    parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
+    parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
+    parser.add_argument('--model-sample-to-load', type=str, default="000", help='Model sample to be used for generate mprops samples. Default value is for best model.')
     parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|ConvGRU')
     args = parser.parse_args()
 

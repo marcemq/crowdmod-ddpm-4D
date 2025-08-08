@@ -96,12 +96,12 @@ def plotDynamicMacroprops(seq_frames, cfg, velScale, headwidth, output_dir):
 
     # Iterate over each sequence to create a GIF for each
     for i in range(cfg.MODEL.NSAMPLES4PLOTS*2):
-        if cfg.DATASET.NAME in ["ATC", "HERMES-BO"]:
+        if cfg.DATASET.NAME in ["ATC", "ATC4TEST", "HERMES-BO"]:
             fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
         elif cfg.DATASET.NAME in ["HERMES-CR-120", "HERMES-CR-120-OBST"]:
             fig, ax = plt.subplots(1, 1, figsize=(4, 5), facecolor='white')
         else:
-            logging.info("Dataset not supported")
+            logging.error("Dynamic plot: Dataset not supported")
         fig.subplots_adjust(hspace=0.1, wspace=0.1)
 
         # Set up the initial plot and color bar
