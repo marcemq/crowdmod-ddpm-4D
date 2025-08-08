@@ -6,6 +6,8 @@ import pandas as pd
 import json
 import os, re
 import logging
+
+from tqdm import tqdm
 from models.generate import generate_ddpm, generate_ddim, generate_convGRU
 
 from utils.myparser import getYamlConfig
@@ -204,34 +206,38 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
 
     count_batch = 0
     metrics_data_dict, metrics_header_dict = get_metrics_dicts()
-    for batch in batched_test_data:
-        past_test, future_test, stats = batch
-        past_test, future_test = past_test.float(), future_test.float()
-        past_test, future_test = past_test.to(device=device), future_test.to(device=device)
-        # Compute the idx of the past sequences to work on
-        if past_test.shape[0] < samples_per_batch:
-            random_past_idx = torch.randperm(past_test.shape[0])
-        else:
-            random_past_idx = torch.randperm(past_test.shape[0])[:samples_per_batch]
-        expanded_random_past_idx = torch.repeat_interleave(random_past_idx, chunkRepdPastSeq)
-        random_past_idx = expanded_random_past_idx[:samples_per_batch]
-        random_past_samples = past_test[random_past_idx]
-        random_future_samples = future_test[random_past_idx]
-        predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, cfg.MODEL.CONVGRU.TEACHER_FORCING)
+    with tqdm(total=len(batches_to_use), dynamic_ncols=True) as tq:
+        tq.set_description(f"Compute Metrics :: batch: {count_batch+1}/{batches_to_use}")
+        # scan test batches
+        for batch in batched_test_data:
+            tq.update(1)
+            past_test, future_test, stats = batch
+            past_test, future_test = past_test.float(), future_test.float()
+            past_test, future_test = past_test.to(device=device), future_test.to(device=device)
+            # Compute the idx of the past sequences to work on
+            if past_test.shape[0] < samples_per_batch:
+                random_past_idx = torch.randperm(past_test.shape[0])
+            else:
+                random_past_idx = torch.randperm(past_test.shape[0])[:samples_per_batch]
+            expanded_random_past_idx = torch.repeat_interleave(random_past_idx, chunkRepdPastSeq)
+            random_past_idx = expanded_random_past_idx[:samples_per_batch]
+            random_past_samples = past_test[random_past_idx]
+            random_future_samples = future_test[random_past_idx]
+            predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, cfg.MODEL.CONVGRU.TEACHER_FORCING)
 
-        # mprops setup for metrics compute
-        random_future_samples = random_future_samples[:, :cfg.METRICS.MPROPS_COUNT, :, :, :]
-        predictions = predictions[:, :cfg.METRICS.MPROPS_COUNT, :, :, :]
+            # mprops setup for metrics compute
+            random_future_samples = random_future_samples[:, :cfg.METRICS.MPROPS_COUNT, :, :, :]
+            predictions = predictions[:, :cfg.METRICS.MPROPS_COUNT, :, :, :]
 
-        pred_seq_list, gt_seq_list = [], []
-        for i in range(len(random_past_idx)):
-            pred_seq_list.append(predictions[i])
-            gt_seq_list.append(random_future_samples[i])
+            pred_seq_list, gt_seq_list = [], []
+            for i in range(len(random_past_idx)):
+                pred_seq_list.append(predictions[i])
+                gt_seq_list.append(random_future_samples[i])
 
-        compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq)
-        count_batch += 1
-        if count_batch == batches_to_use:
-            break
+            compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq)
+            count_batch += 1
+            #if count_batch == batches_to_use:
+            #    break
 
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
     title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})"
