@@ -132,7 +132,6 @@ def generate_samples_convGRU(cfg, batched_test_data, plotType, output_dir, model
         past_test, future_test, stats = batch
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
-        #x_train, y_train, stats = batch
         random_past_idx = torch.randperm(past_test.shape[0])[:cfg.MODEL.NSAMPLES4PLOTS]
         # Predict different sequences for the same past sequence
         if samePastSeq:
@@ -172,7 +171,7 @@ def sampling_mgmt(args, cfg):
         logging.error(f"Dataset type not supported.")
     logging.info(f"Batched Test dataset loaded.")
 
-    # === Generate samples ===
+    # === Generate samples per architecture ===
     if args.arch == "DDPM-UNet":
         generate_samples_ddpm(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth)
     elif args.arch == "ConvGRU":

@@ -6,7 +6,7 @@ import pandas as pd
 import json
 import os, re
 import logging
-from models.generate import generate_ddpm, generate_ddim
+from models.generate import generate_ddpm, generate_ddim, generate_convGRU
 
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset, getClassicDataset, getDataset4Test
@@ -15,6 +15,7 @@ from utils.plot.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_an
 from utils.metrics.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics, energy_mprops_seq, re_density_mprops_seq
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
+from models.convGRU.forecaster import Forecaster
 
 def save_metric_data(match, data, metric, header, samples_per_batch, output_dir):
     file_name = f"{output_dir}/mpSampling_{metric}_NS{samples_per_batch}_{match.group()}.csv"
@@ -82,27 +83,40 @@ def get_metrics_dicts():
                     }
     return metrics_data_dict, metrics_header_dict
 
-def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, epoch):
-    if chunkRepdPastSeq == None:
-        samples_per_batch = cfg.MODEL.NSAMPLES
-        chunkRepdPastSeq = 20
-    else:
-        samples_per_batch = cfg.DATASET.BATCH_SIZE*chunkRepdPastSeq
+def compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq):
+    if metric in ['PSNR', 'ALL']:
+        mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.MACROPROPS.MPROPS_COUNT)
+        metrics_data_dict['PSNR'].append(mprops_psnr)
+        metrics_data_dict['MAX-PSNR'].append(mprops_max_psnr)
+    if metric in ['SSIM', 'ALL']:
+        mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
+        metrics_data_dict['SSIM'].append(mprops_ssim)
+        metrics_data_dict['MAX-SSIM'].append(mprops_max_ssim)
+    if metric in ['MOTION_FEAT_MSE', 'MOTION_FEAT_BHATT', 'ALL']:
+        mse_flag = metric == 'MOTION_FEAT_MSE' or metric == 'ALL'
+        bhatt_flag = metric == 'MOTION_FEAT_BHATT' or metric == 'ALL'
 
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/DDPM_UNet_VN{cfg.DATASET.VELOCITY_NORM}_modelE{epoch}"
-    create_directory(output_dir)
+        mfeat_mse, mfeat_bhatt_dist, mfeat_bhatt_coef = motion_feature_metrics(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA, mse_flag, bhatt_flag)
+
+        if mse_flag:
+            metrics_data_dict["MOTION_FEAT_MSE"].append(mfeat_mse)
+        if bhatt_flag:
+            metrics_data_dict["MOTION_FEAT_BHATT_DIST"].append(mfeat_bhatt_dist)
+            metrics_data_dict["MOTION_FEAT_BHATT_COEF"].append(mfeat_bhatt_coef)
+    #if metric in ['ENERGY', 'ALL']:
+    #    mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
+    #    metrics_data_dict['ENERGY'].append(mprops_energy)
+    #    metrics_data_dict['MIN-ENERGY'].append(mprops_min_energy)
+    if metric in ['RE_DENSITY', 'ALL']:
+        mprops_re_density, mprops_min_re_density = re_density_mprops_seq(gt_seq_list, pred_seq_list, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+        metrics_data_dict['RE_DENSITY'].append(mprops_re_density)
+        metrics_data_dict['MIN_RE_DENSITY'].append(mprops_min_re_density)
+    #AR not sure if I have to return metrics_data_dict
+
+def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # Get batched datasets ready to iterate
-    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        _, batched_test_data = getClassicDataset(cfg, filenames)
-    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
-    elif cfg.DATASET.DATASET_TYPE == "ByFilenames4Test":
-        batched_test_data = getDataset4Test(cfg, filenames)
-
-    logging.info(f"Batched Test dataset loaded.")
     # Instanciate the UNet for the reverse diffusion
     denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
                                   output_channels = cfg.MACROPROPS.MPROPS_COUNT,
@@ -114,14 +128,13 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
                                   time_multiple           = cfg.MODEL.DDPM.UNET.TIME_EMB_MULT,
                                   condition               = cfg.MODEL.DDPM.UNET.CONDITION)
 
-    model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format("UNet", cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     logging.info(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
     denoiser.to(device)
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
 
     # Instantiate the diffusion model
-    timesteps=cfg.MODEL.DDPM.TIMESTEPS
+    timesteps = cfg.MODEL.DDPM.TIMESTEPS
     diffusionmodel = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS)
     diffusionmodel.to(device)
     taus = 1
@@ -162,33 +175,7 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
             pred_seq_list.append(future_samples_pred[i])
             gt_seq_list.append(random_future_samples[i])
 
-        if metric in ['PSNR', 'ALL']:
-            mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.MACROPROPS.MPROPS_COUNT)
-            metrics_data_dict['PSNR'].append(mprops_psnr)
-            metrics_data_dict['MAX-PSNR'].append(mprops_max_psnr)
-        if metric in ['SSIM', 'ALL']:
-            mprops_ssim, mprops_max_ssim = ssim_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
-            metrics_data_dict['SSIM'].append(mprops_ssim)
-            metrics_data_dict['MAX-SSIM'].append(mprops_max_ssim)
-        if metric in ['MOTION_FEAT_MSE', 'MOTION_FEAT_BHATT', 'ALL']:
-            mse_flag = metric == 'MOTION_FEAT_MSE' or metric == 'ALL'
-            bhatt_flag = metric == 'MOTION_FEAT_BHATT' or metric == 'ALL'
-
-            mfeat_mse, mfeat_bhatt_dist, mfeat_bhatt_coef = motion_feature_metrics(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA, mse_flag, bhatt_flag)
-
-            if mse_flag:
-                metrics_data_dict["MOTION_FEAT_MSE"].append(mfeat_mse)
-            if bhatt_flag:
-                metrics_data_dict["MOTION_FEAT_BHATT_DIST"].append(mfeat_bhatt_dist)
-                metrics_data_dict["MOTION_FEAT_BHATT_COEF"].append(mfeat_bhatt_coef)
-        #if metric in ['ENERGY', 'ALL']:
-        #    mprops_energy, mprops_min_energy = energy_mprops_seq(gt_seq_list, pred_seq_list, cfg.MODEL.DDPM.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.MPROPS_COUNT)
-        #    metrics_data_dict['ENERGY'].append(mprops_energy)
-        #    metrics_data_dict['MIN-ENERGY'].append(mprops_min_energy)
-        if metric in ['RE_DENSITY', 'ALL']:
-            mprops_re_density, mprops_min_re_density = re_density_mprops_seq(gt_seq_list, pred_seq_list, chunkRepdPastSeq, cfg.MACROPROPS.EPS)
-            metrics_data_dict['RE_DENSITY'].append(mprops_re_density)
-            metrics_data_dict['MIN_RE_DENSITY'].append(mprops_min_re_density)
+        compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq)
         count_batch += 1
         if count_batch == batches_to_use:
             break
@@ -197,25 +184,108 @@ def generate_metrics(cfg, filenames, chunkRepdPastSeq, metric, batches_to_use, e
     save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch, output_dir)
     save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title, output_dir)
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="A script to generate metrics from a trained model.")
-    parser.add_argument('--chunk-repd-past-seq', type=int, default=None, help='Chunk of repeteaded past sequences to use when predict.')
-    parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute, options: PSNR|SSIM|MOTION_FEAT_BHATT|ENERGY|RE_DENSITY|ALL')
-    parser.add_argument('--batches-to-use', type=int, default=1, help='Total of batches to use to compute metrics.')
-    parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
-    parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
-    parser.add_argument('--model-sample-to-load', type=int, help='Model sample to be used for generate mprops samples.')
-    args = parser.parse_args()
+def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir):
+    torch.manual_seed(42)
+    # Setting the device to work with
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Instanciate the convGRU forcaster model
+    convGRU_model = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
+                               input_channels       = cfg.MACROPROPS.MPROPS_COUNT,
+                               enc_hidden_channels  = cfg.MODEL.CONVGRU.ENC_HIDDEN_CH,
+                               forc_hidden_channels = cfg.MODEL.CONVGRU.FORC_HIDDEN_CH,
+                               enc_kernels          = cfg.MODEL.CONVGRU.ENC_KERNELS,
+                               forc_kernels         = cfg.MODEL.CONVGRU.FORC_KERNELS,
+                               device               = device,
+                               bias                 = False)
 
-    cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
+    logging.info(f'model full name:{model_fullname}')
+    convGRU_model.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
+    convGRU_model.to(device)
+
+    metrics_data_dict, metrics_header_dict = get_metrics_dicts()
+    for batch in batched_test_data:
+        past_test, future_test, stats = batch
+        past_test, future_test = past_test.float(), future_test.float()
+        past_test, future_test = past_test.to(device=device), future_test.to(device=device)
+        # Compute the idx of the past sequences to work on
+        if past_test.shape[0] < samples_per_batch:
+            random_past_idx = torch.randperm(past_test.shape[0])
+        else:
+            random_past_idx = torch.randperm(past_test.shape[0])[:samples_per_batch]
+        expanded_random_past_idx = torch.repeat_interleave(random_past_idx, chunkRepdPastSeq)
+        random_past_idx = expanded_random_past_idx[:samples_per_batch]
+        random_past_samples = past_test[random_past_idx]
+        random_future_samples = future_test[random_past_idx]
+        predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, cfg.MODEL.CONVGRU.TEACHER_FORCING)
+
+        pred_seq_list, gt_seq_list = [], []
+        for i in range(len(random_past_idx)):
+            pred_seq_list.append(predictions[i])
+            gt_seq_list.append(random_future_samples[i])
+
+        compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq)
+        count_batch += 1
+        if count_batch == batches_to_use:
+            break
+
+    match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
+    title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})"
+    save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch, output_dir)
+    save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title, output_dir)
+
+def metricss_mgmt(args, cfg):
+    """
+    Metrics compute management function.
+    """
+    # === Prepare file paths ===
     filenames = cfg.DATA_LIST
-
     if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
         filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
     elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
         filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
     else:
-        logging.info("Dataset not supported")
+        logging.error("Dataset not supported")
 
     filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    generate_metrics(cfg, filenames, chunkRepdPastSeq=args.chunk_repd_past_seq, metric=args.metric, batches_to_use=args.batches_to_use, epoch=args.model_sample_to_load)
+    model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(args.arch, cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, args.model_sample_to_load, cfg.DATASET.VELOCITY_NORM))
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_VN{cfg.DATASET.VELOCITY_NORM}_modelE{args.model_sample_to_load}"
+    create_directory(output_dir)
+
+    # === Load test dataset ===
+    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
+        _, batched_test_data = getClassicDataset(cfg, filenames)
+    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
+        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
+    else:
+        logging.error(f"Dataset type not supported.")
+    logging.info(f"Batched Test dataset loaded.")
+
+    # === Set samples_per_batch ===
+    if args.chunk_repd_past_seq == None:
+        samples_per_batch = cfg.MODEL.NSAMPLES
+        chunkRepdPastSeq = 20
+    else:
+        samples_per_batch = cfg.DATASET.BATCH_SIZE*args.chunk_repd_past_seq
+        chunkRepdPastSeq = args.chunk_repd_past_seq
+
+    # === Generate metrics per architecture ===
+    if args.arch == "DDPM-UNet":
+        generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, output_dir)
+    elif args.arch == "ConvGRU":
+        generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, output_dir)
+    else:
+        logging.error("Architecture not supported.")
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="A script to generate metrics from a trained model.")
+    parser.add_argument('--chunk-repd-past-seq', type=int, default=None, help='Chunk of repeteaded past sequences to use when predict.')
+    parser.add_argument('--metric', type=str, default='PSNR', help='Name of the metric to compute, options: PSNR|SSIM|MOTION_FEAT_BHATT|ENERGY|RE_DENSITY|ALL')
+    parser.add_argument('--batches-to-use', type=int, default=1, help='Total of batches to use to compute metrics.')
+    parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
+    parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
+    parser.add_argument('--model-sample-to-load', type=str, default="000", help='Model sample to be used for generate mprops samples.')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|ConvGRU')
+    args = parser.parse_args()
+
+    cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
+    metricss_mgmt(args, cfg)
