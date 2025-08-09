@@ -242,7 +242,7 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
     save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch, output_dir)
     save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title, output_dir)
 
-def metricss_mgmt(args, cfg):
+def metrics_mgmt(args, cfg):
     """
     Metrics compute management function.
     """
@@ -297,4 +297,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
-    metricss_mgmt(args, cfg)
+    metrics_mgmt(args, cfg)
