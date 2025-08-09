@@ -167,7 +167,7 @@ def training_mgmt(args, cfg):
     create_directory(cfg.DATA_FS.SAVE_DIR)
 
     # === Load training dataset
-    mprops_count = 4 if args.arch == "DDPM-UNet" else 3
+    mprops_count = 4 if args.arch == "ConvGRU" else 3
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
         batched_train_data, batched_val_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":

@@ -261,7 +261,7 @@ def metrics_mgmt(args, cfg):
     create_directory(output_dir)
 
     # === Load test dataset ===
-    mprops_count = 4 if args.arch == "DDPM-UNet" else 3
+    mprops_count = 4 if args.arch == "ConvGRU" else 3
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
         _, batched_test_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
