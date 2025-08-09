@@ -21,7 +21,6 @@ MACROPROPS:
   WINDOWSIZE: 10
   THETA: 0
   TIME_RES: 0.25
-  MPROPS_COUNT: 3
 DATASET:
   NAME: "HERMES-CR-120-OBST"
   PAST_LEN: 5
@@ -67,8 +66,8 @@ MODEL:
     ENC_KERNELS: [3, 3, 3, 3, 3, 3]
     FORC_KERNELS: [3, 4, 3, 4, 3, 3, 3]
 METRICS:
-  MPROPS_COUNT: 3
   PRED_MPROPS_FACTOR: [1, 1, 1]
+  MPROPS_COUNT: 3    # Metrics consider rho, vx, vy predictions only
   MOTION_FEATURE:
     f: 1    # Number of frames of each volume
     k: 4    # Spatial dimensions of each volume, valid for ATC grid

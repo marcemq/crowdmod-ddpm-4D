@@ -8,9 +8,9 @@ from utils.data import preProcessData, filterDataByLU, filterDataByTime, getMacr
 from torch.utils.data import Dataset, DataLoader, TensorDataset, random_split
 
 class CustomTransform():
-    def __call__(self, tensor, cfg):
-        stats = np.empty((cfg.MACROPROPS.MPROPS_COUNT, 4))
-        for i in range(cfg.MACROPROPS.MPROPS_COUNT):
+    def __call__(self, tensor, cfg, mprops_count):
+        stats = np.empty((mprops_count, 4))
+        for i in range(mprops_count):
             stats[i, 0], stats[i, 1], stats[i, 2], stats[i, 3] = np.mean(tensor[:,i,:,:]), np.std(tensor[:,i,:,:]), np.min(tensor[:,i,:,:]), np.max(tensor[:,i,:,:])
 
         if cfg.DATASET.VELOCITY_NORM:
@@ -21,10 +21,11 @@ class CustomTransform():
         return tensor, stats
 
 class MacropropsDataset(Dataset):
-    def __init__(self, seq_all, cfg, transform=None):
+    def __init__(self, seq_all, cfg, mprops_count, transform=None):
         self.transform = transform
+        self.mprops_count = mprops_count
         if self.transform:
-            seq_all, stats = self.transform(seq_all, cfg)
+            seq_all, stats = self.transform(seq_all, cfg, mprops_count)
 
         self.PAST = seq_all[:,:,:,:,:cfg.DATASET.PAST_LEN]
         self.FUTURE = seq_all[:,:,:,:,cfg.DATASET.PAST_LEN:cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN]
@@ -124,7 +125,7 @@ def dataHelper(cfg, filenames, mprops_count, train_data_only=False, test_data_on
 
     return train_data, val_data, test_data, train_stats, val_stats, test_stats
 
-def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False, test_data_only=False):
+def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False, test_data_only=False, mprops_count=4):
     if 'merge_from_file' in cfg.DATASET.params:
         del cfg.DATASET.params['merge_from_file']
     if 'merge_from_dict' in cfg.DATASET.params:
@@ -133,7 +134,7 @@ def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False, test_data
         BATCH_SIZE = cfg.DATASET.BATCH_SIZE
 
     # Load the dataset and perform the split
-    tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, cfg.MACROPROPS.MPROPS_COUNT, train_data_only, test_data_only)
+    tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames, mprops_count, train_data_only, test_data_only)
     # Transfor set
     custom_transform = CustomTransform()
     train_data, val_data, test_data = None, None, None
@@ -141,19 +142,19 @@ def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False, test_data
 
     if train_data_only:
         # Torch dataset
-        train_data= MacropropsDataset(tmp_train_data, cfg, transform=custom_transform)
+        train_data= MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=custom_transform)
         # Form batches
         batched_train_data = DataLoader(train_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
     elif test_data_only:
         # Torch dataset
-        test_data = MacropropsDataset(tmp_test_data, cfg, transform=custom_transform)
+        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=custom_transform)
         # Form batches
         batched_test_data  = DataLoader(test_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
     else:
         # Torch dataset
-        train_data= MacropropsDataset(tmp_train_data, cfg, transform=custom_transform)
-        val_data  = MacropropsDataset(tmp_val_data, cfg, transform=custom_transform)
-        test_data = MacropropsDataset(tmp_test_data, cfg, transform=custom_transform)
+        train_data= MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=custom_transform)
+        val_data  = MacropropsDataset(tmp_val_data, cfg, mprops_count, transform=custom_transform)
+        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=custom_transform)
         # Form batches
         batched_train_data = DataLoader(train_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
         batched_val_data   = DataLoader(val_data, batch_size=BATCH_SIZE, **cfg.DATASET.params)
@@ -161,11 +162,11 @@ def getDataset(cfg, filenames, BATCH_SIZE=None, train_data_only=False, test_data
 
     return batched_train_data, batched_val_data, batched_test_data
 
-def getDataset4Test(cfg, filenames):
+def getDataset4Test(cfg, filenames, mprops_count):
     BATCH_SIZE = cfg.DATASET.BATCH_SIZE
     # Load all sequences from all filenames
     logging.info("Loading all macroprops sequences (no file partition)...")
-    all_data, _ = getMacropropsFromFilenames(filenames, cfg.MACROPROPS.MPROPS_COUNT)
+    all_data, _ = getMacropropsFromFilenames(filenames, mprops_count)
     logging.info(f"Total number of sequences loaded for test: {len(all_data)} of shape {all_data.shape}")
 
     # Torch dataset
@@ -176,17 +177,17 @@ def getDataset4Test(cfg, filenames):
 
     return test_loader
 
-def getClassicDataset(cfg, filenames, split_ratio=0.9):
+def getClassicDataset(cfg, filenames, split_ratio=0.9, mprops_count=4):
     BATCH_SIZE = cfg.DATASET.BATCH_SIZE
 
     # Load all sequences from all filenames
     logging.info("Loading all macroprops sequences (no file partition)...")
-    all_data, _ = getMacropropsFromFilenames(filenames, cfg.MACROPROPS.MPROPS_COUNT)
+    all_data, _ = getMacropropsFromFilenames(filenames, mprops_count)
 
     logging.info(f"Total number of sequences loaded: {len(all_data)} of shape {all_data.shape}")
 
     # Torch dataset
-    dataset = MacropropsDataset(all_data, cfg, transform=CustomTransform())
+    dataset = MacropropsDataset(all_data, cfg, mprops_count, transform=CustomTransform())
 
     # Calculate split sizes
     train_len = int(split_ratio * len(dataset))
