@@ -177,6 +177,7 @@ def training_mgmt(args, cfg):
     logging.info(f"Batched Train dataset loaded.")
 
     # === Train models with specific architecture ===
+    logging.info(f"=======>>>> Init training for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
         train_ddpm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
     elif args.arch == "ConvGRU":

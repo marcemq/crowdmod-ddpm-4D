@@ -279,6 +279,7 @@ def metrics_mgmt(args, cfg):
         chunkRepdPastSeq = args.chunk_repd_past_seq
 
     # === Generate metrics per architecture ===
+    logging.info(f"=======>>>> Init metrics compute for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
         generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count=mprops_count)
     elif args.arch == "ConvGRU":

@@ -173,6 +173,7 @@ def sampling_mgmt(args, cfg):
     logging.info(f"Batched Test dataset loaded.")
 
     # === Generate samples per architecture ===
+    logging.info(f"=======>>>> Init sampling for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
         generate_samples_ddpm(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth, mprops_count=mprops_count)
     elif args.arch == "ConvGRU":
