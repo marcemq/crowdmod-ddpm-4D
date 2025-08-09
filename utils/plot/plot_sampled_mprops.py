@@ -89,19 +89,19 @@ def plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, 
     plt.axis("off")
     fig.savefig(figName, format='svg', bbox_inches='tight')
 
-def plotDynamicMacroprops(seq_frames, cfg, match, velScale, velUncScale, headwidth, output_dir):
+def plotDynamicMacroprops(seq_frames, cfg, velScale, headwidth, output_dir):
     j_indexes = _get_j_indexes(cfg, plotPast="All")
     rho_min, rho_max = _get_rho_limits(cfg, seq_frames, j_indexes)
     title =  f"Sampling for diffusion process using {cfg.MODEL.DDPM.SAMPLER}\nPast Len:{cfg.DATASET.PAST_LEN} and Future Len:{cfg.DATASET.FUTURE_LEN}"
 
     # Iterate over each sequence to create a GIF for each
     for i in range(cfg.MODEL.NSAMPLES4PLOTS*2):
-        if cfg.DATASET.NAME in ["ATC", "HERMES-BO"]:
+        if cfg.DATASET.NAME in ["ATC", "ATC4TEST", "HERMES-BO"]:
             fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
         elif cfg.DATASET.NAME in ["HERMES-CR-120", "HERMES-CR-120-OBST"]:
             fig, ax = plt.subplots(1, 1, figsize=(4, 5), facecolor='white')
         else:
-            logging.info("Dataset not supported")
+            logging.error("Dynamic plot: Dataset not supported")
         fig.subplots_adjust(hspace=0.1, wspace=0.1)
 
         # Set up the initial plot and color bar

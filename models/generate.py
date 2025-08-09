@@ -64,3 +64,14 @@ def generate_ddim(denoiser_model:nn.Module, past:torch.Tensor, taus, backward_sa
         sqrt_one_minus_alpha_bar_t      = sqrt_one_minus_alpha_bar_t_prev
         xnoisy_over_time.append(xnoisy)
     return xnoisy, xnoisy_over_time
+
+@torch.inference_mode()
+def generate_convGRU(convGRU_model, x_test, y_test, teacher_forcing):
+    # Set the model in evaluation mode
+    convGRU_model.eval()
+    predictions = convGRU_model(x_test, y_test, teacher_forcing)
+    #AR: check if exp() is still needed for rho, vx and vy
+    predictions[:,0,:,:,:] = torch.exp(predictions[:,0,:,:,:])
+    predictions[:,3,:,:,:] = torch.exp(predictions[:,3,:,:,:])
+
+    return predictions

@@ -1,6 +1,6 @@
 DATA_FS:
-  RAW_DATA_DIR: 'datasets/HERMES-BO/rawData/'
-  AGG_DATA_DIR: 'datasets/HERMES-BO/aggData/'
+  RAW_DATA_DIR: '/datasets/HERMES-BO/rawData/'
+  AGG_DATA_DIR: '/datasets/HERMES-BO/aggData/'
   PICKLE_DIR: '/datasets/HERMES-BO/processed/'
   OUTPUT_DIR : "output_hermes_bo"
   SAVE_DIR: "saved_models/hermes_bo/"
@@ -33,6 +33,7 @@ DATASET:
   params:
     shuffle: True
     num_workers: 6
+    drop_last: True
   DATASET_TYPE: 'BySplitRatio'    # Available options: ByFilenames|BySplitRatio|ByFilenames4Test
   VELOCITY_NORM: False
 MODEL:
@@ -44,7 +45,6 @@ MODEL:
     TIMESTEPS: 1000     # Define canonical number of diffusion timesteps
     SCALE: 0.5          # Define scale for betas in model
     DDIM_DIVIDER: 90    # Define number of timesteps to divide by
-    PRED_MPROPS_FACTOR: [1, 1, 1, 1] # QA: not sure if we still needs this
     GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
     MODEL_SAMPLES: 7
     UNET:
@@ -61,8 +61,14 @@ MODEL:
   FLOW_MATCHING:
     TMP_VAR: "Placeholder"
   CONVGRU:
-    TMP_VAR: "Placeholder"
+    TEACHER_FORCING: False
+    ENC_HIDDEN_CH: [16, 64, 64, 96, 96, 96]
+    FORC_HIDDEN_CH: [96, 96, 96, 96, 96, 64, 16]
+    ENC_KERNELS: [3, 3, 3, 3, 3, 3]
+    FORC_KERNELS: [3, 4, 3, 4, 3, 3, 3]
 METRICS:
+  MPROPS_COUNT: 3
+  PRED_MPROPS_FACTOR: [1, 1, 1]
   MOTION_FEATURE:
     f: 1    # Number of frames of each volume
     k: 4    # Spatial dimensions of each volume, valid for ATC grid
