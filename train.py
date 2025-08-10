@@ -159,7 +159,7 @@ def training_mgmt(args, cfg):
 
     # === Load training dataset
     mprops_count = 4 if args.arch == "ConvGRU" else 3
-    batched_train_data, batched_val_data = get_training_dataset(cfg, filenames)
+    batched_train_data, batched_val_data = get_training_dataset(cfg, filenames, mprops_count)
 
     # === Train models with specific architecture ===
     logging.info(f"=======>>>> Init training for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
