@@ -26,36 +26,22 @@ from models.training import train_one_epoch, train_one_epoch_convGRU
 from models.convGRU.forecaster import Forecaster
 from functools import partial
 
-def save_checkpoint(optimizer, model, epoch, cfg, arch, best_flag=False):
+def save_checkpoint(optimizer, model, epoch, cfg, arch):
     checkpoint_dict = {
         "opt": optimizer.state_dict(),
         "model": model.state_dict()
     }
-
-    if best_flag:
-        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, "000", cfg.DATASET.VELOCITY_NORM))
-    else:
-        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
-
+    save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     torch.save(checkpoint_dict, save_path)
     del checkpoint_dict
 
-def train_ddpm(cfg, filenames, arch):
+def train_ddpm(cfg, batched_train_data, arch, mprops_count):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # Get batched datasets ready to iterate
-    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        batched_train_data, _ = getClassicDataset(cfg, filenames)
-    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        batched_train_data, _, _ = getDataset(cfg, filenames, train_data_only=True)
-    else:
-        logging.error(f"Dataset type not supported.")
-
-    logging.info(f"Batched Train dataset loaded.")
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
-                                  output_channels = cfg.MACROPROPS.MPROPS_COUNT,
+    denoiser = MacropropsDenoiser(input_channels  = mprops_count,
+                                  output_channels = mprops_count,
                                   num_res_blocks  = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
                                   base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
                                   base_channels_multiples = cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
@@ -72,7 +58,6 @@ def train_ddpm(cfg, filenames, arch):
     # Instantiate the diffusion model
     diffusionmodel = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS, scale=cfg.MODEL.DDPM.SCALE)
     diffusionmodel.to(device)
-
 
     best_loss      = 1e6
     consecutive_nan_count = 0
@@ -99,29 +84,21 @@ def train_ddpm(cfg, filenames, arch):
         # Save best checkpoint from all training
         if epoch_loss < best_loss:
             best_loss = epoch_loss
-            save_checkpoint(optimizer, denoiser, epoch, cfg, arch, best_flag=True)
+            save_checkpoint(optimizer, denoiser, "000", cfg, arch)
 
         # Save model samples at stable loss
         if epoch in epoch_model_samples:
             logging.info(f"Epoch {epoch}: in sample set, saving model sample.")
             save_checkpoint(optimizer, denoiser, epoch, cfg, arch)
 
-def train_convGRU(cfg, filenames, arch):
+def train_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # Get batched datasets ready to iterate
-    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        batched_train_data, batched_val_data = getClassicDataset(cfg, filenames)
-    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        batched_train_data, batched_val_data, _ = getDataset(cfg, filenames)
-    else:
-        logging.error(f"Dataset type not supported.")
-
     logging.info(f"Batched Traininig  and Validation dataset loaded.")
 
     convGRU_model = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
-                               input_channels       = cfg.MACROPROPS.MPROPS_COUNT,
+                               input_channels       = mprops_count,
                                enc_hidden_channels  = cfg.MODEL.CONVGRU.ENC_HIDDEN_CH,
                                forc_hidden_channels = cfg.MODEL.CONVGRU.FORC_HIDDEN_CH,
                                enc_kernels          = cfg.MODEL.CONVGRU.ENC_KERNELS,
@@ -155,25 +132,13 @@ def train_convGRU(cfg, filenames, arch):
         # Save best checkpoint from all training
         if epoch_train_loss < best_loss:
             best_loss = epoch_train_loss
-            save_checkpoint(optimizer, convGRU_model, epoch, cfg, arch, best_flag=True)
+            save_checkpoint(optimizer, convGRU_model, "000", cfg, arch)
 
 def training_mgmt(args, cfg):
     """
     Training management function.
     """
-    filenames = cfg.DATA_LIST
-
-    if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
-        filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
-    elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
-        filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
-    else:
-        logging.info("Dataset not supported")
-
-    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    create_directory(cfg.DATA_FS.SAVE_DIR)
-
-    # Initialize W&B
+    # === Initialize W&B ===
     wandb.init(
         project="macroprops-predict-4D",
         config={
@@ -189,10 +154,34 @@ def training_mgmt(args, cfg):
         }
     )
 
+    # === Prepare file paths ===
+    filenames = cfg.DATA_LIST
+    if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
+        filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
+    elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
+        filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
+    else:
+        logging.info("Dataset not supported")
+
+    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    create_directory(cfg.DATA_FS.SAVE_DIR)
+
+    # === Load training dataset
+    mprops_count = 4 if args.arch == "ConvGRU" else 3
+    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
+        batched_train_data, batched_val_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
+    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
+        batched_train_data, batched_val_data, _ = getDataset(cfg, filenames, mprops_count=mprops_count)
+    else:
+        logging.error(f"Dataset type not supported.")
+    logging.info(f"Batched Train dataset loaded.")
+
+    # === Train models with specific architecture ===
+    logging.info(f"=======>>>> Init training for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
-        train_ddpm(cfg, filenames, arch=args.arch)
+        train_ddpm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
     elif args.arch == "ConvGRU":
-        train_convGRU(cfg, filenames, arch=args.arch)
+        train_convGRU(cfg, batched_train_data, batched_val_data, arch=args.arch, mprops_count=mprops_count)
     else:
         logging.info("Architecture not supported.")
 

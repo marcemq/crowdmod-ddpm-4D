@@ -115,13 +115,13 @@ def compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunk
         metrics_data_dict['MIN_RE_DENSITY'].append(mprops_min_re_density)
     #AR not sure if I have to return metrics_data_dict
 
-def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir):
+def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
-                                  output_channels = cfg.MACROPROPS.MPROPS_COUNT,
+    denoiser = MacropropsDenoiser(input_channels  = mprops_count,
+                                  output_channels = mprops_count,
                                   num_res_blocks  = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
                                   base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
                                   base_channels_multiples = cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
@@ -160,14 +160,14 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
         random_future_samples = future_test[random_past_idx]
 
         if cfg.MODEL.DDPM.SAMPLER == "DDPM":
-            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
+            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, samples_per_batch, mprops_count=mprops_count) # AR review .cpu() call here
             if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE=="mass_preservation" or cfg.MODEL.DDPM.GUIDANCE == "None":
                 l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
                 logging.info(f'L1 norm {l1:.2f} using {cfg.MODEL.DDPM.GUIDANCE} guidance')
         elif cfg.MODEL.DDPM.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.MODEL.DDPM.DDIM_DIVIDER)
             logging.info(f'taus:{taus}')
-            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, samples_per_batch) # AR review .cpu() call here
+            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, samples_per_batch, mprops_count=mprops_count) # AR review .cpu() call here
         else:
             logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
@@ -186,13 +186,13 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
     save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch, output_dir)
     save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title, output_dir)
 
-def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir):
+def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Instanciate the convGRU forcaster model
     convGRU_model = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
-                               input_channels       = cfg.MACROPROPS.MPROPS_COUNT,
+                               input_channels       = mprops_count,
                                enc_hidden_channels  = cfg.MODEL.CONVGRU.ENC_HIDDEN_CH,
                                forc_hidden_channels = cfg.MODEL.CONVGRU.FORC_HIDDEN_CH,
                                enc_kernels          = cfg.MODEL.CONVGRU.ENC_KERNELS,
@@ -236,6 +236,8 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
 
             compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq)
             count_batch += 1
+            if count_batch == batches_to_use:
+                break
 
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
     title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})"
@@ -261,10 +263,11 @@ def metrics_mgmt(args, cfg):
     create_directory(output_dir)
 
     # === Load test dataset ===
+    mprops_count = 4 if args.arch == "ConvGRU" else 3
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        _, batched_test_data = getClassicDataset(cfg, filenames)
+        _, batched_test_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
+        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True, mprops_count=mprops_count)
     else:
         logging.error(f"Dataset type not supported.")
     logging.info(f"Batched Test dataset loaded.")
@@ -278,10 +281,11 @@ def metrics_mgmt(args, cfg):
         chunkRepdPastSeq = args.chunk_repd_past_seq
 
     # === Generate metrics per architecture ===
+    logging.info(f"=======>>>> Init metrics compute for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
-        generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, output_dir)
+        generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count=mprops_count)
     elif args.arch == "ConvGRU":
-        generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, output_dir)
+        generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count=mprops_count)
     else:
         logging.error("Architecture not supported.")
 

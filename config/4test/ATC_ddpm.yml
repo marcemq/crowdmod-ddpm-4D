@@ -22,7 +22,6 @@ MACROPROPS:
   WINDOWSIZE: 1
   THETA: 2.5647
   TIME_RES: 0.5
-  MPROPS_COUNT: 4   # 3 for DDPM and Flow Matching models
 DATASET:
   NAME: "ATC4TEST"
   PAST_LEN: 5
@@ -68,8 +67,8 @@ MODEL:
     ENC_KERNELS: [3, 3, 3, 3, 3, 3]
     FORC_KERNELS: [3, 4, 3, 4, 3, 3, 3]
 METRICS:
-  MPROPS_COUNT: 3
   PRED_MPROPS_FACTOR: [1, 10, 10]
+  MPROPS_COUNT: 3    # Metrics consider rho, vx, vy predictions only
   MOTION_FEATURE:
     f: 1    # Number of frames of each volume
     k: 4    # Spatial dimensions of each volume, valid for ATC grid

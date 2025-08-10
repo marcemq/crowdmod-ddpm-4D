@@ -57,13 +57,13 @@ def set_predictions_plot(predictions, random_past_idx, random_past_samples, rand
 
     plotDensityOverTime(seq_frames, cfg, output_dir)
 
-def generate_samples_ddpm(cfg, batched_test_data, plotType, output_dir, model_fullname, plotMprop, plotPast, velScale, velUncScale, samePastSeq, headwidth):
+def generate_samples_ddpm(cfg, batched_test_data, plotType, output_dir, model_fullname, plotMprop, plotPast, velScale, velUncScale, samePastSeq, headwidth, mprops_count):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(input_channels  = cfg.MACROPROPS.MPROPS_COUNT,
-                                  output_channels = cfg.MACROPROPS.MPROPS_COUNT,
+    denoiser = MacropropsDenoiser(input_channels  = mprops_count,
+                                  output_channels = mprops_count,
                                   num_res_blocks  = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
                                   base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
                                   base_channels_multiples = cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
@@ -96,27 +96,27 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, output_dir, model_fu
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
         if cfg.MODEL.DDPM.SAMPLER == "DDPM":
-            predictions, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS) # AR review .cpu() call here
+            predictions, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS, mprops_count=mprops_count) # AR review .cpu() call here
             if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE == "none":
                 l1 = torch.mean(torch.abs(predictions[:,0,:,:,:])).cpu().detach().numpy()
                 logging.info('L1 norm {:.2f}'.format(l1))
         elif cfg.MODEL.DDPM.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.MODEL.DDPM.DDIM_DIVIDER)
             logging.info(f'taus:{taus}')
-            predictions, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS) # AR review .cpu() call here
+            predictions, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS, mprops_count=mprops_count) # AR review .cpu() call here
         else:
             logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
         set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir)
         break
 
-def generate_samples_convGRU(cfg, batched_test_data, plotType, output_dir, model_fullname, plotMprop, plotPast, velScale, velUncScale, samePastSeq, headwidth):
+def generate_samples_convGRU(cfg, batched_test_data, plotType, output_dir, model_fullname, plotMprop, plotPast, velScale, velUncScale, samePastSeq, headwidth, mprops_count):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Instanciate the convGRU forcaster model
     convGRU_model = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
-                               input_channels       = cfg.MACROPROPS.MPROPS_COUNT,
+                               input_channels       = mprops_count,
                                enc_hidden_channels  = cfg.MODEL.CONVGRU.ENC_HIDDEN_CH,
                                forc_hidden_channels = cfg.MODEL.CONVGRU.FORC_HIDDEN_CH,
                                enc_kernels          = cfg.MODEL.CONVGRU.ENC_KERNELS,
@@ -163,19 +163,21 @@ def sampling_mgmt(args, cfg):
     create_directory(output_dir)
 
     # === Load test dataset ===
+    mprops_count = 4 if args.arch == "ConvGRU" else 3
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        _, batched_test_data = getClassicDataset(cfg, filenames)
+        _, batched_test_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True)
+        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True, mprops_count=mprops_count)
     else:
         logging.error(f"Dataset type not supported.")
     logging.info(f"Batched Test dataset loaded.")
 
     # === Generate samples per architecture ===
+    logging.info(f"=======>>>> Init sampling for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
-        generate_samples_ddpm(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth)
+        generate_samples_ddpm(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth, mprops_count=mprops_count)
     elif args.arch == "ConvGRU":
-        generate_samples_convGRU(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth)
+        generate_samples_convGRU(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth, mprops_count=mprops_count)
     else:
         logging.error("Architecture not supported.")
 

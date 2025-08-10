@@ -90,7 +90,7 @@ def train_one_epoch_convGRU(convGRU_model, train_data_loader, val_data_loader, o
 
     with torch.no_grad():
         with tqdm(total=len(val_data_loader), dynamic_ncols=True) as tq:
-            tq.set_description(f"Val :: Epoch: {epoch}/{total_epochs}")
+            tq.set_description(f"Val   :: Epoch: {epoch}/{total_epochs}")
             # Scan the validation batches
             for batched_val_data in val_data_loader:
                 tq.update(1)
