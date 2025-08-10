@@ -236,6 +236,8 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
 
             compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq)
             count_batch += 1
+            if count_batch == batches_to_use:
+                break
 
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
     title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})"
