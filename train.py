@@ -132,7 +132,7 @@ def train_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count)
         # Save best checkpoint from all training
         if epoch_train_loss < best_loss:
             best_loss = epoch_train_loss
-            save_checkpoint(optimizer, convGRU_model, epoch, cfg, arch)
+            save_checkpoint(optimizer, convGRU_model, "000", cfg, arch)
 
 def training_mgmt(args, cfg):
     """
