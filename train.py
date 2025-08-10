@@ -15,9 +15,8 @@ import torch.optim as optim
 import gc,logging,os
 
 from matplotlib import pyplot as plt
-from utils.utils import create_directory
+from utils.utils import create_directory, get_filenames_paths, get_training_dataset
 from utils.myparser import getYamlConfig
-from utils.dataset import getDataset, getClassicDataset
 from utils.model_details import count_trainable_params
 from models.diffusion.forward import ForwardSampler
 from models.unet import MacropropsDenoiser
@@ -155,26 +154,12 @@ def training_mgmt(args, cfg):
     )
 
     # === Prepare file paths ===
-    filenames = cfg.DATA_LIST
-    if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
-        filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
-    elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
-        filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
-    else:
-        logging.info("Dataset not supported")
-
-    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    filenames = get_filenames_paths(cfg)
     create_directory(cfg.DATA_FS.SAVE_DIR)
 
     # === Load training dataset
     mprops_count = 4 if args.arch == "ConvGRU" else 3
-    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        batched_train_data, batched_val_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
-    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        batched_train_data, batched_val_data, _ = getDataset(cfg, filenames, mprops_count=mprops_count)
-    else:
-        logging.error(f"Dataset type not supported.")
-    logging.info(f"Batched Train dataset loaded.")
+    batched_train_data, batched_val_data = get_training_dataset(cfg, filenames)
 
     # === Train models with specific architecture ===
     logging.info(f"=======>>>> Init training for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")

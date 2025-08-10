@@ -11,8 +11,7 @@ from tqdm import tqdm
 from models.generate import generate_ddpm, generate_ddim, generate_convGRU
 
 from utils.myparser import getYamlConfig
-from utils.dataset import getDataset, getClassicDataset, getDataset4Test
-from utils.utils import create_directory
+from utils.utils import create_directory, get_filenames_paths, get_test_dataset
 from utils.plot.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
 from utils.metrics.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics, energy_mprops_seq, re_density_mprops_seq
 from models.unet import MacropropsDenoiser
@@ -182,7 +181,7 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
         if count_batch == batches_to_use:
             break
 
-    title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})"
+    title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})-(DDPM-UNet)"
     save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch, output_dir)
     save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title, output_dir)
 
@@ -240,7 +239,7 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
                 break
 
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
-    title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})"
+    title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})-(ConvGRU)"
     save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch, output_dir)
     save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title, output_dir)
 
@@ -249,28 +248,14 @@ def metrics_mgmt(args, cfg):
     Metrics compute management function.
     """
     # === Prepare file paths ===
-    filenames = cfg.DATA_LIST
-    if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
-        filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
-    elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
-        filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
-    else:
-        logging.error("Dataset not supported")
-
-    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    filenames = get_filenames_paths(cfg)
     model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(args.arch, cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, args.model_sample_to_load, cfg.DATASET.VELOCITY_NORM))
     output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_VN{cfg.DATASET.VELOCITY_NORM}_modelE{args.model_sample_to_load}"
     create_directory(output_dir)
 
     # === Load test dataset ===
     mprops_count = 4 if args.arch == "ConvGRU" else 3
-    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        _, batched_test_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
-    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True, mprops_count=mprops_count)
-    else:
-        logging.error(f"Dataset type not supported.")
-    logging.info(f"Batched Test dataset loaded.")
+    batched_test_data = get_test_dataset(cfg, filenames, mprops_count)
 
     # === Set samples_per_batch ===
     if args.chunk_repd_past_seq == None:

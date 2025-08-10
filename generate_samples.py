@@ -9,8 +9,7 @@ from models.generate import generate_ddpm, generate_ddim, generate_convGRU
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from models.convGRU.forecaster import Forecaster
-from utils.dataset import getDataset, getClassicDataset, getDataset4Test
-from utils.utils import create_directory
+from utils.utils import create_directory, get_filenames_paths, get_test_dataset
 from utils.plot.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops, plotDensityOverTime
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
@@ -149,28 +148,14 @@ def sampling_mgmt(args, cfg):
     Sampling management function.
     """
     # === Prepare file paths ===
-    filenames = cfg.DATA_LIST
-    if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
-        filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
-    elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
-        filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
-    else:
-        logging.error("Dataset not supported")
-
-    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    filenames = get_filenames_paths(cfg)
     model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(args.arch, cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, args.model_sample_to_load, cfg.DATASET.VELOCITY_NORM))
     output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_VN{cfg.DATASET.VELOCITY_NORM}_modelE{args.model_sample_to_load}"
     create_directory(output_dir)
 
     # === Load test dataset ===
     mprops_count = 4 if args.arch == "ConvGRU" else 3
-    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        _, batched_test_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
-    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True, mprops_count=mprops_count)
-    else:
-        logging.error(f"Dataset type not supported.")
-    logging.info(f"Batched Test dataset loaded.")
+    batched_test_data = get_test_dataset(cfg, filenames, mprops_count)
 
     # === Generate samples per architecture ===
     logging.info(f"=======>>>> Init sampling for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
