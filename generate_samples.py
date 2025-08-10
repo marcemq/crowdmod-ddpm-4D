@@ -72,7 +72,7 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, output_dir, model_fu
                                   condition               = cfg.MODEL.DDPM.UNET.CONDITION)
 
     logging.info(f'model full name:{model_fullname}')
-    denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
+    denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
     denoiser.to(device)
 
     # Instantiate the diffusion model 
@@ -124,7 +124,7 @@ def generate_samples_convGRU(cfg, batched_test_data, plotType, output_dir, model
                                bias                 = False)
 
     logging.info(f'model full name:{model_fullname}')
-    convGRU_model.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
+    convGRU_model.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
     convGRU_model.to(device)
 
     for batch in batched_test_data:

@@ -130,7 +130,7 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
                                   condition               = cfg.MODEL.DDPM.UNET.CONDITION)
 
     logging.info(f'model full name:{model_fullname}')
-    denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
+    denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
     denoiser.to(device)
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
 
@@ -200,7 +200,7 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
                                bias                 = False)
 
     logging.info(f'model full name:{model_fullname}')
-    convGRU_model.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'))['model'])
+    convGRU_model.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
     convGRU_model.to(device)
 
     count_batch = 0
