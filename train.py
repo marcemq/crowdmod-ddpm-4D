@@ -171,7 +171,7 @@ def training_mgmt(args, cfg):
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
         batched_train_data, batched_val_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        batched_train_data, batched_val_data, _ = getDataset(cfg, filenames, train_data_only=True, mprops_count=mprops_count)
+        batched_train_data, batched_val_data, _ = getDataset(cfg, filenames, mprops_count=mprops_count)
     else:
         logging.error(f"Dataset type not supported.")
     logging.info(f"Batched Train dataset loaded.")
