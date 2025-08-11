@@ -10,7 +10,7 @@ from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
 from models.convGRU.forecaster import Forecaster
 from utils.utils import create_directory, get_filenames_paths, get_test_dataset
-from utils.plot.plot_sampled_mprops import plotStaticMacroprops, plotDynamicMacroprops, plotDensityOverTime
+from utils.plot.plot_sampled_mprops import MacropropPlotter
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
 
@@ -37,7 +37,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
         plt.show()
     return grid_img
 
-def set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir):
+def set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter):
     seq_frames = []
     for i in range(len(random_past_idx)):
         future_sample_pred = predictions[i]
@@ -50,13 +50,13 @@ def set_predictions_plot(predictions, random_past_idx, random_past_samples, rand
 
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
     if plotType == "Static":
-        plotStaticMacroprops(seq_frames, cfg, match, plotMprop, plotPast, velScale, velUncScale, output_dir)
+        macropropPlotter.plotStatic(seq_frames, match, plotMprop, plotPast)
     elif plotType == "Dynamic":
-        plotDynamicMacroprops(seq_frames, cfg, velScale, headwidth, output_dir)
+        macropropPlotter.plotDynamic(seq_frames)
 
-    plotDensityOverTime(seq_frames, cfg, output_dir)
+    macropropPlotter.plotDensityOverTime(seq_frames)
 
-def generate_samples_ddpm(cfg, batched_test_data, plotType, output_dir, model_fullname, plotMprop, plotPast, velScale, velUncScale, samePastSeq, headwidth, mprops_count):
+def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -106,10 +106,10 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, output_dir, model_fu
         else:
             logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
-        set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir)
+        set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
         break
 
-def generate_samples_convGRU(cfg, batched_test_data, plotType, output_dir, model_fullname, plotMprop, plotPast, velScale, velUncScale, samePastSeq, headwidth, mprops_count):
+def generate_samples_convGRU(cfg, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -140,7 +140,7 @@ def generate_samples_convGRU(cfg, batched_test_data, plotType, output_dir, model
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
         predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, cfg.MODEL.CONVGRU.TEACHER_FORCING)
-        set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, velScale, velUncScale, headwidth, output_dir)
+        set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
         break
 
 def sampling_mgmt(args, cfg):
@@ -158,11 +158,12 @@ def sampling_mgmt(args, cfg):
     batched_test_data = get_test_dataset(cfg, filenames, mprops_count)
 
     # === Generate samples per architecture ===
+    macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)
     logging.info(f"=======>>>> Init sampling for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
-        generate_samples_ddpm(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth, mprops_count=mprops_count)
+        generate_samples_ddpm(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     elif args.arch == "ConvGRU":
-        generate_samples_convGRU(cfg, batched_test_data, args.plot_type, output_dir, model_fullname, args.plot_mprop, args.plot_past, args.vel_scale, args.vel_unc_scale, args.same_past_seq, args.headwidth, mprops_count=mprops_count)
+        generate_samples_convGRU(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     else:
         logging.error("Architecture not supported.")
 
