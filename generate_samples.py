@@ -169,7 +169,7 @@ def sampling_mgmt(args, cfg):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to sample crowd macroprops from trained model.")
-    parser.add_argument('--plot-mprop', type=str, default='Density', help='Macroprops to be plotted')
+    parser.add_argument('--plot-mprop', type=str, default="Density&Vel", help='Macroprops to be plotted. Options: Density|Uncertainty|Density&Vel')
     parser.add_argument('--plot-past', type=str, default='Last2', help='Past macroprops to be plotted')
     parser.add_argument('--vel-scale', type=float, default=0.5, help='Scale to be applied to velocity mprops vectors')
     parser.add_argument('--headwidth', type=int, default=5, help='Headwidth to be applied to velocity mprops vectors')
