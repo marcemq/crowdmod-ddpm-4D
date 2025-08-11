@@ -67,15 +67,16 @@ class MacropropPlotter:
         j_indexes = self._get_j_indexes(plotPast)
         rho_min, rho_max = self._get_rho_limits(seq_frames, j_indexes)
 
-        fig, ax = plt.subplots(self.samples4plot*2, len(j_indexes), figsize=(10,8), facecolor='white')
+        static_samples4plot = 4
+        fig, ax = plt.subplots(static_samples4plot*2, len(j_indexes), figsize=(10,8), facecolor='white')
         fig.subplots_adjust(hspace=0.1, wspace=0.1)
 
-        for i in range(self.samples4plot*2):
+        for i in range(static_samples4plot*2):
             one_seq_img = seq_frames[i]
             for ind, j in enumerate(j_indexes):
                 if ind == 0:
                     label = f"GT\nseq-{i // 2 + 1}" if (i + 1) % 2 == 0 else f"Pred\nseq-{i // 2 + 1}"
-                    fig.text(0.11, 0.845 - i / (self.samples4plot * 2 + 4.6), label, fontsize=8, ha='center', va='center', rotation=90)
+                    fig.text(0.11, 0.845 - i / (static_samples4plot * 2 + 4.6), label, fontsize=8, ha='center', va='center', rotation=90)
 
                 one_sample_img = one_seq_img[:,:,:,j].cpu()
                 rho = torch.squeeze(one_sample_img[0:1,:,:], axis=0)
