@@ -222,7 +222,7 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
             random_past_idx = expanded_random_past_idx[:samples_per_batch]
             random_past_samples = past_test[random_past_idx]
             random_future_samples = future_test[random_past_idx]
-            predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, cfg.MODEL.CONVGRU.TEACHER_FORCING)
+            predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, teacher_forcing=False)
 
             # mprops setup for metrics compute
             random_future_samples = random_future_samples[:, :cfg.METRICS.MPROPS_COUNT, :, :, :]

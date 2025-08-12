@@ -60,7 +60,7 @@ MODEL:
   FLOW_MATCHING:
     TMP_VAR: "Placeholder"
   CONVGRU:
-    TEACHER_FORCING: False
+    TEACHER_FORCING: True
     ENC_HIDDEN_CH: [16, 64, 64, 128, 128, 128]
     FORC_HIDDEN_CH: [128, 128, 128, 128, 128, 64, 16]
     ENC_KERNELS: [3, 3, 3, 3, 3, 3]
@@ -74,10 +74,9 @@ METRICS:
     s: 1
     GAMMA: 2.0 # Exponent of the power function for 1D-histogram
 TRAIN:
-  INITIAL_LR: 0.0005
   EPOCHS: 200
   SOLVER:
-    LR: 0.00005
+    LR: 0.0001
     WEIGHT_DECAY: 0.003
     BETAS:
       - 0.5
