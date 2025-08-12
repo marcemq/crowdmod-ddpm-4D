@@ -104,7 +104,9 @@ def train_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count)
                                forc_kernels         = cfg.MODEL.CONVGRU.FORC_KERNELS,
                                device               = device,
                                bias                 = False)
-    
+
+    trainable_params = count_trainable_params(convGRU_model)
+    logging.info(f"Total trainable parameters at ConvGRU model:{trainable_params}")
     # The optimizer (Adam with weight decay)
     optimizer = optim.Adam(convGRU_model.parameters(),lr=cfg.TRAIN.SOLVER.LR, betas=cfg.TRAIN.SOLVER.BETAS,weight_decay=cfg.TRAIN.SOLVER.WEIGHT_DECAY)
     best_loss      = 1e6
