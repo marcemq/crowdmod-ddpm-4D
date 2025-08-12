@@ -34,7 +34,7 @@ DATASET:
     num_workers: 6
     drop_last: True
   DATASET_TYPE: 'BySplitRatio'    # Available options: ByFilenames|BySplitRatio|ByFilenames4Test
-  VELOCITY_NORM: False
+  VELOCITY_NORM: True
 MODEL:
   NAME: "ARCH-{}_HERMESBO_TE{}_PL{}_FL{}_CE{}_VN{}.pth"
   NSAMPLES: 1280      # Define number of predicted samples (64 BS * 20 rep, default values)
@@ -77,7 +77,7 @@ TRAIN:
   EPOCHS: 200
   SOLVER:
     LR: 0.0001
-    WEIGHT_DECAY: 0.003
+    WEIGHT_DECAY: 0.00001
     BETAS:
-      - 0.5
+      - 0.9
       - 0.999
