@@ -139,7 +139,7 @@ def generate_samples_convGRU(cfg, batched_test_data, plotType, model_fullname, p
 
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
-        predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, cfg.MODEL.CONVGRU.TEACHER_FORCING)
+        predictions = generate_convGRU(convGRU_model, random_past_samples, random_future_samples, teacher_forcing=False)
         set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
         break
 
