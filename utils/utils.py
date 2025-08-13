@@ -1,4 +1,5 @@
 import os
+import wandb
 import logging
 from utils.dataset import getDataset, getClassicDataset
 
@@ -57,3 +58,66 @@ def get_test_dataset(cfg, filenames, mprops_count):
     logging.info(f"Batched Test dataset loaded.")
 
     return batched_test_data
+
+def get_checkpoint_save_path(cfg, arch, epoch):
+    """
+    Return checkpoint save complete path based on arch.
+    """
+    if arch == "DDPM-UNet":
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+    elif arch == "ConvGRU":
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVGRU.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+    else:
+        logging.error("Architecture not supported.")
+
+    return save_path
+
+def get_model_fullname(cfg, arch, epoch):
+    """
+    Return model fullname based on arch.
+    """
+    if arch == "DDPM-UNet":
+        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+    elif arch == "ConvGRU":
+        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVGRU.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+    else:
+        logging.error("Architecture not supported.")
+
+    return model_fullname
+
+def init_wandb(cfg, arch):
+    """
+    Initialize W&B based on arch
+    """
+    if arch == "DDPM-UNet":
+        wandb.init(
+            project="macroprops-predict-4D",
+            config={
+                "architecture": arch,
+                "dataset": cfg.DATASET.NAME,
+                "learning_rate": cfg.MODEL.DDPM.TRAIN.SOLVER.LR,
+                "epochs": cfg.MODEL.DDPM.TRAIN.EPOCHS,
+                "batch_size": cfg.DATASET.BATCH_SIZE,
+                "past_len": cfg.DATASET.PAST_LEN,
+                "future_len": cfg.DATASET.FUTURE_LEN,
+                "weight_decay": cfg.MODEL.DDPM.TRAIN.SOLVER.WEIGHT_DECAY,
+                "solver_betas": cfg.MODEL.DDPM.TRAIN.SOLVER.BETAS,
+            }
+        )
+    elif arch == "ConvGRU":
+        wandb.init(
+            project="macroprops-predict-4D",
+            config={
+                "architecture": arch,
+                "dataset": cfg.DATASET.NAME,
+                "learning_rate": cfg.MODEL.CONVGRU.TRAIN.SOLVER.LR,
+                "epochs": cfg.MODEL.CONVGRU.TRAIN.EPOCHS,
+                "batch_size": cfg.DATASET.BATCH_SIZE,
+                "past_len": cfg.DATASET.PAST_LEN,
+                "future_len": cfg.DATASET.FUTURE_LEN,
+                "weight_decay": cfg.MODEL.CONVGRU.TRAIN.SOLVER.WEIGHT_DECAY,
+                "solver_betas": cfg.MODEL.CONVGRU.TRAIN.SOLVER.BETAS,
+            }
+        )
+    else:
+        logging.error("Architecture not supported.")

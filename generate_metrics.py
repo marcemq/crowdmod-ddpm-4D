@@ -11,7 +11,7 @@ from tqdm import tqdm
 from models.generate import generate_ddpm, generate_ddim, generate_convGRU
 
 from utils.myparser import getYamlConfig
-from utils.utils import create_directory, get_filenames_paths, get_test_dataset
+from utils.utils import create_directory, get_filenames_paths, get_test_dataset, get_model_fullname
 from utils.plot.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
 from utils.metrics.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics, energy_mprops_seq, re_density_mprops_seq
 from models.unet import MacropropsDenoiser
@@ -249,7 +249,7 @@ def metrics_mgmt(args, cfg):
     """
     # === Prepare file paths ===
     filenames = get_filenames_paths(cfg)
-    model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(args.arch, cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, args.model_sample_to_load, cfg.DATASET.VELOCITY_NORM))
+    model_fullname = get_model_fullname(cfg, args.arch, args.model_sample_to_load)
     output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_VN{cfg.DATASET.VELOCITY_NORM}_modelE{args.model_sample_to_load}"
     create_directory(output_dir)
 
