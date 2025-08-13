@@ -15,7 +15,7 @@ import torch.optim as optim
 import gc,logging,os
 
 from matplotlib import pyplot as plt
-from utils.utils import create_directory, get_filenames_paths, get_training_dataset
+from utils.utils import create_directory, get_filenames_paths, get_training_dataset, get_checkpoint_save_path, init_wandb
 from utils.myparser import getYamlConfig
 from utils.model_details import count_trainable_params
 from models.diffusion.forward import ForwardSampler
@@ -30,7 +30,7 @@ def save_checkpoint(optimizer, model, epoch, cfg, arch):
         "opt": optimizer.state_dict(),
         "model": model.state_dict()
     }
-    save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+    save_path = get_checkpoint_save_path(cfg, arch, epoch)
     torch.save(checkpoint_dict, save_path)
     del checkpoint_dict
 
@@ -52,7 +52,7 @@ def train_ddpm(cfg, batched_train_data, arch, mprops_count):
     trainable_params = count_trainable_params(denoiser)
     logging.info(f"Total trainable parameters at denoiser:{trainable_params}")
     # The optimizer (Adam with weight decay)
-    optimizer = optim.Adam(denoiser.parameters(),lr=cfg.TRAIN.SOLVER.LR, betas=cfg.TRAIN.SOLVER.BETAS,weight_decay=cfg.TRAIN.SOLVER.WEIGHT_DECAY)
+    optimizer = optim.Adam(denoiser.parameters(),lr=cfg.MODEL.DDPM.TRAIN.SOLVER.LR, betas=cfg.MODEL.DDPM.TRAIN.SOLVER.BETAS,weight_decay=cfg.MODEL.DDPM.TRAIN.SOLVER.WEIGHT_DECAY)
 
     # Instantiate the diffusion model
     diffusionmodel = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS, scale=cfg.MODEL.DDPM.SCALE)
@@ -60,14 +60,14 @@ def train_ddpm(cfg, batched_train_data, arch, mprops_count):
 
     best_loss      = 1e6
     consecutive_nan_count = 0
-    epoch_model_samples = np.random.randint(150, cfg.TRAIN.EPOCHS + 1, size=cfg.MODEL.DDPM.MODEL_SAMPLES)
+    epoch_model_samples = np.random.randint(150, cfg.MODEL.DDPM.TRAIN.EPOCHS + 1, size=cfg.MODEL.DDPM.MODEL_SAMPLES)
     # Training loop
-    for epoch in range(1,cfg.TRAIN.EPOCHS + 1):
+    for epoch in range(1,cfg.MODEL.DDPM.TRAIN.EPOCHS + 1):
         torch.cuda.empty_cache()
         gc.collect()
 
         # One epoch of training
-        epoch_loss = train_one_epoch(denoiser,diffusionmodel,batched_train_data,optimizer,device,epoch=epoch,total_epochs=cfg.TRAIN.EPOCHS)
+        epoch_loss = train_one_epoch(denoiser,diffusionmodel,batched_train_data,optimizer,device,epoch=epoch,total_epochs=cfg.MODEL.DDPM.TRAIN.EPOCHS)
         wandb.log({"train_loss": epoch_loss})
         # NaN handling / early stopping
         if np.isnan(epoch_loss):
@@ -104,16 +104,18 @@ def train_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count)
                                forc_kernels         = cfg.MODEL.CONVGRU.FORC_KERNELS,
                                device               = device,
                                bias                 = False)
-    
+
+    trainable_params = count_trainable_params(convGRU_model)
+    logging.info(f"Total trainable parameters at ConvGRU model:{trainable_params}")
     # The optimizer (Adam with weight decay)
-    optimizer = optim.Adam(convGRU_model.parameters(),lr=cfg.TRAIN.SOLVER.LR, betas=cfg.TRAIN.SOLVER.BETAS,weight_decay=cfg.TRAIN.SOLVER.WEIGHT_DECAY)
+    optimizer = optim.Adam(convGRU_model.parameters(),lr=cfg.MODEL.CONVGRU.TRAIN.SOLVER.LR, betas=cfg.MODEL.CONVGRU.TRAIN.SOLVER.BETAS,weight_decay=cfg.MODEL.CONVGRU.TRAIN.SOLVER.WEIGHT_DECAY)
     best_loss      = 1e6
     consecutive_nan_count = 0
     # Training loop
-    for epoch in range(1,cfg.TRAIN.EPOCHS + 1):
+    for epoch in range(1,cfg.MODEL.CONVGRU.TRAIN.EPOCHS + 1):
         torch.cuda.empty_cache()
         gc.collect()
-        epoch_train_loss, epoch_val_loss = train_one_epoch_convGRU(convGRU_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=cfg.TRAIN.EPOCHS, teacher_forcing=cfg.MODEL.CONVGRU.TEACHER_FORCING)
+        epoch_train_loss, epoch_val_loss = train_one_epoch_convGRU(convGRU_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=cfg.MODEL.CONVGRU.TRAIN.EPOCHS, teacher_forcing=cfg.MODEL.CONVGRU.TEACHER_FORCING)
         wandb.log({
             "train_loss": epoch_train_loss,
             "val_loss": epoch_val_loss
@@ -138,20 +140,7 @@ def training_mgmt(args, cfg):
     Training management function.
     """
     # === Initialize W&B ===
-    wandb.init(
-        project="macroprops-predict-4D",
-        config={
-            "architecture": args.arch,
-            "dataset": cfg.DATASET.NAME,
-            "learning_rate": cfg.TRAIN.SOLVER.LR,
-            "epochs": cfg.TRAIN.EPOCHS,
-            "batch_size": cfg.DATASET.BATCH_SIZE,
-            "past_len": cfg.DATASET.PAST_LEN,
-            "future_len": cfg.DATASET.FUTURE_LEN,
-            "weight_decay": cfg.TRAIN.SOLVER.WEIGHT_DECAY,
-            "solver_betas": cfg.TRAIN.SOLVER.BETAS,
-        }
-    )
+    init_wandb(cfg, args.arch, )
 
     # === Prepare file paths ===
     filenames = get_filenames_paths(cfg)

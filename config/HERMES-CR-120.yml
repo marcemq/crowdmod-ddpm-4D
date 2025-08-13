@@ -46,6 +46,14 @@ MODEL:
     DDIM_DIVIDER: 90    # Define number of timesteps to divide by
     GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
     MODEL_SAMPLES: 7
+    TRAIN:
+      EPOCHS: 200
+      SOLVER:
+        LR: 0.00005
+        WEIGHT_DECAY: 0.003
+        BETAS:
+          - 0.5
+          - 0.999
     UNET:
       CONDITION: "Past"
       CONDITION_HANDLING: "embed"
@@ -60,11 +68,19 @@ MODEL:
   FLOW_MATCHING:
     TMP_VAR: "Placeholder"
   CONVGRU:
-    TEACHER_FORCING: False
+    TEACHER_FORCING: True
     ENC_HIDDEN_CH: [16, 64, 64, 96, 96, 96]
     FORC_HIDDEN_CH: [96, 96, 96, 96, 96, 64, 16]
     ENC_KERNELS: [3, 3, 3, 3, 3, 3]
     FORC_KERNELS: [3, 4, 3, 4, 3, 3, 3]
+    TRAIN:
+      EPOCHS: 100
+      SOLVER:
+        LR: 0.0005
+        WEIGHT_DECAY: 0.0003
+        BETAS:
+          - 0.7
+          - 0.999
 METRICS:
   PRED_MPROPS_FACTOR: [1, 1, 1]
   MPROPS_COUNT: 3    # Metrics consider rho, vx, vy predictions only
