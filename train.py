@@ -117,8 +117,8 @@ def train_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count)
         gc.collect()
         epoch_train_loss, epoch_val_loss = train_one_epoch_convGRU(convGRU_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=cfg.MODEL.CONVGRU.TRAIN.EPOCHS, teacher_forcing=cfg.MODEL.CONVGRU.TEACHER_FORCING)
         wandb.log({
-            "train_loss": epoch_train_loss,
-            "val_loss": epoch_val_loss
+            "train_loss": min(epoch_train_loss, 10),
+            "val_loss": min(epoch_val_loss,10)
         }, step=epoch)
         # NaN handling / early stopping
         if np.isnan(epoch_train_loss):
