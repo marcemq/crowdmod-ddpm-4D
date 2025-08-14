@@ -145,10 +145,9 @@ def train_sweep_mgmt(args, cfg):
     if args.arch == "DDPM-UNet":
         sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ddpm")
         wandb.agent(sweep_id, function=functools.partial(train_sweep_ddpm, cfg, filenames), count=50)
-        train_sweep_ddpm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
     elif args.arch == "ConvGRU":
         sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ConvGRU")
-        wandb.agent(sweep_id, function=functools.partial(train_sweep_convGRU, cfg, filenames), count=50)
+        wandb.agent(sweep_id, function=functools.partial(train_sweep_convGRU, cfg, batched_train_data, batched_val_data, args.arch, mprops_count), count=50)
     else:
         logging.error("Architecture not supported to launch train sweep.")
 
