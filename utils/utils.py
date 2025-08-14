@@ -156,8 +156,8 @@ def get_sweep_configuration(arch):
             "metric": {"goal": "minimize", "name": "train_loss"},
             "parameters": {
                 "learning_rate": {"min": 0.00001, "max": 0.001},
-                "batch_size": {"values": [16, 32, 64]},
-                "epochs": {"values": [100, 200, 300]},
+                "batch_size": {"values": [16, 32]},
+                "epochs": {"values": [100, 150, 200]},
                 "weight_decay": {"values": [0.0003, 0.001, 0.01]},
                 "betas": {"values": [[0.5, 0.999], [0.7, 0.999], [0.9, 0.999]]},
             },
