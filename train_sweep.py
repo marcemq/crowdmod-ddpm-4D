@@ -129,9 +129,6 @@ def train_sweep_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_
             save_checkpoint(optimizer, convGRU_model, "000", cfg, arch)
 
 def train_sweep_mgmt(args, cfg):
-    # === Initialize W&B ===
-    init_wandb(cfg, args.arch)
-
     # === Prepare file paths ===
     filenames = get_filenames_paths(cfg)
     create_directory(cfg.DATA_FS.SAVE_DIR)
