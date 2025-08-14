@@ -95,13 +95,13 @@ def get_model_fullname(cfg, arch, epoch):
 
     return model_fullname
 
-def init_wandb(cfg, arch):
+def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
     """
     Initialize W&B based on arch
     """
     if arch == "DDPM-UNet":
         wandb.init(
-            project="macroprops-predict-4D",
+            project=project_name,
             config={
                 "architecture": arch,
                 "dataset": cfg.DATASET.NAME,
@@ -116,7 +116,7 @@ def init_wandb(cfg, arch):
         )
     elif arch == "ConvGRU":
         wandb.init(
-            project="macroprops-predict-4D",
+            project=project_name,
             config={
                 "architecture": arch,
                 "dataset": cfg.DATASET.NAME,
