@@ -112,11 +112,27 @@ def train_sweep_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_
 
     trainable_params = count_trainable_params(convGRU_model)
     logging.info(f"Total trainable parameters at ConvGRU model:{trainable_params}")
-    # The optimizer (Adam with weight decay)
-    optimizer = optim.Adam(convGRU_model.parameters(),lr=wandb.config.learning_rate, betas=cfg.MODEL.CONVGRU.TRAIN.SOLVER.BETAS,weight_decay=wandb.config.weight_decay)
+    # Set optimizer based on chossen wandb sweep optimizer
+    if wandb.config.optimizer == "Adam":
+        optimizer = optim.Adam(
+            convGRU_model.parameters(),
+            lr=wandb.config.learning_rate,
+            betas=wandb.config.betas,
+            weight_decay=wandb.config.weight_decay
+        )
+    elif wandb.config.optimizer == "AdamW":
+        optimizer = optim.AdamW(
+            convGRU_model.parameters(),
+            lr=wandb.config.learning_rate,
+            betas=wandb.config.betas,
+            weight_decay=wandb.config.weight_decay
+        )
+    else:
+        raise ValueError(f"Unsupported optimizer: {wandb.config.optimizer}")
+
     best_loss      = 1e6
     # Training loop
-    for epoch in range(1,cfg.MODEL.CONVGRU.TRAIN.EPOCHS + 1):
+    for epoch in range(1, wandb.config.epochs + 1):
         torch.cuda.empty_cache()
         gc.collect()
         epoch_train_loss, epoch_val_loss = train_one_epoch_convGRU(convGRU_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=wandb.config.epochs, teacher_forcing=cfg.MODEL.CONVGRU.TEACHER_FORCING)
