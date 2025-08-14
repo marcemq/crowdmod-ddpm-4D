@@ -94,7 +94,8 @@ def train_sweep_ddpm(cfg, filenames, show_losses_plot=False):
             torch.save(checkpoint_dict, save_path)
             del checkpoint_dict
 
-def train_sweep_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count):
+def train_sweep_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count, project_name):
+    init_wandb(cfg, args.arch, project_name)
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -141,14 +142,12 @@ def train_sweep_mgmt(args, cfg):
     sweep_configuration = get_sweep_configuration(args.arch)
     if args.arch == "DDPM-UNet":
         project_name = "sweep_crowdmod_ddpm"
-        init_wandb(cfg, args.arch, project_name)
         sweep_id = wandb.sweep(sweep=sweep_configuration, project=project_name)
         wandb.agent(sweep_id, function=functools.partial(train_sweep_ddpm, cfg, filenames), count=50)
     elif args.arch == "ConvGRU":
         project_name = "sweep_crowdmod_ConvGRU"
-        init_wandb(cfg, args.arch, project_name)
         sweep_id = wandb.sweep(sweep=sweep_configuration, project=project_name)
-        wandb.agent(sweep_id, function=functools.partial(train_sweep_convGRU, cfg, batched_train_data, batched_val_data, args.arch, mprops_count), count=50)
+        wandb.agent(sweep_id, function=functools.partial(train_sweep_convGRU, cfg, batched_train_data, batched_val_data, args.arch, mprops_count, project_name), count=50)
     else:
         logging.error("Architecture not supported to launch train sweep.")
 
