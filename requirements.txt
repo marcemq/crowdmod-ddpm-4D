@@ -16,3 +16,4 @@ torchmetrics==1.6.1
 torchvision==0.20.1
 tqdm==4.67.1
 wandb==0.19.3
+torchsummary==1.5.1
