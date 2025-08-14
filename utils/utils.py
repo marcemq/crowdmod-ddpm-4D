@@ -160,7 +160,15 @@ def get_sweep_configuration(arch):
                 "epochs": {"values": [100, 150, 200]},
                 "weight_decay": {"values": [0.0003, 0.001, 0.01]},
                 "betas": {"values": [[0.5, 0.999], [0.7, 0.999], [0.9, 0.999]]},
-                "optimizer": {"values": ["Adam", "AdamW"]}
+                "optimizer": {"values": ["Adam", "AdamW"]},
+                "enc_hidden_ch": {
+                    "values": [
+                        [16, 64, 64, 96, 96, 96],
+                        [32, 64, 64, 96, 96, 96],
+                        [16, 64, 64, 128, 128, 128],
+                        [32, 64, 64, 128, 128, 128]
+                    ]
+                },
             },
         }
     else:

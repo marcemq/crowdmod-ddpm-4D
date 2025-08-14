@@ -101,10 +101,18 @@ def train_sweep_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logging.info(f"Batched Traininig  and Validation dataset loaded.")
 
+    # Set forc_hidden_channels based on sweep enc_hidden_ch
+    forc_hidden_map = {(16, 64, 64, 96, 96, 96):  [96, 96, 96, 96, 96, 64, 16],
+                       (32, 64, 64, 96, 96, 96):  [96, 96, 96, 96, 96, 64, 32],
+                       (16, 64, 64, 128, 128, 128): [128, 128, 128, 128, 128, 64, 16],
+                       (32, 64, 64, 128, 128, 128): [128, 128, 128, 128, 128, 64, 32]}
+    forc_hidden_ch = forc_hidden_map[tuple(wandb.config.enc_hidden_ch)]
+
+    # Set convGRU model object
     convGRU_model = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
                                input_channels       = mprops_count,
-                               enc_hidden_channels  = cfg.MODEL.CONVGRU.ENC_HIDDEN_CH,
-                               forc_hidden_channels = cfg.MODEL.CONVGRU.FORC_HIDDEN_CH,
+                               enc_hidden_channels  = wandb.config.enc_hidden_ch,
+                               forc_hidden_channels = forc_hidden_ch,
                                enc_kernels          = cfg.MODEL.CONVGRU.ENC_KERNELS,
                                forc_kernels         = cfg.MODEL.CONVGRU.FORC_KERNELS,
                                device               = device,
@@ -129,6 +137,10 @@ def train_sweep_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_
         )
     else:
         raise ValueError(f"Unsupported optimizer: {wandb.config.optimizer}")
+
+    logging.info(f"Selected optimizer: {wandb.config.optimizer}")
+    logging.info(f"Selected enc_hidden_ch: {wandb.config.enc_hidden_ch}")
+    logging.info(f"Selected forc_hidden_ch: {forc_hidden_ch}")
 
     best_loss      = 1e6
     # Training loop
