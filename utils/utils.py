@@ -135,7 +135,7 @@ def init_wandb(cfg, arch):
 def get_sweep_configuration(arch):
     if arch == "DDPM-UNet":
         sweep_configuration = {
-            "name": "sweep_crowdmod_ddpm_4D",
+            "name": "sweep_crowdmod_ddpm",
             "method": "random",
             "metric": {"goal": "minimize", "name": "loss_2D"},
             "parameters": {
@@ -151,7 +151,7 @@ def get_sweep_configuration(arch):
         }
     elif arch == "ConvGRU":
         sweep_configuration = {
-            "name": "sweep_crowdmod_convgru_4D",
+            "name": "sweep_crowdmod_ConvGRU",
             "method": "random",
             "metric": {"goal": "minimize", "name": "train_loss"},
             "parameters": {
