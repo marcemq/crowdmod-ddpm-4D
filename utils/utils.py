@@ -2,6 +2,7 @@ import os
 import torch
 import wandb
 import logging
+import torch.optim as optim
 from utils.dataset import getDataset, getClassicDataset
 
 def create_directory(directory_path):
@@ -32,28 +33,28 @@ def get_filenames_paths(cfg):
     filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     return filenames
 
-def get_training_dataset(cfg, filenames, mprops_count):
+def get_training_dataset(cfg, filenames, mprops_count, batch_size=None):
     """
     Return training and validation data for specific dataset type.
     """
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        batched_train_data, batched_val_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
+        batched_train_data, batched_val_data = getClassicDataset(cfg, filenames, batch_size=batch_size, mprops_count=mprops_count)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        batched_train_data, batched_val_data, _ = getDataset(cfg, filenames, mprops_count=mprops_count)
+        batched_train_data, batched_val_data, _ = getDataset(cfg, filenames, batch_size=batch_size, mprops_count=mprops_count)
     else:
         logging.error(f"Dataset type not supported.")
     logging.info(f"Batched Train dataset loaded.")
 
     return batched_train_data, batched_val_data
 
-def get_test_dataset(cfg, filenames, mprops_count):
+def get_test_dataset(cfg, filenames, mprops_count, batch_size=None):
     """
     Return testing data for specific dataset type.
     """
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        _, batched_test_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
+        _, batched_test_data = getClassicDataset(cfg, filenames, batch_size=batch_size, mprops_count=mprops_count)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True, mprops_count=mprops_count)
+        _, _, batched_test_data = getDataset(cfg, filenames, batch_size=batch_size, test_data_only=True, mprops_count=mprops_count)
     else:
         logging.error(f"Dataset type not supported.")
     logging.info(f"Batched Test dataset loaded.")
@@ -137,11 +138,11 @@ def get_sweep_configuration(arch):
         sweep_configuration = {
             "name": "sweep_crowdmod_ddpm",
             "method": "random",
-            "metric": {"goal": "minimize", "name": "loss_2D"},
+            "metric": {"goal": "minimize", "name": "train_loss"},
             "parameters": {
                 "learning_rate": {"min": 0.00001, "max": 0.001},
                 "batch_size": {"values": [16, 32, 64]},
-                "epochs": {"values": [400, 600, 800]},
+                "epochs": {"values": [150, 180, 200]},
                 "base_ch": {"values": [16, 32, 64]},
                 "dropout_rate": {"values": [0.05, 0.15, 0.25]},
                 "time_emb_mult": {"values": [2, 4, 8]},
@@ -175,3 +176,26 @@ def get_sweep_configuration(arch):
         logging.error("Architecture not supported for train sweep.")
 
     return sweep_configuration
+
+def get_optimizer(model):
+    """
+    Return optimizer object based on chossen wandb sweep optimizer at runtime
+    """
+    if wandb.config.optimizer == "Adam":
+        optimizer = optim.Adam(
+            model.parameters(),
+            lr=wandb.config.learning_rate,
+            betas=wandb.config.betas,
+            weight_decay=wandb.config.weight_decay
+        )
+    elif wandb.config.optimizer == "AdamW":
+        optimizer = optim.AdamW(
+            model.parameters(),
+            lr=wandb.config.learning_rate,
+            betas=wandb.config.betas,
+            weight_decay=wandb.config.weight_decay
+        )
+    else:
+        raise ValueError(f"Unsupported optimizer: {wandb.config.optimizer}")
+
+    return optimizer
