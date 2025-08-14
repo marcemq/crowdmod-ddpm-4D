@@ -1,4 +1,5 @@
 import os
+import torch
 import wandb
 import logging
 from utils.dataset import getDataset, getClassicDataset
@@ -72,6 +73,15 @@ def get_checkpoint_save_path(cfg, arch, epoch):
 
     return save_path
 
+def save_checkpoint(optimizer, model, epoch, cfg, arch):
+    checkpoint_dict = {
+        "opt": optimizer.state_dict(),
+        "model": model.state_dict()
+    }
+    save_path = get_checkpoint_save_path(cfg, arch, epoch)
+    torch.save(checkpoint_dict, save_path)
+    del checkpoint_dict
+
 def get_model_fullname(cfg, arch, epoch):
     """
     Return model fullname based on arch.
@@ -121,3 +131,38 @@ def init_wandb(cfg, arch):
         )
     else:
         logging.error("Architecture not supported.")
+
+def get_sweep_configuration(arch):
+    if arch == "DDPM-UNet":
+        sweep_configuration = {
+            "name": "sweep_crowdmod_ddpm_4D",
+            "method": "random",
+            "metric": {"goal": "minimize", "name": "loss_2D"},
+            "parameters": {
+                "learning_rate": {"min": 0.00001, "max": 0.001},
+                "batch_size": {"values": [16, 32, 64]},
+                "epochs": {"values": [400, 600, 800]},
+                "base_ch": {"values": [16, 32, 64]},
+                "dropout_rate": {"values": [0.05, 0.15, 0.25]},
+                "time_emb_mult": {"values": [2, 4, 8]},
+                "scale": {"values": [0.1, 0.3, 0.5, 0.8]},
+                "timesteps": {"values": [500, 1000, 1500]},
+            },
+        }
+    elif arch == "ConvGRU":
+        sweep_configuration = {
+            "name": "sweep_crowdmod_convgru_4D",
+            "method": "random",
+            "metric": {"goal": "minimize", "name": "train_loss"},
+            "parameters": {
+                "learning_rate": {"min": 0.00001, "max": 0.001},
+                "batch_size": {"values": [16, 32, 64]},
+                "epochs": {"values": [100, 200, 300]},
+                "weight_decay": {"values": [0.0003, 0.001, 0.01]},
+                "betas": {"values": [[0.5, 0.999], [0.7, 0.999], [0.9, 0.999]]},
+            },
+        }
+    else:
+        logging.error("Architecture not supported for train sweep.")
+
+    return sweep_configuration

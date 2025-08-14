@@ -16,14 +16,17 @@ import gc,logging,os
 from matplotlib import pyplot as plt
 from utils.myparser import getYamlConfig
 from utils.dataset import getDataset
+from utils.model_details import count_trainable_params
+from utils.utils import get_filenames_paths, get_training_dataset, get_sweep_configuration, save_checkpoint, init_wandb, create_directory
 from models.diffusion.forward import ForwardSampler
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
-from models.training import train_one_epoch
+from models.training import train_one_epoch, train_one_epoch_convGRU
+from models.convGRU.forecaster import Forecaster
 from torchsummary import summary
 from functools import partial
 
-def train(cfg, filenames, show_losses_plot=False):
+def train_sweep_ddpm(cfg, filenames, show_losses_plot=False):
     config={
         "architecture": "DDPM-4D",
         "dataset": cfg.DATASET.NAME,
@@ -91,31 +94,69 @@ def train(cfg, filenames, show_losses_plot=False):
             torch.save(checkpoint_dict, save_path)
             del checkpoint_dict
 
-sweep_configuration = {
-    "name": "sweep_crowdmod_ddpm_4D",
-    "method": "random",
-    "metric": {"goal": "minimize", "name": "loss_2D"},
-    "parameters": {
-        "learning_rate": {"min": 0.00001, "max": 0.001},
-        "batch_size": {"values": [16, 32, 64]},
-        "epochs": {"values": [400, 600, 800]},
-        "base_ch": {"values": [16, 32, 64]},
-        "dropout_rate": {"values": [0.05, 0.15, 0.25]},
-        "time_emb_mult": {"values": [2, 4, 8]},
-        "scale": {"values": [0.1, 0.3, 0.5, 0.8]},
-        "timesteps": {"values": [500, 1000, 1500]},
-    },
-}
+def train_sweep_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count):
+    torch.manual_seed(42)
+    # Setting the device to work with
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logging.info(f"Batched Traininig  and Validation dataset loaded.")
+
+    convGRU_model = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
+                               input_channels       = mprops_count,
+                               enc_hidden_channels  = cfg.MODEL.CONVGRU.ENC_HIDDEN_CH,
+                               forc_hidden_channels = cfg.MODEL.CONVGRU.FORC_HIDDEN_CH,
+                               enc_kernels          = cfg.MODEL.CONVGRU.ENC_KERNELS,
+                               forc_kernels         = cfg.MODEL.CONVGRU.FORC_KERNELS,
+                               device               = device,
+                               bias                 = False)
+
+    trainable_params = count_trainable_params(convGRU_model)
+    logging.info(f"Total trainable parameters at ConvGRU model:{trainable_params}")
+    # The optimizer (Adam with weight decay)
+    optimizer = optim.Adam(convGRU_model.parameters(),lr=wandb.config.learning_rate, betas=cfg.MODEL.CONVGRU.TRAIN.SOLVER.BETAS,weight_decay=wandb.config.weight_decay)
+    best_loss      = 1e6
+    # Training loop
+    for epoch in range(1,cfg.MODEL.CONVGRU.TRAIN.EPOCHS + 1):
+        torch.cuda.empty_cache()
+        gc.collect()
+        epoch_train_loss, epoch_val_loss = train_one_epoch_convGRU(convGRU_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=wandb.config.epochs, teacher_forcing=cfg.MODEL.CONVGRU.TEACHER_FORCING)
+        wandb.log({
+            "train_loss": epoch_train_loss,
+            "val_loss": epoch_val_loss
+        }, step=epoch)
+
+        if epoch_train_loss < best_loss:
+            best_loss = epoch_train_loss
+            save_checkpoint(optimizer, convGRU_model, "000", cfg, arch)
+
+def train_sweep_mgmt(args, cfg):
+    # === Initialize W&B ===
+    init_wandb(cfg, args.arch)
+
+    # === Prepare file paths ===
+    filenames = get_filenames_paths(cfg)
+    create_directory(cfg.DATA_FS.SAVE_DIR)
+
+    # === Load training dataset
+    mprops_count = 4 if args.arch == "ConvGRU" else 3
+    batched_train_data, batched_val_data = get_training_dataset(cfg, filenames, mprops_count)
+
+    # === Sweep Train models with specific architecture ===
+    sweep_configuration = get_sweep_configuration(args.arch)
+    if args.arch == "DDPM-UNet":
+        sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ddpm")
+        wandb.agent(sweep_id, function=functools.partial(train_sweep_ddpm, cfg, filenames), count=50)
+        train_sweep_ddpm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
+    elif args.arch == "ConvGRU":
+        sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ConvGRU")
+        wandb.agent(sweep_id, function=functools.partial(train_sweep_convGRU, cfg, filenames), count=50)
+    else:
+        logging.error("Architecture not supported to launch train sweep.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
-    parser.add_argument('--config-yml-file', type=str, default='config/ATC_ddpm_4test.yml', help='Configuration YML file for specific dataset.')
-    parser.add_argument('--configList-yml-file', type=str, default='config/ATC_ddpm_DSlist4test.yml',help='Configuration YML macroprops list for specific dataset.')
+    parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
+    parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
-    filenames = cfg.SUNDAY_DATA_LIST
-    filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
-    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project="sweep_crowdmod_ddpm4D")
-    wandb.agent(sweep_id, function=functools.partial(train, cfg, filenames), count=50)
+    train_sweep_mgmt(args, cfg)
