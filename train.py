@@ -15,7 +15,7 @@ import torch.optim as optim
 import gc,logging,os
 
 from matplotlib import pyplot as plt
-from utils.utils import create_directory, get_filenames_paths, get_training_dataset, get_checkpoint_save_path, init_wandb
+from utils.utils import create_directory, get_filenames_paths, get_training_dataset, save_checkpoint, init_wandb
 from utils.myparser import getYamlConfig
 from utils.model_details import count_trainable_params
 from models.diffusion.forward import ForwardSampler
@@ -24,15 +24,6 @@ from models.diffusion.ddpm import DDPM
 from models.training import train_one_epoch, train_one_epoch_convGRU
 from models.convGRU.forecaster import Forecaster
 from functools import partial
-
-def save_checkpoint(optimizer, model, epoch, cfg, arch):
-    checkpoint_dict = {
-        "opt": optimizer.state_dict(),
-        "model": model.state_dict()
-    }
-    save_path = get_checkpoint_save_path(cfg, arch, epoch)
-    torch.save(checkpoint_dict, save_path)
-    del checkpoint_dict
 
 def train_ddpm(cfg, batched_train_data, arch, mprops_count):
     torch.manual_seed(42)
@@ -118,7 +109,7 @@ def train_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count)
         epoch_train_loss, epoch_val_loss = train_one_epoch_convGRU(convGRU_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=cfg.MODEL.CONVGRU.TRAIN.EPOCHS, teacher_forcing=cfg.MODEL.CONVGRU.TEACHER_FORCING)
         wandb.log({
             "train_loss": min(epoch_train_loss, 10),
-            "val_loss": min(epoch_val_loss,10)
+            "val_loss": min(epoch_val_loss, 10)
         }, step=epoch)
         # NaN handling / early stopping
         if np.isnan(epoch_train_loss):
@@ -140,7 +131,7 @@ def training_mgmt(args, cfg):
     Training management function.
     """
     # === Initialize W&B ===
-    init_wandb(cfg, args.arch, )
+    init_wandb(cfg, args.arch)
 
     # === Prepare file paths ===
     filenames = get_filenames_paths(cfg)

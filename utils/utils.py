@@ -1,6 +1,8 @@
 import os
+import torch
 import wandb
 import logging
+import torch.optim as optim
 from utils.dataset import getDataset, getClassicDataset
 
 def create_directory(directory_path):
@@ -31,28 +33,28 @@ def get_filenames_paths(cfg):
     filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     return filenames
 
-def get_training_dataset(cfg, filenames, mprops_count):
+def get_training_dataset(cfg, filenames, mprops_count, batch_size=None):
     """
     Return training and validation data for specific dataset type.
     """
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        batched_train_data, batched_val_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
+        batched_train_data, batched_val_data = getClassicDataset(cfg, filenames, batch_size=batch_size, mprops_count=mprops_count)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        batched_train_data, batched_val_data, _ = getDataset(cfg, filenames, mprops_count=mprops_count)
+        batched_train_data, batched_val_data, _ = getDataset(cfg, filenames, batch_size=batch_size, mprops_count=mprops_count)
     else:
         logging.error(f"Dataset type not supported.")
     logging.info(f"Batched Train dataset loaded.")
 
     return batched_train_data, batched_val_data
 
-def get_test_dataset(cfg, filenames, mprops_count):
+def get_test_dataset(cfg, filenames, mprops_count, batch_size=None):
     """
     Return testing data for specific dataset type.
     """
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        _, batched_test_data = getClassicDataset(cfg, filenames, mprops_count=mprops_count)
+        _, batched_test_data = getClassicDataset(cfg, filenames, batch_size=batch_size, mprops_count=mprops_count)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        _, _, batched_test_data = getDataset(cfg, filenames, test_data_only=True, mprops_count=mprops_count)
+        _, _, batched_test_data = getDataset(cfg, filenames, batch_size=batch_size, test_data_only=True, mprops_count=mprops_count)
     else:
         logging.error(f"Dataset type not supported.")
     logging.info(f"Batched Test dataset loaded.")
@@ -72,6 +74,15 @@ def get_checkpoint_save_path(cfg, arch, epoch):
 
     return save_path
 
+def save_checkpoint(optimizer, model, epoch, cfg, arch):
+    checkpoint_dict = {
+        "opt": optimizer.state_dict(),
+        "model": model.state_dict()
+    }
+    save_path = get_checkpoint_save_path(cfg, arch, epoch)
+    torch.save(checkpoint_dict, save_path)
+    del checkpoint_dict
+
 def get_model_fullname(cfg, arch, epoch):
     """
     Return model fullname based on arch.
@@ -85,13 +96,13 @@ def get_model_fullname(cfg, arch, epoch):
 
     return model_fullname
 
-def init_wandb(cfg, arch):
+def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
     """
     Initialize W&B based on arch
     """
     if arch == "DDPM-UNet":
         wandb.init(
-            project="macroprops-predict-4D",
+            project=project_name,
             config={
                 "architecture": arch,
                 "dataset": cfg.DATASET.NAME,
@@ -106,7 +117,7 @@ def init_wandb(cfg, arch):
         )
     elif arch == "ConvGRU":
         wandb.init(
-            project="macroprops-predict-4D",
+            project=project_name,
             config={
                 "architecture": arch,
                 "dataset": cfg.DATASET.NAME,
@@ -121,3 +132,70 @@ def init_wandb(cfg, arch):
         )
     else:
         logging.error("Architecture not supported.")
+
+def get_sweep_configuration(arch):
+    if arch == "DDPM-UNet":
+        sweep_configuration = {
+            "name": "sweep_crowdmod_ddpm",
+            "method": "random",
+            "metric": {"goal": "minimize", "name": "train_loss"},
+            "parameters": {
+                "learning_rate": {"min": 0.00001, "max": 0.001},
+                "batch_size": {"values": [16, 32, 64]},
+                "epochs": {"values": [150, 180, 200]},
+                "base_ch": {"values": [16, 32, 64]},
+                "dropout_rate": {"values": [0.05, 0.15, 0.25]},
+                "time_emb_mult": {"values": [2, 4, 8]},
+                "scale": {"values": [0.1, 0.3, 0.5, 0.8]},
+                "timesteps": {"values": [500, 1000, 1500]},
+            },
+        }
+    elif arch == "ConvGRU":
+        sweep_configuration = {
+            "name": "sweep_crowdmod_ConvGRU",
+            "method": "random",
+            "metric": {"goal": "minimize", "name": "train_loss"},
+            "parameters": {
+                "learning_rate": {"min": 0.00001, "max": 0.001},
+                "batch_size": {"values": [32, 64, 128]},
+                "epochs": {"values": [100, 150, 180]},
+                "weight_decay": {"values": [0.0003, 0.001, 0.01]},
+                "betas": {"values": [[0.5, 0.999], [0.7, 0.999], [0.9, 0.999]]},
+                "optimizer": {"values": ["Adam", "AdamW"]},
+                "enc_hidden_ch": {
+                    "values": [
+                        [16, 64, 64, 96, 96, 96],
+                        [32, 64, 64, 96, 96, 96],
+                        [16, 64, 64, 128, 128, 128],
+                        [32, 64, 64, 128, 128, 128]
+                    ]
+                },
+            },
+        }
+    else:
+        logging.error("Architecture not supported for train sweep.")
+
+    return sweep_configuration
+
+def get_optimizer(model):
+    """
+    Return optimizer object based on chossen wandb sweep optimizer at runtime
+    """
+    if wandb.config.optimizer == "Adam":
+        optimizer = optim.Adam(
+            model.parameters(),
+            lr=wandb.config.learning_rate,
+            betas=wandb.config.betas,
+            weight_decay=wandb.config.weight_decay
+        )
+    elif wandb.config.optimizer == "AdamW":
+        optimizer = optim.AdamW(
+            model.parameters(),
+            lr=wandb.config.learning_rate,
+            betas=wandb.config.betas,
+            weight_decay=wandb.config.weight_decay
+        )
+    else:
+        raise ValueError(f"Unsupported optimizer: {wandb.config.optimizer}")
+
+    return optimizer
