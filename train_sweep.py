@@ -26,11 +26,12 @@ from models.convGRU.forecaster import Forecaster
 from torchsummary import summary
 from functools import partial
 
-def train_sweep_ddpm(cfg, batched_train_data, arch, mprops_count, project_name):
+def train_sweep_ddpm(cfg, filenames, arch, mprops_count, project_name):
     init_wandb(cfg, arch, project_name)
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    batched_train_data, _ = get_training_dataset(cfg, filenames, mprops_count, batch_size=wandb.config.batch_size)
     logging.info(f"Batched Traininig  and Validation dataset loaded.")
 
     # Instanciate the UNet for the reverse diffusion
@@ -62,11 +63,12 @@ def train_sweep_ddpm(cfg, batched_train_data, arch, mprops_count, project_name):
             best_loss = epoch_loss
             save_checkpoint(optimizer, denoiser, "000", cfg, arch)
 
-def train_sweep_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count, project_name):
+def train_sweep_convGRU(cfg, filenames, arch, mprops_count, project_name):
     init_wandb(cfg, arch, project_name)
     torch.manual_seed(42)
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    batched_train_data, batched_val_data = get_training_dataset(cfg, filenames, mprops_count, batch_size=wandb.config.batch_size)
     logging.info(f"Batched Traininig  and Validation dataset loaded.")
 
     # Set forc_hidden_channels based on sweep enc_hidden_ch
@@ -114,20 +116,17 @@ def train_sweep_mgmt(args, cfg):
     filenames = get_filenames_paths(cfg)
     create_directory(cfg.DATA_FS.SAVE_DIR)
 
-    # === Load training dataset
-    mprops_count = 4 if args.arch == "ConvGRU" else 3
-    batched_train_data, batched_val_data = get_training_dataset(cfg, filenames, mprops_count, batch_size=wandb.config.batch_size)
-
     # === Sweep Train models with specific architecture ===
     sweep_configuration = get_sweep_configuration(args.arch)
+    mprops_count = 4 if args.arch == "ConvGRU" else 3
     if args.arch == "DDPM-UNet":
         project_name = "sweep_crowdmod_ddpm"
         sweep_id = wandb.sweep(sweep=sweep_configuration, project=project_name)
-        wandb.agent(sweep_id, function=functools.partial(train_sweep_ddpm, cfg, batched_train_data, args.arch, mprops_count, project_name), count=50)
+        wandb.agent(sweep_id, function=functools.partial(train_sweep_ddpm, cfg, filenames, args.arch, mprops_count, project_name), count=50)
     elif args.arch == "ConvGRU":
         project_name = "sweep_crowdmod_ConvGRU"
         sweep_id = wandb.sweep(sweep=sweep_configuration, project=project_name)
-        wandb.agent(sweep_id, function=functools.partial(train_sweep_convGRU, cfg, batched_train_data, batched_val_data, args.arch, mprops_count, project_name), count=50)
+        wandb.agent(sweep_id, function=functools.partial(train_sweep_convGRU, cfg, filenames, args.arch, mprops_count, project_name), count=50)
     else:
         logging.error("Architecture not supported to launch train sweep.")
 
