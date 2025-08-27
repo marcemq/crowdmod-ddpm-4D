@@ -77,10 +77,10 @@ MODEL:
     TRAIN:
       EPOCHS: 100
       SOLVER:
-        LR: 0.0005
-        WEIGHT_DECAY: 0.0003
+        LR: 0.0001
+        WEIGHT_DECAY: 0.003
         BETAS:
-          - 0.7
+          - 0.5
           - 0.999
 METRICS:
   PRED_MPROPS_FACTOR: [1, 10, 10]
