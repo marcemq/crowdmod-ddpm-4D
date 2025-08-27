@@ -84,7 +84,7 @@ def train_one_epoch_convGRU(convGRU_model, train_data_loader, val_data_loader, o
             optimizer.step()
             train_loss_value = loss.detach().item()
             train_loss_record.update(train_loss_value)
-            logging.info(f"Training rloss:{rloss}, vloss:{vloss}")
+            logging.info(f"Training rloss:{rloss:.4f}, vloss:{vloss:.4f}")
             tq.set_postfix_str(s=f" Training Loss: {train_loss_value:.4f}")
 
         train_mean_loss = train_loss_record.compute().item()
@@ -106,7 +106,7 @@ def train_one_epoch_convGRU(convGRU_model, train_data_loader, val_data_loader, o
                 val_loss = rloss + vloss
                 val_loss_value = val_loss.detach().item()
                 val_loss_record.update(val_loss_value)
-                logging.info(f"Training rloss:{rloss}, vloss:{vloss}")
+                logging.info(f"Validation rloss:{rloss:.4f}, vloss:{vloss:.4f}")
                 tq.set_postfix_str(s=f" Val Loss: {val_loss_value:.4f}")
 
         val_mean_loss = val_loss_record.compute().item()
