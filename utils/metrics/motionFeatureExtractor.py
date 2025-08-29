@@ -1,5 +1,4 @@
 import numpy as np
-import logging
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
