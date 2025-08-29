@@ -129,6 +129,7 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
                                   time_multiple           = cfg.MODEL.DDPM.UNET.TIME_EMB_MULT,
                                   condition               = cfg.MODEL.DDPM.UNET.CONDITION)
 
+    # Load model
     logging.info(f'model full name:{model_fullname}')
     denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
     denoiser.to(device)
@@ -159,14 +160,14 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
         random_future_samples = future_test[random_past_idx]
 
         if cfg.MODEL.DDPM.SAMPLER == "DDPM":
-            x, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, samples_per_batch, mprops_count=mprops_count) # AR review .cpu() call here
+            x, _  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, samples_per_batch, mprops_count=mprops_count) # AR review .cpu() call here
             if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE=="mass_preservation" or cfg.MODEL.DDPM.GUIDANCE == "None":
                 l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
                 logging.info(f'L1 norm {l1:.2f} using {cfg.MODEL.DDPM.GUIDANCE} guidance')
         elif cfg.MODEL.DDPM.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.MODEL.DDPM.DDIM_DIVIDER)
             logging.info(f'taus:{taus}')
-            x, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, samples_per_batch, mprops_count=mprops_count) # AR review .cpu() call here
+            x, _ = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, samples_per_batch, mprops_count=mprops_count) # AR review .cpu() call here
         else:
             logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
@@ -199,6 +200,7 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
                                device               = device,
                                bias                 = False)
 
+    # Load model
     logging.info(f'model full name:{model_fullname}')
     convGRU_model.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
     convGRU_model.to(device)
