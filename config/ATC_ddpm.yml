@@ -18,8 +18,7 @@ MACROPROPS:
     - -15.8076
   # EPSILON value to avoid division by cero
   EPS: 0.000001
-  OVERLAP: True
-  WINDOWSIZE: 1
+  STRIDE: 10    # Stride to use to use most out provided data.
   THETA: 2.5647
   TIME_RES: 0.5
 DATASET:
