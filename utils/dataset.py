@@ -21,26 +21,44 @@ class CustomTransform():
         return tensor, stats
 
 class MacropropsDataset(Dataset):
-    def __init__(self, seq_all, cfg, mprops_count, transform=None):
+    def __init__(self, seq_all, cfg, mprops_count, transform=None, stride=10):
         self.transform = transform
         self.mprops_count = mprops_count
+        self.stride = stride
+        self.past_len = cfg.DATASET.PAST_LEN
+        self.future_len = cfg.DATASET.FUTURE_LEN
+
         if self.transform:
             seq_all, stats = self.transform(seq_all, cfg, mprops_count)
+        else:
+            stats = None
 
-        self.PAST = seq_all[:,:,:,:,:cfg.DATASET.PAST_LEN]
-        self.FUTURE = seq_all[:,:,:,:,cfg.DATASET.PAST_LEN:cfg.DATASET.PAST_LEN+cfg.DATASET.FUTURE_LEN]
+        total_len = seq_all.shape[-1]
+        window_len = self.past_len + self.future_len
+
+        # compute all possible window start indices with stride
+        self.indices = []
+        for seq_idx in range(seq_all.shape[0]):  # loop over batch dimension
+            for t in range(0, total_len - window_len + 1, stride):
+                self.indices.append((seq_idx, t))
+
+        self.seq_all = seq_all
         self.stats = stats
 
     def __len__(self):
-        return len(self.FUTURE)
+        return len(self.indices)
     
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        PAST_seq = self.PAST[idx]
-        FUTURE_seq = self.FUTURE[idx]
-        # AR: I think we need to do the inverse transform here
-        return PAST_seq, FUTURE_seq, self.stats
+
+        seq_idx, t = self.indices[idx]
+        window = self.seq_all[seq_idx, :, :, :, t:t+self.past_len+self.future_len]
+
+        past_seq = window[:, :, :, :self.past_len]
+        future_seq = window[:, :, :, self.past_len:]
+
+        return past_seq, future_seq, self.stats
 
 def saveData(train_data, val_data, test_data, pickle_dir):
     logging.info("Saving training, validatio and testing dara ndarrays in pickle files...")
@@ -142,19 +160,22 @@ def getDataset(cfg, filenames, batch_size=None, train_data_only=False, test_data
 
     if train_data_only:
         # Torch dataset
-        train_data= MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=custom_transform)
+        train_data = MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=custom_transform, stride=cfg.MACROPROPS.STRIDE)
+        logging.info(f"In getDataset func, total seqs in train_data:{len(train_data)}")
         # Form batches
         batched_train_data = DataLoader(train_data, batch_size=batch_size, **cfg.DATASET.params)
     elif test_data_only:
         # Torch dataset
-        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=custom_transform)
+        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=custom_transform, stride=cfg.MACROPROPS.STRIDE)
+        logging.info(f"In getDataset func, total seqs in test_data:{len(test_data)}")
         # Form batches
         batched_test_data  = DataLoader(test_data, batch_size=batch_size, **cfg.DATASET.params)
     else:
         # Torch dataset
-        train_data= MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=custom_transform)
-        val_data  = MacropropsDataset(tmp_val_data, cfg, mprops_count, transform=custom_transform)
-        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=custom_transform)
+        train_data= MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=custom_transform, stride=cfg.MACROPROPS.STRIDE)
+        val_data  = MacropropsDataset(tmp_val_data, cfg, mprops_count, transform=custom_transform, stride=cfg.MACROPROPS.STRIDE)
+        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=custom_transform, stride=cfg.MACROPROPS.STRIDE)
+        logging.info(f"In getDataset func, total seqs in train_data:{len(train_data)}, val_data:{len(val_data)}, test_data:{len(test_data)}")
         # Form batches
         batched_train_data = DataLoader(train_data, batch_size=batch_size, **cfg.DATASET.params)
         batched_val_data   = DataLoader(val_data, batch_size=batch_size, **cfg.DATASET.params)
@@ -172,7 +193,7 @@ def getDataset4Test(cfg, filenames, batch_size=None, mprops_count=4):
     logging.info(f"Total number of sequences loaded for test: {len(all_data)} of shape {all_data.shape}")
 
     # Torch dataset
-    test_dataset = MacropropsDataset(all_data, cfg, transform=CustomTransform())
+    test_dataset = MacropropsDataset(all_data, cfg, transform=CustomTransform(), stride=cfg.MACROPROPS.STRIDE)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, **cfg.DATASET.params)
 
     logging.info(f"Test sequences: {len(test_dataset)}")
@@ -190,8 +211,8 @@ def getClassicDataset(cfg, filenames, batch_size=None, split_ratio=0.9, mprops_c
     logging.info(f"Total number of sequences loaded: {len(all_data)} of shape {all_data.shape}")
 
     # Torch dataset
-    dataset = MacropropsDataset(all_data, cfg, mprops_count, transform=CustomTransform())
-
+    dataset = MacropropsDataset(all_data, cfg, mprops_count, transform=CustomTransform(), stride=cfg.MACROPROPS.STRIDE)
+    logging.info(f"Total number of sequences in dataset: {len(dataset)}")
     # Calculate split sizes
     train_len = int(split_ratio * len(dataset))
     test_len = len(dataset) - train_len
