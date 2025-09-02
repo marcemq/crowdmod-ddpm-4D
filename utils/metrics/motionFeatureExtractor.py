@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
@@ -53,13 +54,24 @@ class MotionFeatureExtractor:
 
         return mag_rho_transf
 
-    def motion_feature_2D_hist(self):
+    def motion_feature_2D_hist(self, debug_file="mag_rho_debug.csv"):
         all_motion_feature_vectors = []
+        debug_stats = []  # collect min, max, range values
         for sample in range(self.nsamples):
             motion_feature_vector = []
             # Reshape each frame's data back into a (r, c) grid
             mag_rho_reshaped = self.mag_rho_transf[sample].reshape(self.F, self.r, self.c)
             angle_phi_reshaped = self.angle_phi[sample].reshape(self.F, self.r, self.c)
+            # ---- Debugging values for this sample ----
+            mag_min = mag_rho_reshaped.min()
+            mag_max = mag_rho_reshaped.max()
+            mag_range = mag_max - mag_min
+            debug_stats.append({
+                "sample": sample,
+                "min": mag_min,
+                "max": mag_max,
+                "range": mag_range
+            })
             for i in range(0, self.F, self.f):  # Temporal volumes of size f
                 for row in range(0, self.r, self.k):  # Spatial rows (k x k blocks)
                     for col in range(0, self.c, self.k):  # Spatial columns (k x k blocks)
@@ -75,6 +87,9 @@ class MotionFeatureExtractor:
             motion_feature_vector = np.concatenate(motion_feature_vector)
             motion_feature_vector = motion_feature_vector / (motion_feature_vector.sum() + 1)
             all_motion_feature_vectors.append(motion_feature_vector)
+        # ---- Save debug stats to CSV ----
+        df_debug = pd.DataFrame(debug_stats)
+        df_debug.to_csv(debug_file, index=False)
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors)
 
