@@ -42,29 +42,20 @@ class MotionFeatureExtractor:
             angle_phi[sample] = np.arctan2(U[..., 1], U[..., 0])
         return mag_rho, angle_phi
 
-    def mag_rho_transform(self):
+    def mag_rho_transform(self, debug_file="mag_rho_debug.csv"):
         mag_rho_transf = np.zeros((self.nsamples, self.F, self.N))
-        total_clipped = 0
+        debug_stats = []  # collect min, max, range values
         for sample in range(self.nsamples):
             mag_rho_sample = self.mag_rho[sample]
+            # AR: attempt to do a global normalization
+            # AR: review this range before fit_transform
             mag_rho_normalized = self.scaler.fit_transform(mag_rho_sample).reshape(self.F, self.N)
             # Range here is [0,8]
             mag_rho_log = np.log2(mag_rho_normalized + 1)
             mag_rho_transf[sample] = mag_rho_log
-
-        return mag_rho_transf
-
-    def motion_feature_2D_hist(self, debug_file="mag_rho_debug.csv"):
-        all_motion_feature_vectors = []
-        debug_stats = []  # collect min, max, range values
-        for sample in range(self.nsamples):
-            motion_feature_vector = []
-            # Reshape each frame's data back into a (r, c) grid
-            mag_rho_reshaped = self.mag_rho_transf[sample].reshape(self.F, self.r, self.c)
-            angle_phi_reshaped = self.angle_phi[sample].reshape(self.F, self.r, self.c)
             # ---- Debugging values for this sample ----
-            mag_min = mag_rho_reshaped.min()
-            mag_max = mag_rho_reshaped.max()
+            mag_min = mag_rho_sample.min()
+            mag_max = mag_rho_sample.max()
             mag_range = mag_max - mag_min
             debug_stats.append({
                 "sample": sample,
@@ -72,6 +63,21 @@ class MotionFeatureExtractor:
                 "max": mag_max,
                 "range": mag_range
             })
+
+        # ---- Save debug stats to CSV ----
+        df_debug = pd.DataFrame(debug_stats)
+        df_debug.to_csv(debug_file, index=False)
+        return mag_rho_transf
+
+    def motion_feature_2D_hist(self):
+        all_motion_feature_vectors = []
+
+        for sample in range(self.nsamples):
+            motion_feature_vector = []
+            # Reshape each frame's data back into a (r, c) grid
+            mag_rho_reshaped = self.mag_rho_transf[sample].reshape(self.F, self.r, self.c)
+            angle_phi_reshaped = self.angle_phi[sample].reshape(self.F, self.r, self.c)
+            
             for i in range(0, self.F, self.f):  # Temporal volumes of size f
                 for row in range(0, self.r, self.k):  # Spatial rows (k x k blocks)
                     for col in range(0, self.c, self.k):  # Spatial columns (k x k blocks)
@@ -87,9 +93,6 @@ class MotionFeatureExtractor:
             motion_feature_vector = np.concatenate(motion_feature_vector)
             motion_feature_vector = motion_feature_vector / (motion_feature_vector.sum() + 1)
             all_motion_feature_vectors.append(motion_feature_vector)
-        # ---- Save debug stats to CSV ----
-        df_debug = pd.DataFrame(debug_stats)
-        df_debug.to_csv(debug_file, index=False)
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors)
 
