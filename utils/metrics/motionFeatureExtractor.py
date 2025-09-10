@@ -3,12 +3,13 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
-    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=9, num_angle_bins=8):
+    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=9, num_angle_bins=8, seq_label="GT"):
         self.f = f
         self.k = k
         self.gamma = gamma
         self.nsamples = len(seq_list)
         self.seq_list = seq_list
+        self.seq_label = seq_label
         # r,c: spatial dimensions, F: temporal dimension
         self._, self.r, self.c, self.F = seq_list[0].shape
         self.N = self.r * self.c
@@ -42,7 +43,7 @@ class MotionFeatureExtractor:
             angle_phi[sample] = np.arctan2(U[..., 1], U[..., 0])
         return mag_rho, angle_phi
 
-    def mag_rho_transform(self, debug_file="mag_rho_debug.csv"):
+    def mag_rho_transform(self):
         mag_rho_transf = np.zeros((self.nsamples, self.F, self.N))
         debug_stats = []  # collect min, max, range values
         for sample in range(self.nsamples):
@@ -65,6 +66,7 @@ class MotionFeatureExtractor:
             })
 
         # ---- Save debug stats to CSV ----
+        debug_file = f"mag_rho_debug_{self.seq_label}.csv"
         df_debug = pd.DataFrame(debug_stats)
         df_debug.to_csv(debug_file, index=False)
         return mag_rho_transf
