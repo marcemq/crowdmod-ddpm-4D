@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
-    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=9, num_angle_bins=8, seq_label="GT"):
+    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=10, num_angle_bins=8, seq_label="GT"):
         self.f = f
         self.k = k
         self.gamma = gamma
@@ -54,7 +54,7 @@ class MotionFeatureExtractor:
             mag_rho_sample = mag_rho_sample.reshape(self.N, self.F).T
             # Range here is [0,8]
             mag_rho_log = np.log2(mag_rho_sample + 1)
-            mag_rho_transf[sample] = mag_rho_log
+            mag_rho_transf[sample] = mag_rho_sample
             # ---- Debugging values for this sample ----
             mag_min = mag_rho_sample.min()
             mag_max = mag_rho_sample.max()
