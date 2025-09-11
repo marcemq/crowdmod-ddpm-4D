@@ -51,8 +51,9 @@ class MotionFeatureExtractor:
             # AR: attempt to do a global normalization
             # AR: review this range before fit_transform
             mag_rho_normalized = self.scaler.fit_transform(mag_rho_sample).reshape(self.F, self.N)
+            mag_rho_sample = mag_rho_sample.reshape(self.N, self.F).T
             # Range here is [0,8]
-            mag_rho_log = np.log2(mag_rho_normalized + 1)
+            mag_rho_log = np.log2(mag_rho_sample + 1)
             mag_rho_transf[sample] = mag_rho_log
             # ---- Debugging values for this sample ----
             mag_min = mag_rho_sample.min()
