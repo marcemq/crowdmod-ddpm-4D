@@ -17,7 +17,7 @@ class MotionFeatureExtractor:
         self.num_angle_bins = num_angle_bins
         self.scaler = MinMaxScaler(feature_range=(0, 255))
         self.mag_rho, self.angle_phi = self.compute_norm_angle_4samples()
-        self.mag_rho_transf =  self.mag_rho_transform()
+        self.mag_rho_transf, self.mag_rho_gmin, self.mag_rho_gmax =  self.mag_rho_transform()
 
     def get_vel_vector_field(self, one_seq):
         v_x = one_seq[1, :, :, :]  # Shape (r, c, F)
@@ -46,6 +46,9 @@ class MotionFeatureExtractor:
     def mag_rho_transform(self):
         mag_rho_transf = np.zeros((self.nsamples, self.F, self.N))
         debug_stats = []  # collect min, max, range values
+
+        mag_rho_global_min = float("inf")
+        mag_rho_global_max = float("-inf")
         for sample in range(self.nsamples):
             mag_rho_sample = self.mag_rho[sample]
             # AR: attempt to do a global normalization
@@ -66,11 +69,17 @@ class MotionFeatureExtractor:
                 "range": mag_range
             })
 
+            # update global min/max
+            if mag_min < mag_rho_global_min:
+                mag_rho_global_min = mag_min
+            if mag_max > mag_rho_global_max:
+                mag_rho_global_max = mag_max
+
         # ---- Save debug stats to CSV ----
         debug_file = f"mag_rho_debug_{self.seq_label}.csv"
         df_debug = pd.DataFrame(debug_stats)
         df_debug.to_csv(debug_file, index=False)
-        return mag_rho_transf
+        return mag_rho_transf, mag_rho_global_min, mag_rho_global_max
 
     def motion_feature_2D_hist(self):
         all_motion_feature_vectors = []
@@ -88,7 +97,7 @@ class MotionFeatureExtractor:
                         mag_volume = mag_rho_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
                         angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
                         # Compute 2D histogram (quantized magnitude vs angle)
-                        hist_2D, _, _ = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
+                        hist_2D, _, _ = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[self.mag_rho_gmin, self.mag_rho_gmax], [-np.pi, np.pi]])
                         # Flatten and add to the motion feature vector
                         hist_2D = hist_2D.flatten()
                         motion_feature_vector.append(hist_2D)
