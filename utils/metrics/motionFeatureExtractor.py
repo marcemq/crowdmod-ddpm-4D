@@ -46,11 +46,12 @@ class MotionFeatureExtractor:
     def mag_rho_transform(self):
         mag_rho_transf = np.zeros((self.nsamples, self.F, self.N))
         debug_stats = []  # collect min, max, range values
-
+        debug_stats_angle = []
         mag_rho_global_min = float("inf")
         mag_rho_global_max = float("-inf")
         for sample in range(self.nsamples):
             mag_rho_sample = self.mag_rho[sample]
+            angle_phi_sample = self.angle_phi[sample]
             # AR: attempt to do a global normalization
             # AR: review this range before fit_transform
             mag_rho_normalized = self.scaler.fit_transform(mag_rho_sample).reshape(self.F, self.N)
@@ -63,10 +64,14 @@ class MotionFeatureExtractor:
             mag_max = mag_rho_sample.max()
             mag_range = mag_max - mag_min
             debug_stats.append({
-                "sample": sample,
                 "min": mag_min,
                 "max": mag_max,
                 "range": mag_range
+            })
+            debug_stats_angle.append({
+                "min": angle_phi_sample.min(),
+                "max": angle_phi_sample.max(),
+                "range": angle_phi_sample.max() - angle_phi_sample.min()
             })
 
             # update global min/max
@@ -79,6 +84,13 @@ class MotionFeatureExtractor:
         debug_file = f"mag_rho_debug_{self.seq_label}.csv"
         df_debug = pd.DataFrame(debug_stats)
         df_debug.to_csv(debug_file, index=False)
+
+        debug_file_angle = f"angle_debug_{self.seq_label}.csv"
+        df_debug_angle = pd.DataFrame(debug_stats_angle)
+        df_debug_angle.to_csv(debug_file_angle, index=False)
+
+        print(f'***** Global mag_rho_min:{mag_rho_global_min} and mag_rho_global_max:{mag_rho_global_max}')
+
         return mag_rho_transf, mag_rho_global_min, mag_rho_global_max
 
     def motion_feature_2D_hist(self):
@@ -125,7 +137,7 @@ class MotionFeatureExtractor:
                         angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
                         all_mag_rho_volumnes.append(mag_volume)
                         # Quantize only angles
-                        angle_bins = np.digitize(angle_volume, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
+                        angle_bins = np.digitize(angle_volume, np.linspace(-np.pi, np.pi, self.num_angle_bins+1)) - 1
                         # Initialize a 1D histogram (8 bins for angles)
                         hist_1D = np.zeros(self.num_angle_bins)
                         # Sum magnitudes into the corresponding angle bins
