@@ -34,7 +34,7 @@ DATASET:
     num_workers: 6
     drop_last: True
   DATASET_TYPE: 'ByFilenames'    # Available options: ByFilenames|BySplitRatio|ByFilenames4Test
-  VELOCITY_NORM: True
+  VELOCITY_NORM: False
 MODEL:
   NAME: "ARCH-{}_ATC4TEST_TE{}_PL{}_FL{}_CE{}_VN{}.pth"
   NSAMPLES: 1280      # Define number of predicted samples (64 BS * 20 rep, default values)
@@ -82,7 +82,7 @@ MODEL:
           - 0.7
           - 0.999
 METRICS:
-  PRED_MPROPS_FACTOR: [1, 10, 10]
+  PRED_MPROPS_FACTOR: [1, 1, 1] # AR test if this factor works fine for ATC
   MPROPS_COUNT: 3    # Metrics consider rho, vx, vy predictions only
   MOTION_FEATURE:
     f: 1    # Number of frames of each volume
