@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
-    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=10, num_angle_bins=8, seq_label="GT"):
+    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=9, num_angle_bins=8, seq_label="GT"):
         self.f = f
         self.k = k
         self.gamma = gamma
@@ -15,6 +15,7 @@ class MotionFeatureExtractor:
         self.N = self.r * self.c
         self.num_magnitude_bins = num_magnitude_bins
         self.num_angle_bins = num_angle_bins
+        #AR global self.scaler
         self.scaler = MinMaxScaler(feature_range=(0, 255))
         self.mag_rho, self.angle_phi = self.compute_norm_angle_4samples()
         self.mag_rho_transf, self.mag_rho_gmin, self.mag_rho_gmax =  self.mag_rho_transform()
