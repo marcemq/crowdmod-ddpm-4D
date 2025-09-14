@@ -98,9 +98,10 @@ def getMacropropsFromFilenames(filenames, mprops_count):
     data = np.asarray(seq_all)
 
     stats = np.empty((mprops_count, 4))
-    for i in range(mprops_count):
-        stats[i, 0], stats[i, 1], stats[i, 2], stats[i, 3] = np.mean(data[:,i,:,:,:]), np.std(data[:,i,:,:,:]), np.min(data[:,i,:,:,:]), np.max(data[:,i,:,:,:])
-        logging.info(f'Stats per dataset channel {i} ==> mean:{stats[i, 0]:.4f}, std:{stats[i, 1]:.4f}, min:{stats[i, 2]:.4f}, max:{stats[i, 3]:.4f}')
+    logging.info("===> Not computing dataset stats...")
+    #for i in range(mprops_count):
+    #    stats[i, 0], stats[i, 1], stats[i, 2], stats[i, 3] = np.mean(data[:,i,:,:,:]), np.std(data[:,i,:,:,:]), np.min(data[:,i,:,:,:]), np.max(data[:,i,:,:,:])
+    #    logging.info(f'Stats per dataset channel {i} ==> mean:{stats[i, 0]:.4f}, std:{stats[i, 1]:.4f}, min:{stats[i, 2]:.4f}, max:{stats[i, 3]:.4f}')
 
     return data[:, 0:mprops_count, :, :, :], stats
 
@@ -160,21 +161,21 @@ def getDataset(cfg, filenames, batch_size=None, train_data_only=False, test_data
 
     if train_data_only:
         # Torch dataset
-        train_data = MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=custom_transform, stride=cfg.MACROPROPS.STRIDE)
+        train_data = MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=None, stride=cfg.MACROPROPS.STRIDE)
         logging.info(f"In getDataset func, total seqs in train_data:{len(train_data)}")
         # Form batches
         batched_train_data = DataLoader(train_data, batch_size=batch_size, **cfg.DATASET.params)
     elif test_data_only:
         # Torch dataset
-        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=custom_transform, stride=cfg.MACROPROPS.STRIDE)
+        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=None, stride=cfg.MACROPROPS.STRIDE)
         logging.info(f"In getDataset func, total seqs in test_data:{len(test_data)}")
         # Form batches
         batched_test_data  = DataLoader(test_data, batch_size=batch_size, **cfg.DATASET.params)
     else:
         # Torch dataset
-        train_data= MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=custom_transform, stride=cfg.MACROPROPS.STRIDE)
-        val_data  = MacropropsDataset(tmp_val_data, cfg, mprops_count, transform=custom_transform, stride=cfg.MACROPROPS.STRIDE)
-        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=custom_transform, stride=cfg.MACROPROPS.STRIDE)
+        train_data= MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=None, stride=cfg.MACROPROPS.STRIDE)
+        val_data  = MacropropsDataset(tmp_val_data, cfg, mprops_count, transform=None, stride=cfg.MACROPROPS.STRIDE)
+        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=None, stride=cfg.MACROPROPS.STRIDE)
         logging.info(f"In getDataset func, total seqs in train_data:{len(train_data)}, val_data:{len(val_data)}, test_data:{len(test_data)}")
         # Form batches
         batched_train_data = DataLoader(train_data, batch_size=batch_size, **cfg.DATASET.params)
