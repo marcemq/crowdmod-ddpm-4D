@@ -90,10 +90,6 @@ def getMacropropsFromFilenames(filenames, mprops_count):
             with open(filename, "rb") as file:
                 seq_per_file = pickle.load(file)
 
-                if np.isnan(seq_per_file).any():
-                    logging.info(f"{filename} has NaN values")
-                    raise ValueError("The loaded data contains NaN values.")
-
                 if data is None:
                     data = seq_per_file
                 else:
