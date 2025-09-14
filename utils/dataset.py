@@ -78,30 +78,44 @@ def saveData(train_data, val_data, test_data, pickle_dir):
     pickle_out.close()
 
 def getMacropropsFromFilenames(filenames, mprops_count):
-    seq_per_file_list = []
+    logging.info(f"Loading {len(filenames)} macro-props files...")
+
+    # Concatenate incrementally to avoid double memory usage
+    data = None
     for idx, filename in enumerate(filenames):
-        logging.info('Loading macro-props data from: {}'.format(filename))
-        logging.info("File {} out of {}".format(idx+1, len(filenames)))
+        logging.info(f"Loading macro-props data from: {filename}")
+        logging.info(f"File {idx+1} out of {len(filenames)}")
+
         try:
             with open(filename, "rb") as file:
                 seq_per_file = pickle.load(file)
-                if np.any(np.isnan(seq_per_file )):
-                    logging.info(f'{filename} has NaN values')
-                    raise ValueError('The loaded data contains NaN values.')
-                seq_per_file_list.append(seq_per_file)
-        except MemoryError:
-            logging.info("MemoryError: Unable to load pickle data due to memory issues.")
-        except Exception as e:
-            logging.info(f"An error occurred while loading pkl file: {str(e)}")
-        logging.info("-------------------------------------")
-    seq_all = np.concatenate(seq_per_file_list, axis=0)
-    data = np.asarray(seq_all)
 
+                if np.isnan(seq_per_file).any():
+                    logging.info(f"{filename} has NaN values")
+                    raise ValueError("The loaded data contains NaN values.")
+
+                if data is None:
+                    data = seq_per_file
+                else:
+                    data = np.concatenate((data, seq_per_file), axis=0)
+
+        except MemoryError:
+            logging.error("MemoryError: Unable to load pickle data due to memory issues.")
+            break
+        except Exception as e:
+            logging.error(f"Error loading {filename}: {str(e)}")
+
+        logging.info("-------------------------------------")
+
+    if data is None:
+        raise RuntimeError("No data loaded.")
+
+    # Preallocate stats
     stats = np.empty((mprops_count, 4))
-    logging.info("===> Not computing dataset stats...")
-    #for i in range(mprops_count):
-    #    stats[i, 0], stats[i, 1], stats[i, 2], stats[i, 3] = np.mean(data[:,i,:,:,:]), np.std(data[:,i,:,:,:]), np.min(data[:,i,:,:,:]), np.max(data[:,i,:,:,:])
-    #    logging.info(f'Stats per dataset channel {i} ==> mean:{stats[i, 0]:.4f}, std:{stats[i, 1]:.4f}, min:{stats[i, 2]:.4f}, max:{stats[i, 3]:.4f}')
+    for i in range(mprops_count):
+        channel_data = data[:, i, :, :, :]
+        stats[i] = [channel_data.mean(), channel_data.std(), channel_data.min(), channel_data.max()]
+        logging.info(f"Stats per dataset channel {i} ==>: mean={stats[i,0]:.4f}, std={stats[i,1]:.4f}, "f"min={stats[i,2]:.4f}, max={stats[i,3]:.4f}")
 
     return data[:, 0:mprops_count, :, :, :], stats
 
