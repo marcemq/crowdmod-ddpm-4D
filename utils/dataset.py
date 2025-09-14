@@ -58,7 +58,7 @@ class MacropropsDataset(Dataset):
         past_seq = window[:, :, :, :self.past_len]
         future_seq = window[:, :, :, self.past_len:]
 
-        return past_seq, future_seq, self.stats
+        return past_seq, future_seq
 
 def saveData(train_data, val_data, test_data, pickle_dir):
     logging.info("Saving training, validatio and testing dara ndarrays in pickle files...")

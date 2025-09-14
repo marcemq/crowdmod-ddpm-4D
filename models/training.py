@@ -35,7 +35,7 @@ def train_one_epoch(denoiser_model:nn.Module,sampler:nn.Module,loader,optimizer,
         for batched_train_data in loader:
             tq.update(1)
             # Take a batch of macropros sequences
-            past_train, future_train, stats = batched_train_data
+            past_train, future_train = batched_train_data
             past_train, future_train = past_train.float(), future_train.float()
             past_train, future_train = past_train.to(device=device), future_train.to(device=device)
 
@@ -69,7 +69,7 @@ def train_one_epoch_convGRU(convGRU_model, train_data_loader, val_data_loader, o
         for batched_train_data in train_data_loader:
             tq.update(1)
             # Take a batch of macropros sequences
-            past_train, future_train, stats = batched_train_data
+            past_train, future_train = batched_train_data
             past_train, future_train = past_train.float(), future_train.float()
             past_train, future_train = past_train.to(device=device), future_train.to(device=device)
             # Evaluate losses
@@ -95,7 +95,7 @@ def train_one_epoch_convGRU(convGRU_model, train_data_loader, val_data_loader, o
             for batched_val_data in val_data_loader:
                 tq.update(1)
                 # Take a batch of macropros sequences
-                past_val, future_val, stats = batched_val_data
+                past_val, future_val = batched_val_data
                 past_val, future_val = past_val.float(), future_val.float()
                 past_val, future_val = past_val.to(device=device), future_train.to(device=device)
                 rloss, vloss = evaluate_loss(convGRU_model, past_val, future_val, teacher_forcing)
