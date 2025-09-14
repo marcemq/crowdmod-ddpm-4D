@@ -104,7 +104,6 @@ def getMacropropsFromFilenames(filenames, mprops_count):
             break
         except Exception as e:
             logging.error(f"Error loading {filename}: {str(e)}")
-
         logging.info("-------------------------------------")
 
     if data is None:
