@@ -1,10 +1,10 @@
 DATA_LIST:
-  - "crossing_120_a_01.txt"
-  - "crossing_120_a_02.txt"
-  - "crossing_120_a_03.txt"
-  - "crossing_120_a_04.txt"
-  - "crossing_120_a_05.txt"
-  - "crossing_120_a_06.txt"
-  - "crossing_120_a_07.txt"
-  - "crossing_120_b_01.txt"
-  - "crossing_120_b_02.txt"
+- ["crossing_120_a_01.pkl", 1121]
+- ["crossing_120_a_02.pkl", 1237]
+- ["crossing_120_a_03.pkl", 2288]
+- ["crossing_120_a_04.pkl", 7239]
+- ["crossing_120_a_05.pkl", 14182]
+- ["crossing_120_a_06.pkl", 14305]
+- ["crossing_120_a_07.pkl", 17267]
+- ["crossing_120_b_01.pkl", 16786]
+- ["crossing_120_b_02.pkl", 13978]
