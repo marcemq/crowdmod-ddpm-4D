@@ -9,10 +9,10 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
 from utils.myparser import getYamlConfig
-from utils.utils import get_filenames_paths
+from utils.utils import get_filenames_paths_base
 
 def count_samples(cfg, output_yml="samples_per_file.yml"):
-    filenames = get_filenames_paths(cfg)
+    filenames = get_filenames_paths_base(cfg)
     samples_per_filename = []
 
     logging.info(f"Counting samples from {len(filenames)} files...")

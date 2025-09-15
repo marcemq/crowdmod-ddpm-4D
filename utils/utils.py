@@ -18,6 +18,21 @@ def create_directory(directory_path):
     else:
         logging.info(f"Directory '{directory_path}' already exists.")
 
+def get_filenames_paths_base(cfg):
+    """
+    Return list of filenames with complete path.
+    """
+    filenames = cfg.DATA_LIST
+    if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
+        filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
+    elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
+        filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
+    else:
+        logging.info("Dataset not supported")
+
+    filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
+    return filenames
+
 def get_filenames_paths(cfg):
     """
     Return list of filenames with complete path and raw samples per file
