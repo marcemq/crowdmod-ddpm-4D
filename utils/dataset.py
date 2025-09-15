@@ -210,13 +210,14 @@ def getDataset4Test(cfg, filenames, batch_size=None, mprops_count=4):
 
     return test_loader
 
-def getClassicDataset(cfg, filenames, batch_size=None, split_ratio=0.9, mprops_count=4):
+def getClassicDataset(cfg, filenames_and_numSamples, batch_size=None, split_ratio=0.9, mprops_count=4):
     if batch_size == None:
         batch_size = cfg.DATASET.BATCH_SIZE
 
     # Load all sequences from all filenames
     logging.info("Loading all macroprops sequences (no file partition)...")
-    all_data, _ = getMacropropsFromFilenames(filenames, mprops_count)
+    per_sample_shape = [4, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.RAW_SEQ_LEN]
+    all_data, _ = getMacropropsFromFilenames(filenames_and_numSamples, mprops_count, per_sample_shape)
 
     logging.info(f"Total number of sequences loaded: {len(all_data)} of shape {all_data.shape}")
 
