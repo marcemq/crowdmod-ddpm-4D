@@ -14,7 +14,7 @@ def train_step(future:torch.Tensor,past:torch.Tensor, denoiser_model:nn.Module, 
     t = torch.randint(low=0, high=forwardsampler.timesteps, size=(future.shape[0],), device=future.device)
     # Apply forward noising process on original images, up to step t (sample from q(x_t|x_0))
     future_macroprops_noisy, eps_true = forwardsampler(future, t)
-    with amp.autocast(device_type=future.device.type):
+    with amp.autocast():
         # Our prediction for the denoised macropros sequence AR:beLOW is needed a permutation? lo we have LxHxW?
         # TODO: eps_predicted debe de ser de la dimension de eps_true
         eps_predicted = denoiser_model(future_macroprops_noisy, t, past)
