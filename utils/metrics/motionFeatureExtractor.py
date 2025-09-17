@@ -1,13 +1,15 @@
 import numpy as np
+from utils.plot.plot_metrics import plot_motion_feat_hist2D, plot_motion_feat_hist1D
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
-    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=9, num_angle_bins=8):
+    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=9, num_angle_bins=8, output_dir=None):
         self.f = f
         self.k = k
         self.gamma = gamma
         self.nsamples = len(seq_list)
         self.seq_list = seq_list
+        self.output_dir = output_dir
         # r,c: spatial dimensions, F: temporal dimension
         self._, self.r, self.c, self.F = seq_list[0].shape
         self.N = self.r * self.c
@@ -53,8 +55,9 @@ class MotionFeatureExtractor:
 
         return mag_rho_transf
 
-    def motion_feature_2D_hist(self):
+    def motion_feature_2D_hist(self, num_plot_hist2D=10, plot_prob=0.2):
         all_motion_feature_vectors = []
+        plotted = 0
         for sample in range(self.nsamples):
             motion_feature_vector = []
             # Reshape each frame's data back into a (r, c) grid
@@ -67,7 +70,10 @@ class MotionFeatureExtractor:
                         mag_volume = mag_rho_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
                         angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
                         # Compute 2D histogram (quantized magnitude vs angle)
-                        hist_2D, _, _ = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
+                        hist_2D, mag_edges, angle_edges = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
+                        if plotted < num_plot_hist2D and np.random.rand() < plot_prob:
+                            plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col, plotted, self.output_dir)
+                            plotted += 1
                         # Flatten and add to the motion feature vector
                         hist_2D = hist_2D.flatten()
                         motion_feature_vector.append(hist_2D)
@@ -78,9 +84,10 @@ class MotionFeatureExtractor:
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors)
 
-    def motion_feature_1D_hist(self):
+    def motion_feature_1D_hist(self, num_plot_hist1D=10, plot_prob=0.2):
         all_motion_feature_vectors = []
         all_mag_rho_volumnes = []
+        plotted = 0
 
         for sample in range(self.nsamples):
             motion_feature_vector = []
@@ -95,12 +102,16 @@ class MotionFeatureExtractor:
                         angle_volume = angle_phi_reshaped[i:i+self.f, row:row+self.k, col:col+self.k].flatten()
                         all_mag_rho_volumnes.append(mag_volume)
                         # Quantize only angles
-                        angle_bins = np.digitize(angle_volume, np.linspace(0, 2*np.pi, self.num_angle_bins+1)) - 1
+                        angle_bins = np.digitize(angle_volume, np.linspace(-np.pi, np.pi, self.num_angle_bins+1)) - 1
                         # Initialize a 1D histogram (8 bins for angles)
                         hist_1D = np.zeros(self.num_angle_bins)
                         # Sum magnitudes into the corresponding angle bins
                         for bin_idx in range(self.num_angle_bins):
                             hist_1D[bin_idx] = np.sum(np.power(mag_volume[angle_bins == bin_idx], self.gamma))
+
+                        if plotted < num_plot_hist1D and np.random.rand() < plot_prob:
+                            plot_motion_feat_hist1D(hist_1D, sample, i, row, col, plotted, self.output_dir)
+                            plotted += 1
                         # Append this histogram to the motion feature vector avoing division by cero
                         motion_feature_vector.append(hist_1D)
             # Concatenate histograms from all volumes into a single vector

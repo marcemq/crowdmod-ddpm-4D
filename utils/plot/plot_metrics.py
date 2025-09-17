@@ -116,3 +116,25 @@ def merge_and_plot_boxplot(df_max, df, title, save_path, ytick_step, prefix='max
         createBoxPlotWithOutlierInfo(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path)
     else:
         createBoxPlot(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path, ytick_step=ytick_step)
+
+def plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col, plotted_idx, output_dir):
+    plt.figure(figsize=(5, 4))
+    plt.imshow(hist_2D.T, origin='lower', aspect='auto', extent=[mag_edges[0], mag_edges[-1], angle_edges[0], angle_edges[-1]], cmap='viridis')
+    plt.colorbar(label="Counts")
+    plt.xlabel("Magnitude bin")
+    plt.ylabel("Angle bin (radians)")
+    plt.title(f"2D Motion Hist | Sample {sample}, Block ({i},{row},{col})")
+    save_path = f"{output_dir}/mf_hist2D_plot{plotted_idx}.png"
+    plt.savefig(save_path, bbox_inches='tight')
+
+def plot_motion_feat_hist1D(hist_1D, sample, i, row, col, num_plot, output_dir):
+    angle_bin_edges = np.linspace(-np.pi, np.pi, 9)
+    angle_bin_centers = (angle_bin_edges[:-1] + angle_bin_edges[1:]) / 2
+
+    plt.figure(figsize=(5, 4))
+    plt.bar(angle_bin_centers, hist_1D, width=(2*np.pi / len(hist_1D)), align='center', alpha=0.7, color='steelblue', edgecolor='black')
+    plt.xlabel("Angle (radians)")
+    plt.ylabel("Weighted magnitude sum")
+    plt.title(f"1D Motion Hist | Sample {sample}, Block (t={i}, r={row}, c={col})")
+    save_path = f"{output_dir}/mf_hist1D_plot{num_plot}.png"
+    plt.savefig(save_path, bbox_inches='tight')

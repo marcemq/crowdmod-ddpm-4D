@@ -178,9 +178,9 @@ def _save_mag_rho_data(all_mag_rho_vol, nameToUse):
     file_name = f"metrics/all_mag_rho_{nameToUse}.csv"
     np.savetxt(file_name, all_mag_rho_vol, delimiter=",", comments="")
 
-def motion_feature_metrics(gt_seq_list, pred_seq_list, f, k, gamma, mse_metric=False, bhatt_metrics=False):
-    mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k, gamma=gamma)
-    mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k, gamma=gamma)
+def motion_feature_metrics(gt_seq_list, pred_seq_list, f, k, gamma, mse_metric=False, bhatt_metrics=False, output_dir=None):
+    mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k, gamma=gamma, output_dir=output_dir)
+    mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k, gamma=gamma, output_dir=output_dir)
 
     mf_2D_pred = mf_extractor_pred.motion_feature_2D_hist()
     mf_2D_gt = mf_extractor_gt.motion_feature_2D_hist()
