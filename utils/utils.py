@@ -18,7 +18,7 @@ def create_directory(directory_path):
     else:
         logging.info(f"Directory '{directory_path}' already exists.")
 
-def get_filenames_paths(cfg):
+def get_filenames_paths_base(cfg):
     """
     Return list of filenames with complete path.
     """
@@ -33,28 +33,50 @@ def get_filenames_paths(cfg):
     filenames = [ os.path.join(cfg.DATA_FS.PICKLE_DIR, filename) for filename in filenames if filename.endswith('.pkl')]
     return filenames
 
-def get_training_dataset(cfg, filenames, mprops_count, batch_size=None):
+def get_filenames_paths(cfg):
+    """
+    Return list of filenames with complete path and raw samples per file
+    """
+    data_list = cfg.DATA_LIST
+    filenames_and_numSamples = []
+
+    for filename, raw_samples in data_list:
+        if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
+            filename = filename.replace(".csv", ".pkl")
+        elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
+            filename = filename.replace(".txt", ".pkl")
+        else:
+            logging.info("Dataset not supported")
+
+        # store only .pkl files with full path
+        if filename.endswith(".pkl"):
+            full_path = os.path.join(cfg.DATA_FS.PICKLE_DIR, filename)
+            filenames_and_numSamples.append((full_path, int(raw_samples)))
+
+    return filenames_and_numSamples
+
+def get_training_dataset(cfg, filenames_and_numSamples, mprops_count, batch_size=None):
     """
     Return training and validation data for specific dataset type.
     """
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        batched_train_data, batched_val_data = getClassicDataset(cfg, filenames, batch_size=batch_size, mprops_count=mprops_count)
+        batched_train_data, batched_val_data = getClassicDataset(cfg, filenames_and_numSamples, batch_size=batch_size, mprops_count=mprops_count)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        batched_train_data, batched_val_data, _ = getDataset(cfg, filenames, batch_size=batch_size, mprops_count=mprops_count)
+        batched_train_data, batched_val_data, _ = getDataset(cfg, filenames_and_numSamples, batch_size=batch_size, mprops_count=mprops_count)
     else:
         logging.error(f"Dataset type not supported.")
     logging.info(f"Batched Train dataset loaded.")
 
     return batched_train_data, batched_val_data
 
-def get_test_dataset(cfg, filenames, mprops_count, batch_size=None):
+def get_test_dataset(cfg, filenames_and_numSamples, mprops_count, batch_size=None):
     """
     Return testing data for specific dataset type.
     """
     if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        _, batched_test_data = getClassicDataset(cfg, filenames, batch_size=batch_size, mprops_count=mprops_count)
+        _, batched_test_data = getClassicDataset(cfg, filenames_and_numSamples, batch_size=batch_size, mprops_count=mprops_count)
     elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        _, _, batched_test_data = getDataset(cfg, filenames, batch_size=batch_size, test_data_only=True, mprops_count=mprops_count)
+        _, _, batched_test_data = getDataset(cfg, filenames_and_numSamples, batch_size=batch_size, test_data_only=True, mprops_count=mprops_count)
     else:
         logging.error(f"Dataset type not supported.")
     logging.info(f"Batched Test dataset loaded.")

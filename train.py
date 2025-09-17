@@ -51,7 +51,9 @@ def train_ddpm(cfg, batched_train_data, arch, mprops_count):
 
     best_loss      = 1e6
     consecutive_nan_count = 0
-    epoch_model_samples = np.random.randint(150, cfg.MODEL.DDPM.TRAIN.EPOCHS + 1, size=cfg.MODEL.DDPM.MODEL_SAMPLES)
+    low = int(cfg.MODEL.DDPM.TRAIN.EPOCHS * 0.75)
+    high = cfg.MODEL.DDPM.TRAIN.EPOCHS + 1  # randint upper bound is exclusive
+    epoch_model_samples = np.random.randint(low, high, size=cfg.MODEL.DDPM.MODEL_SAMPLES)
     # Training loop
     for epoch in range(1,cfg.MODEL.DDPM.TRAIN.EPOCHS + 1):
         torch.cuda.empty_cache()
@@ -134,12 +136,12 @@ def training_mgmt(args, cfg):
     init_wandb(cfg, args.arch)
 
     # === Prepare file paths ===
-    filenames = get_filenames_paths(cfg)
+    filenames_and_numSamples = get_filenames_paths(cfg)
     create_directory(cfg.DATA_FS.SAVE_DIR)
 
     # === Load training dataset
     mprops_count = 4 if args.arch == "ConvGRU" else 3
-    batched_train_data, batched_val_data = get_training_dataset(cfg, filenames, mprops_count)
+    batched_train_data, batched_val_data = get_training_dataset(cfg, filenames_and_numSamples, mprops_count)
 
     # === Train models with specific architecture ===
     logging.info(f"=======>>>> Init training for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")

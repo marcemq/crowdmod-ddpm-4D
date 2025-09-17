@@ -82,10 +82,9 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
     taus = 1
 
     for batch in batched_test_data:
-        past_test, future_test, stats = batch
+        past_test, future_test = batch
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
-        #x_train, y_train, stats = batch
         random_past_idx = torch.randperm(past_test.shape[0])[:cfg.MODEL.NSAMPLES4PLOTS]
         # Predict different sequences for the same past sequence
         if samePastSeq:
@@ -128,7 +127,7 @@ def generate_samples_convGRU(cfg, batched_test_data, plotType, model_fullname, p
     convGRU_model.to(device)
 
     for batch in batched_test_data:
-        past_test, future_test, stats = batch
+        past_test, future_test = batch
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
         random_past_idx = torch.randperm(past_test.shape[0])[:cfg.MODEL.NSAMPLES4PLOTS]
@@ -148,14 +147,14 @@ def sampling_mgmt(args, cfg):
     Sampling management function.
     """
     # === Prepare file paths ===
-    filenames = get_filenames_paths(cfg)
+    filenames_and_numSamples = get_filenames_paths(cfg)
     model_fullname = get_model_fullname(cfg, args.arch, args.model_sample_to_load)
     output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_VN{cfg.DATASET.VELOCITY_NORM}_modelE{args.model_sample_to_load}"
     create_directory(output_dir)
 
     # === Load test dataset ===
     mprops_count = 4 if args.arch == "ConvGRU" else 3
-    batched_test_data = get_test_dataset(cfg, filenames, mprops_count)
+    batched_test_data = get_test_dataset(cfg, filenames_and_numSamples, mprops_count)
 
     # === Generate samples per architecture ===
     macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)

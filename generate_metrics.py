@@ -146,7 +146,7 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
     for batch in batched_test_data:
         logging.info("===" * 20)
         logging.info(f'Computing metrics on batch:{count_batch+1}')
-        past_test, future_test, stats = batch
+        past_test, future_test = batch
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
         # Compute the idx of the past sequences to work on
@@ -212,7 +212,7 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
         for batch in batched_test_data:
             tq.set_description(f"Compute Metrics :: batch: {count_batch+1}/{batches_to_use}")
             tq.update(1)
-            past_test, future_test, stats = batch
+            past_test, future_test = batch
             past_test, future_test = past_test.float(), future_test.float()
             past_test, future_test = past_test.to(device=device), future_test.to(device=device)
             # Compute the idx of the past sequences to work on
@@ -250,14 +250,14 @@ def metrics_mgmt(args, cfg):
     Metrics compute management function.
     """
     # === Prepare file paths ===
-    filenames = get_filenames_paths(cfg)
+    filenames_and_numSamples = get_filenames_paths(cfg)
     model_fullname = get_model_fullname(cfg, args.arch, args.model_sample_to_load)
     output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_VN{cfg.DATASET.VELOCITY_NORM}_modelE{args.model_sample_to_load}"
     create_directory(output_dir)
 
     # === Load test dataset ===
     mprops_count = 4 if args.arch == "ConvGRU" else 3
-    batched_test_data = get_test_dataset(cfg, filenames, mprops_count)
+    batched_test_data = get_test_dataset(cfg, filenames_and_numSamples, mprops_count)
 
     # === Set samples_per_batch ===
     if args.chunk_repd_past_seq == None:
