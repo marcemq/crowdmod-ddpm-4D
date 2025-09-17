@@ -146,7 +146,7 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
     for batch in batched_test_data:
         logging.info("===" * 20)
         logging.info(f'Computing metrics on batch:{count_batch+1}')
-        past_test, future_test, stats = batch
+        past_test, future_test = batch
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
         # Compute the idx of the past sequences to work on
@@ -212,7 +212,7 @@ def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, b
         for batch in batched_test_data:
             tq.set_description(f"Compute Metrics :: batch: {count_batch+1}/{batches_to_use}")
             tq.update(1)
-            past_test, future_test, stats = batch
+            past_test, future_test = batch
             past_test, future_test = past_test.float(), future_test.float()
             past_test, future_test = past_test.to(device=device), future_test.to(device=device)
             # Compute the idx of the past sequences to work on

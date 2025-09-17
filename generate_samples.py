@@ -82,10 +82,9 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
     taus = 1
 
     for batch in batched_test_data:
-        past_test, future_test, stats = batch
+        past_test, future_test = batch
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
-        #x_train, y_train, stats = batch
         random_past_idx = torch.randperm(past_test.shape[0])[:cfg.MODEL.NSAMPLES4PLOTS]
         # Predict different sequences for the same past sequence
         if samePastSeq:
@@ -128,7 +127,7 @@ def generate_samples_convGRU(cfg, batched_test_data, plotType, model_fullname, p
     convGRU_model.to(device)
 
     for batch in batched_test_data:
-        past_test, future_test, stats = batch
+        past_test, future_test = batch
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
         random_past_idx = torch.randperm(past_test.shape[0])[:cfg.MODEL.NSAMPLES4PLOTS]
