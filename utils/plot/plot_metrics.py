@@ -126,6 +126,7 @@ def plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col
     plt.title(f"2D Motion Hist | Sample {sample}, Block ({i},{row},{col})")
     save_path = f"{output_dir}/mf_hist2D_plot{plotted_idx}.png"
     plt.savefig(save_path, bbox_inches='tight')
+    plt.close()
 
 def plot_motion_feat_hist1D(hist_1D, sample, i, row, col, num_plot, output_dir):
     angle_bin_edges = np.linspace(-np.pi, np.pi, 9)
@@ -138,3 +139,4 @@ def plot_motion_feat_hist1D(hist_1D, sample, i, row, col, num_plot, output_dir):
     plt.title(f"1D Motion Hist | Sample {sample}, Block (t={i}, r={row}, c={col})")
     save_path = f"{output_dir}/mf_hist1D_plot{num_plot}.png"
     plt.savefig(save_path, bbox_inches='tight')
+    plt.close()
