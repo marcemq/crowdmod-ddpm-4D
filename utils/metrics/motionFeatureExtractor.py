@@ -55,7 +55,7 @@ class MotionFeatureExtractor:
 
         return mag_rho_transf
 
-    def motion_feature_2D_hist(self, num_plot_hist2D=10, plot_prob=0.2):
+    def motion_feature_2D_hist(self, num_plot_hist2D=10, plot_prob=0.02):
         all_motion_feature_vectors = []
         plotted = 0
         for sample in range(self.nsamples):
@@ -84,7 +84,7 @@ class MotionFeatureExtractor:
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors)
 
-    def motion_feature_1D_hist(self, num_plot_hist1D=10, plot_prob=0.2):
+    def motion_feature_1D_hist(self, num_plot_hist1D=10, plot_prob=0.02):
         all_motion_feature_vectors = []
         all_mag_rho_volumnes = []
         plotted = 0

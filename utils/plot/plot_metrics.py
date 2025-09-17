@@ -121,6 +121,14 @@ def plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col
     plt.figure(figsize=(5, 4))
     plt.imshow(hist_2D.T, origin='lower', aspect='auto', extent=[mag_edges[0], mag_edges[-1], angle_edges[0], angle_edges[-1]], cmap='viridis')
     plt.colorbar(label="Counts")
+    # Magnitude ticks every 1
+    plt.xticks(np.arange(mag_edges[0], mag_edges[-1] + 1, 1))
+
+    # Angle ticks at -π, -3π/4, -π/2, ..., π
+    angle_ticks = np.arange(-np.pi, np.pi + np.pi/4, np.pi/4)
+    angle_tick_labels = [r"$-\pi$", r"$-3\pi/4$", r"$-\pi/2$", r"$- \pi/4$",r"$0$", r"$\pi/4$", r"$\pi/2$", r"$3\pi/4$", r"$\pi$"]
+    plt.yticks(angle_ticks, angle_tick_labels)
+
     plt.xlabel("Magnitude bin")
     plt.ylabel("Angle bin (radians)")
     plt.title(f"2D Motion Hist | Sample {sample}, Block ({i},{row},{col})")
@@ -134,6 +142,11 @@ def plot_motion_feat_hist1D(hist_1D, sample, i, row, col, num_plot, output_dir):
 
     plt.figure(figsize=(5, 4))
     plt.bar(angle_bin_centers, hist_1D, width=(2*np.pi / len(hist_1D)), align='center', alpha=0.7, color='steelblue', edgecolor='black')
+    # Set ticks every π/4
+    xticks = np.arange(-np.pi, np.pi + np.pi/4, np.pi/4)
+    xtick_labels = [r"$-\pi$", r"$-\frac{3\pi}{4}$", r"$-\frac{\pi}{2}$", r"$-\frac{\pi}{4}$","0",r"$\frac{\pi}{4}$", r"$\frac{\pi}{2}$", r"$\frac{3\pi}{4}$", r"$\pi$"]
+    plt.xticks(xticks, xtick_labels)
+
     plt.xlabel("Angle (radians)")
     plt.ylabel("Weighted magnitude sum")
     plt.title(f"1D Motion Hist | Sample {sample}, Block (t={i}, r={row}, c={col})")
