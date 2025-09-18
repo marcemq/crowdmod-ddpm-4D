@@ -55,7 +55,7 @@ class MotionFeatureExtractor:
 
         return mag_rho_transf
 
-    def motion_feature_2D_hist(self, num_plot_hist2D=10, plot_prob=0.05, min_count_threshold=50):
+    def motion_feature_2D_hist(self, num_plot_hist2D=10, plot_prob=0.05, active_bins_threshold=10):
         all_motion_feature_vectors = []
         plotted = 0
         for sample in range(self.nsamples):
@@ -72,8 +72,8 @@ class MotionFeatureExtractor:
                         # Compute 2D histogram (quantized magnitude vs angle)
                         hist_2D, mag_edges, angle_edges = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
 
-                        max_count = hist_2D.max()
-                        if plotted < num_plot_hist2D and np.random.rand() < plot_prob and max_count >= min_count_threshold:
+                        active_bins = np.sum(hist_2D >= 5)
+                        if plotted < num_plot_hist2D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold:
                             plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col, plotted, self.output_dir)
                             plotted += 1
                         # Flatten and add to the motion feature vector
@@ -86,7 +86,7 @@ class MotionFeatureExtractor:
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors)
 
-    def motion_feature_1D_hist(self, num_plot_hist1D=10, plot_prob=0.05, min_energy_threshold=50.0):
+    def motion_feature_1D_hist(self, num_plot_hist1D=10, plot_prob=0.05, active_bins_threshold=10):
         all_motion_feature_vectors = []
         all_mag_rho_volumnes = []
         plotted = 0
@@ -111,8 +111,8 @@ class MotionFeatureExtractor:
                         for bin_idx in range(self.num_angle_bins):
                             hist_1D[bin_idx] = np.sum(np.power(mag_volume[angle_bins == bin_idx], self.gamma))
 
-                        max_count = hist_1D.sum()
-                        if plotted < num_plot_hist1D and np.random.rand() < plot_prob and max_count >= min_energy_threshold :
+                        active_bins = np.sum(hist_1D >= 5)
+                        if plotted < num_plot_hist1D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold :
                             plot_motion_feat_hist1D(hist_1D, sample, i, row, col, plotted, self.output_dir)
                             plotted += 1
                         # Append this histogram to the motion feature vector avoing division by cero
