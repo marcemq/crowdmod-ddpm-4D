@@ -72,8 +72,8 @@ class MotionFeatureExtractor:
                         # Compute 2D histogram (quantized magnitude vs angle)
                         hist_2D, mag_edges, angle_edges = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
 
-                        total_count = hist_2D.sum()
-                        if plotted < num_plot_hist2D and np.random.rand() < plot_prob and total_count >= min_count_threshold:
+                        max_count = hist_2D.max()
+                        if plotted < num_plot_hist2D and np.random.rand() < plot_prob and max_count >= min_count_threshold:
                             plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col, plotted, self.output_dir)
                             plotted += 1
                         # Flatten and add to the motion feature vector
@@ -111,8 +111,8 @@ class MotionFeatureExtractor:
                         for bin_idx in range(self.num_angle_bins):
                             hist_1D[bin_idx] = np.sum(np.power(mag_volume[angle_bins == bin_idx], self.gamma))
 
-                        total_energy = hist_1D.sum()
-                        if plotted < num_plot_hist1D and np.random.rand() < plot_prob and total_energy >= min_energy_threshold :
+                        max_count = hist_1D.sum()
+                        if plotted < num_plot_hist1D and np.random.rand() < plot_prob and max_count >= min_energy_threshold :
                             plot_motion_feat_hist1D(hist_1D, sample, i, row, col, plotted, self.output_dir)
                             plotted += 1
                         # Append this histogram to the motion feature vector avoing division by cero
