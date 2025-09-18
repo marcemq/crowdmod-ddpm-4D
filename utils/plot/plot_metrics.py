@@ -117,7 +117,27 @@ def merge_and_plot_boxplot(df_max, df, title, save_path, ytick_step, prefix='max
     else:
         createBoxPlot(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path, ytick_step=ytick_step)
 
-def plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col, plotted_idx, output_dir):
+def get_angle_tick_labels(num_angle_bins):
+    # Angle ticks depend on num_angle_bins
+    step = np.pi / (num_angle_bins // 2)  # e.g. 8 bins → π/4, 16 bins → π/8
+    angle_ticks = np.arange(-np.pi, np.pi + step, step)
+
+    # Create labels nicely in terms of π
+    def format_pi(x):
+        frac = x / np.pi
+        if np.isclose(frac, 0): return "0"
+        if np.isclose(frac, 1): return r"$\pi$"
+        if np.isclose(frac, -1): return r"$-\pi$"
+        num, den = (frac).as_integer_ratio()
+        if den == 1:
+            return fr"${num}\pi$"
+        else:
+            return fr"${num}\pi/{den}$"
+
+    angle_tick_labels = [format_pi(val) for val in angle_ticks]
+    return angle_ticks, angle_tick_labels
+
+def plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col, plotted_idx, output_dir, num_angle_bins):
     plt.figure(figsize=(5, 4))
     plt.imshow(hist_2D.T, origin='lower', aspect='auto', extent=[mag_edges[0], mag_edges[-1], angle_edges[0], angle_edges[-1]], cmap='viridis')
     plt.colorbar(label="Counts")
@@ -125,8 +145,7 @@ def plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col
     plt.xticks(np.arange(mag_edges[0], mag_edges[-1] + 1, 1))
 
     # Angle ticks at -π, -3π/4, -π/2, ..., π
-    angle_ticks = np.arange(-np.pi, np.pi + np.pi/4, np.pi/4)
-    angle_tick_labels = [r"$-\pi$", r"$-3\pi/4$", r"$-\pi/2$", r"$- \pi/4$",r"$0$", r"$\pi/4$", r"$\pi/2$", r"$3\pi/4$", r"$\pi$"]
+    angle_ticks, angle_tick_labels = get_angle_tick_labels(num_angle_bins)
     plt.yticks(angle_ticks, angle_tick_labels)
 
     plt.xlabel("Magnitude bin")
@@ -136,15 +155,14 @@ def plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col
     plt.savefig(save_path, bbox_inches='tight')
     plt.close()
 
-def plot_motion_feat_hist1D(hist_1D, sample, i, row, col, num_plot, output_dir):
+def plot_motion_feat_hist1D(hist_1D, sample, i, row, col, num_plot, output_dir, num_angle_bins):
     angle_bin_edges = np.linspace(-np.pi, np.pi, 9)
     angle_bin_centers = (angle_bin_edges[:-1] + angle_bin_edges[1:]) / 2
 
     plt.figure(figsize=(5, 4))
     plt.bar(angle_bin_centers, hist_1D, width=(2*np.pi / len(hist_1D)), align='center', alpha=0.7, color='steelblue', edgecolor='black')
-    # Set ticks every π/4
-    xticks = np.arange(-np.pi, np.pi + np.pi/4, np.pi/4)
-    xtick_labels = [r"$-\pi$", r"$-\frac{3\pi}{4}$", r"$-\frac{\pi}{2}$", r"$-\frac{\pi}{4}$","0",r"$\frac{\pi}{4}$", r"$\frac{\pi}{2}$", r"$\frac{3\pi}{4}$", r"$\pi$"]
+    # Set ticks every π/4 or π/8 
+    xticks, xtick_labels = get_angle_tick_labels(num_angle_bins)
     plt.xticks(xticks, xtick_labels)
 
     plt.xlabel("Angle (radians)")
