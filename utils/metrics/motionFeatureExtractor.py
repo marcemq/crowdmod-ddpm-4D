@@ -72,7 +72,7 @@ class MotionFeatureExtractor:
                         # Compute 2D histogram (quantized magnitude vs angle)
                         hist_2D, mag_edges, angle_edges = np.histogram2d(mag_volume, angle_volume, bins=[self.num_magnitude_bins, self.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
 
-                        active_bins = np.sum(hist_2D >= 5)
+                        active_bins = np.sum(hist_2D >= 2)
                         if plotted < num_plot_hist2D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold:
                             plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col, plotted, self.output_dir)
                             plotted += 1
@@ -111,7 +111,7 @@ class MotionFeatureExtractor:
                         for bin_idx in range(self.num_angle_bins):
                             hist_1D[bin_idx] = np.sum(np.power(mag_volume[angle_bins == bin_idx], self.gamma))
 
-                        active_bins = np.sum(hist_1D >= 5)
+                        active_bins = np.sum(hist_1D >= 2)
                         if plotted < num_plot_hist1D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold :
                             plot_motion_feat_hist1D(hist_1D, sample, i, row, col, plotted, self.output_dir)
                             plotted += 1
