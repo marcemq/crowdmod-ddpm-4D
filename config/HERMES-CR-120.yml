@@ -88,13 +88,4 @@ METRICS:
     f: 1    # Number of frames of each volume
     k: 4    # Spatial dimensions of each volume, valid for ATC grid
     s: 1
-    GAMMA: 2.0 # Exponent of the power function for 1D-histogram
-TRAIN:
-  INITIAL_LR: 0.0005
-  EPOCHS: 200
-  SOLVER:
-    LR: 0.00005
-    WEIGHT_DECAY: 0.003
-    BETAS:
-      - 0.5
-      - 0.999
+    GAMMA: 0.5 # Exponent of the power function for 1D-histogram

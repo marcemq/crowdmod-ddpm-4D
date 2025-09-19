@@ -38,7 +38,7 @@ DATASET:
   VELOCITY_NORM: False
 MODEL:
   NAME: "ARCH-{}_ATC4TEST_TE{}_PL{}_FL{}_CE{}_VN{}.pth"
-  NSAMPLES: 1280      # Define number of predicted samples (64 BS * 20 rep, default values)
+  NSAMPLES: 640      # Define number of predicted samples (32 BS * 20 rep, default values)
   NSAMPLES4PLOTS: 20  # Define number of predicted samples to plot static and dynamic seqs
   DDPM:
     SAMPLER: "DDPM"
@@ -89,4 +89,4 @@ METRICS:
     f: 1    # Number of frames of each volume
     k: 4    # Spatial dimensions of each volume, valid for ATC grid
     s: 1
-    GAMMA: 2.0 # Exponent of the power function for 1D-histogram
+    GAMMA: 0.5 # Exponent of the power function for 1D-histogram
