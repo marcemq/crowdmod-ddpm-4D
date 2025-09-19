@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from fractions import Fraction
 from matplotlib import pyplot as plt
 
 def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
@@ -119,16 +120,19 @@ def merge_and_plot_boxplot(df_max, df, title, save_path, ytick_step, prefix='max
 
 def get_angle_tick_labels(num_angle_bins):
     # Angle ticks depend on num_angle_bins
-    step = np.pi / (num_angle_bins // 2)  # e.g. 8 bins → π/4, 16 bins → π/8
+    step = np.pi / (num_angle_bins // 2)
     angle_ticks = np.arange(-np.pi, np.pi + step, step)
 
-    # Create labels nicely in terms of π
     def format_pi(x):
         frac = x / np.pi
         if np.isclose(frac, 0): return "0"
         if np.isclose(frac, 1): return r"$\pi$"
         if np.isclose(frac, -1): return r"$-\pi$"
-        num, den = (frac).as_integer_ratio()
+
+        # Limit denominator for cleaner fractions (like 2, 4, 8, 16)
+        frac = Fraction(frac).limit_denominator(16)
+        num, den = frac.numerator, frac.denominator
+
         if den == 1:
             return fr"${num}\pi$"
         else:
