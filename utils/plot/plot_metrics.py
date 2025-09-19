@@ -167,7 +167,7 @@ def plot_motion_feat_hist1D(hist_1D, sample, i, row, col, num_plot, output_dir, 
     plt.bar(angle_bin_centers, hist_1D, width=(2*np.pi / len(hist_1D)), align='center', alpha=0.7, color='steelblue', edgecolor='black')
     # Set ticks every π/4 or π/8 
     xticks, xtick_labels = get_angle_tick_labels(num_angle_bins)
-    plt.xticks(xticks, xtick_labels)
+    plt.xticks(xticks, xtick_labels, rotation=45, ha="right")
 
     plt.xlabel("Angle (radians)")
     plt.ylabel("Weighted magnitude sum")
