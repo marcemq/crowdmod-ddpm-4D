@@ -156,7 +156,7 @@ def plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col
     plt.close()
 
 def plot_motion_feat_hist1D(hist_1D, sample, i, row, col, num_plot, output_dir, num_angle_bins):
-    angle_bin_edges = np.linspace(-np.pi, np.pi, 9)
+    angle_bin_edges = np.linspace(-np.pi, np.pi, num_angle_bins+1)
     angle_bin_centers = (angle_bin_edges[:-1] + angle_bin_edges[1:]) / 2
 
     plt.figure(figsize=(5, 4))
