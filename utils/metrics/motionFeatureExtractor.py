@@ -75,7 +75,7 @@ class MotionFeatureExtractor:
 
                         active_bins = np.sum(hist_2D >= 2)
                         if plotted < num_plot_hist2D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold:
-                            plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col, plotted, self.output_dir)
+                            plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col, plotted, self.output_dir, self.num_angle_bins)
                             plotted += 1
                         # Flatten and add to the motion feature vector
                         hist_2D = hist_2D.flatten()
@@ -114,7 +114,7 @@ class MotionFeatureExtractor:
 
                         active_bins = np.sum(hist_1D >= 2)
                         if plotted < num_plot_hist1D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold :
-                            plot_motion_feat_hist1D(hist_1D, sample, i, row, col, plotted, self.output_dir)
+                            plot_motion_feat_hist1D(hist_1D, sample, i, row, col, plotted, self.output_dir, self.num_angle_bins)
                             plotted += 1
                         # Append this histogram to the motion feature vector avoing division by cero
                         motion_feature_vector.append(hist_1D)
