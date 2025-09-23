@@ -147,7 +147,7 @@ def set_zero_angle_to_smallMag(hist_2D):
 def get_motion_feature_2D_hist(mf_pred, mf_gt, num_plot_hist2D=10, plot_prob=0.05, active_bins_threshold=5):
     all_mf_pred, all_mf_gt = [], []
     plotted = 0
-
+    global_count = 0
     for sample in range(mf_pred.nsamples):
         mf_vec_pred, mf_vec_gt = [], []
         # Reshape each frame's data back into a (r, c) grid
@@ -168,8 +168,11 @@ def get_motion_feature_2D_hist(mf_pred, mf_gt, num_plot_hist2D=10, plot_prob=0.0
                     # Set zero angle to small magnitudes
                     hist_2D_pred = set_zero_angle_to_smallMag(hist_2D_pred)
                     hist_2D_gt = set_zero_angle_to_smallMag(hist_2D_gt)
+                    # Get counts from hist_2D
+                    count = np.sum(hist_2D_gt[1:, :])
+                    global_count = max(global_count, count)
 
-                    active_bins = np.sum(hist_2D_gt >= 2)
+                    active_bins = np.sum(hist_2D_gt >= 1)
                     if plotted < num_plot_hist2D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold:
                         plot_motion_feat_hist2D(hist_2D_pred, mag_edges_pred, angle_edges_pred, sample, i, row, col, plotted, mf_pred.output_dir, mf_pred.num_angle_bins, "pred")
                         plot_motion_feat_hist2D(hist_2D_gt, mag_edges_gt, angle_edges_gt, sample, i, row, col, plotted, mf_gt.output_dir, mf_gt.num_angle_bins, "gt")
@@ -188,12 +191,14 @@ def get_motion_feature_2D_hist(mf_pred, mf_gt, num_plot_hist2D=10, plot_prob=0.0
 
         all_mf_pred.append(mf_vec_pred)
         all_mf_gt.append(mf_vec_gt)
+    print(f"==========>>>> Global count, hist_2D:{global_count}")
     # Return the motion feature vectors for all pred and GT sequences
     return np.array(all_mf_pred), np.array(all_mf_gt)
 
 def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.05, active_bins_threshold=5):
     all_mf_pred, all_mf_gt = [], []
     plotted = 0
+    global_count = 0
 
     for sample in range(mf_pred.nsamples):
         mf_vec_pred, mf_vec_gt = [], []
@@ -218,7 +223,10 @@ def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.0
                         hist_1D_pred[bin_idx] = np.sum(np.power(mag_vol_pred[angle_bins_pred == bin_idx], mf_pred.gamma))
                         hist_1D_gt[bin_idx] = np.sum(np.power(mag_vol_gt[angle_bins_gt == bin_idx], mf_gt.gamma))
 
-                    active_bins = np.sum(hist_1D_gt >= 2)
+                    # Get counts from hist_2D
+                    count = np.sum(hist_1D_gt[1:, :])
+                    global_count = max(global_count, count)
+                    active_bins = np.sum(hist_1D_gt >= 1)
                     if plotted < num_plot_hist1D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold :
                         plot_motion_feat_hist1D(hist_1D_pred, sample, i, row, col, plotted, mf_pred.output_dir, mf_pred.num_angle_bins, "pred")
                         plot_motion_feat_hist1D(hist_1D_gt, sample, i, row, col, plotted, mf_gt.output_dir, mf_gt.num_angle_bins, "gt")
@@ -235,7 +243,8 @@ def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.0
 
         all_mf_pred.append(mf_vec_pred)
         all_mf_gt.append(mf_vec_gt)
-        # Return the motion feature vectors for all sequences
+    print(f"==========>>>> Global count, hist_1D:{global_count}")
+     # Return the motion feature vectors for all sequences
     return np.array(all_mf_pred), np.array(all_mf_gt)
 
 def get_bhattacharyya_dist_coef(P, Q):
