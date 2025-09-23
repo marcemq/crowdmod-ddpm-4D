@@ -126,6 +126,24 @@ class MotionFeatureExtractor:
         # Return the motion feature vectors for all sequences
         return np.array(all_motion_feature_vectors), np.array(all_mag_rho_volumnes)
 
+def get_mag_angle_seq(motion_feature, sample):
+    mag_rho_rs = motion_feature.mag_rho_transf[sample].reshape(motion_feature.F, motion_feature.r, motion_feature.c)
+    angle_phi_rs = motion_feature.angle_phi[sample].reshape(motion_feature.F, motion_feature.r, motion_feature.c)
+    return mag_rho_rs, angle_phi_rs
+
+def get_mag_angle_volume(mag_rho_rs, angle_phi_rs, i, row, col, f, k):
+    mag_vol = mag_rho_rs[i:i+f, row:row+k, col:col+k].flatten()
+    angle_vol = angle_phi_rs[i:i+f, row:row+k, col:col+k].flatten()
+    return mag_vol, angle_vol
+
+def set_zero_angle_to_smallMag(hist_2D):
+    total_first_mag = np.sum(hist_2D[0, :])
+    # Reset first magnitude bin
+    hist_2D[0, :] = 0
+    # Put everything into angle=0 position
+    hist_2D[0, 0] = total_first_mag
+    return hist_2D
+
 def get_motion_feature_2D_hist(mf_pred, mf_gt, num_plot_hist2D=10, plot_prob=0.05, active_bins_threshold=5):
     all_mf_pred, all_mf_gt = [], []
     plotted = 0
@@ -133,24 +151,23 @@ def get_motion_feature_2D_hist(mf_pred, mf_gt, num_plot_hist2D=10, plot_prob=0.0
     for sample in range(mf_pred.nsamples):
         mf_vec_pred, mf_vec_gt = [], []
         # Reshape each frame's data back into a (r, c) grid
-        mag_rho_rs_pred = mf_pred.mag_rho_transf[sample].reshape(mf_pred.F, mf_pred.r, mf_pred.c)
-        angle_phi_rs_pred = mf_pred.angle_phi[sample].reshape(mf_pred.F, mf_pred.r, mf_pred.c)
-
-        mag_rho_rs_gt = mf_gt.mag_rho_transf[sample].reshape(mf_gt.F, mf_gt.r, mf_gt.c)
-        angle_phi_rs_gt = mf_gt.angle_phi[sample].reshape(mf_gt.F, mf_gt.r, mf_gt.c)
+        mag_rho_rs_pred, angle_phi_rs_pred = get_mag_angle_seq(mf_pred, sample)
+        mag_rho_rs_gt, angle_phi_rs_gt = get_mag_angle_seq(mf_gt, sample)
 
         for i in range(0, mf_pred.F, mf_pred.f):  # Temporal volumes of size f
             for row in range(0, mf_pred.r, mf_pred.k):  # Spatial rows (k x k blocks)
                 for col in range(0, mf_pred.c, mf_pred.k):  # Spatial columns (k x k blocks)
-                    # Extract a sub-volume of size (f, k, k) for pred
-                    mag_vol_pred = mag_rho_rs_pred[i:i+mf_pred.f, row:row+mf_pred.k, col:col+mf_pred.k].flatten()
-                    angle_vol_pred = angle_phi_rs_pred[i:i+mf_pred.f, row:row+mf_pred.k, col:col+mf_pred.k].flatten()
-                    # Extract a sub-volume of size (f, k, k) for gt
-                    mag_vol_gt = mag_rho_rs_gt[i:i+mf_gt.f, row:row+mf_gt.k, col:col+mf_gt.k].flatten()
-                    angle_vol_gt = angle_phi_rs_gt[i:i+mf_gt.f, row:row+mf_gt.k, col:col+mf_gt.k].flatten()
+                    # Extract a sub-volume of size (f, k, k) for PRED ang GT
+                    mag_vol_pred, angle_vol_pred = get_mag_angle_volume(mag_rho_rs_pred, angle_phi_rs_pred, i, row, col, mf_pred.f, mf_pred.k)
+                    mag_vol_gt, angle_vol_gt = get_mag_angle_volume(mag_rho_rs_gt, angle_phi_rs_gt, i, row, col, mf_gt.f, mf_gt.k)
+                    
                     # Compute 2D histogram (quantized magnitude vs angle)
                     hist_2D_pred, mag_edges_pred, angle_edges_pred = np.histogram2d(mag_vol_pred, angle_vol_pred, bins=[mf_pred.num_magnitude_bins, mf_pred.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
                     hist_2D_gt, mag_edges_gt, angle_edges_gt = np.histogram2d(mag_vol_gt, angle_vol_gt, bins=[mf_gt.num_magnitude_bins, mf_gt.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
+
+                    # Set zero angle to small magnitutes
+                    hist_2D_pred = set_zero_angle_to_smallMag(hist_2D_pred)
+                    hist_2D_gt = set_zero_angle_to_smallMag(hist_2D_gt)
 
                     active_bins = np.sum(hist_2D_gt >= 2)
                     if plotted < num_plot_hist2D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold:
@@ -181,21 +198,15 @@ def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.0
     for sample in range(mf_pred.nsamples):
         mf_vec_pred, mf_vec_gt = [], []
         # Reshape each frame's data back into a (r, c) grid
-        mag_rho_rs_pred = mf_pred.mag_rho_transf[sample].reshape(mf_pred.F, mf_pred.r, mf_pred.c)
-        angle_phi_rs_pred = mf_pred.angle_phi[sample].reshape(mf_pred.F, mf_pred.r, mf_pred.c)
-
-        mag_rho_rs_gt = mf_gt.mag_rho_transf[sample].reshape(mf_gt.F, mf_gt.r, mf_gt.c)
-        angle_phi_rs_gt = mf_gt.angle_phi[sample].reshape(mf_gt.F, mf_gt.r, mf_gt.c)
+        mag_rho_rs_pred, angle_phi_rs_pred = get_mag_angle_seq(mf_pred, sample)
+        mag_rho_rs_gt, angle_phi_rs_gt = get_mag_angle_seq(mf_gt, sample)
 
         for i in range(0, mf_pred.F, mf_pred.f):  # Temporal volumes of size f
             for row in range(0, mf_pred.r, mf_pred.k):  # Spatial rows (k x k blocks)
                 for col in range(0, mf_pred.c, mf_pred.k):  # Spatial columns (k x k blocks)
-                    # Extract a sub-volume of size (f, k, k) for pred
-                    mag_vol_pred = mag_rho_rs_pred[i:i+mf_pred.f, row:row+mf_pred.k, col:col+mf_pred.k].flatten()
-                    angle_vol_pred = angle_phi_rs_pred[i:i+mf_pred.f, row:row+mf_pred.k, col:col+mf_pred.k].flatten()
-                    # Extract a sub-volume of size (f, k, k) for gt
-                    mag_vol_gt = mag_rho_rs_gt[i:i+mf_gt.f, row:row+mf_gt.k, col:col+mf_gt.k].flatten()
-                    angle_vol_gt = angle_phi_rs_gt[i:i+mf_gt.f, row:row+mf_gt.k, col:col+mf_gt.k].flatten()
+                    # Extract a sub-volume of size (f, k, k) for PRED ang GT
+                    mag_vol_pred, angle_vol_pred = get_mag_angle_volume(mag_rho_rs_pred, angle_phi_rs_pred, i, row, col, mf_pred.f, mf_pred.k)
+                    mag_vol_gt, angle_vol_gt = get_mag_angle_volume(mag_rho_rs_gt, angle_phi_rs_gt, i, row, col, mf_gt.f, mf_gt.k)
                     # Quantize only angles
                     angle_bins_pred = np.digitize(angle_vol_pred, np.linspace(-np.pi, np.pi, mf_pred.num_angle_bins+1)) - 1
                     angle_bins_gt = np.digitize(angle_vol_gt, np.linspace(-np.pi, np.pi, mf_gt.num_angle_bins+1)) - 1
