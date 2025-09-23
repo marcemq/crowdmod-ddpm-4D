@@ -224,7 +224,7 @@ def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.0
                         hist_1D_gt[bin_idx] = np.sum(np.power(mag_vol_gt[angle_bins_gt == bin_idx], mf_gt.gamma))
 
                     # Get counts from hist_2D
-                    count = np.sum(hist_1D_gt[1:, :])
+                    count = np.sum(hist_1D_gt[1:])
                     global_count = max(global_count, count)
                     active_bins = np.sum(hist_1D_gt >= 1)
                     if plotted < num_plot_hist1D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold :
