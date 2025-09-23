@@ -163,8 +163,12 @@ def get_motion_feature_2D_hist(mf_pred, mf_gt, num_plot_hist2D=10, plot_prob=0.0
                     mf_vec_pred.append(hist_2D_pred)
                     mf_vec_gt.append(hist_2D_gt)
         # Concatenate histograms from all volumes into a single vector
-        mf_vec_pred = np.concatenate(mf_vec_pred) / (mf_vec_pred.sum() + 1)
-        mf_vec_gt = np.concatenate(mf_vec_gt) / (mf_vec_gt.sum() + 1)
+        mf_vec_pred = np.concatenate(mf_vec_pred)
+        mf_vec_pred = mf_vec_pred / (mf_vec_pred.sum() + 1)
+
+        mf_vec_gt = np.concatenate(mf_vec_gt)
+        mf_vec_gt = mf_vec_gt / (mf_vec_gt.sum() + 1)
+
         all_mf_pred.append(mf_vec_pred)
         all_mf_gt.append(mf_vec_gt)
     # Return the motion feature vectors for all pred and GT sequences
