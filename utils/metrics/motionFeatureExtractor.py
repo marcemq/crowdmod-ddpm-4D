@@ -160,12 +160,12 @@ def get_motion_feature_2D_hist(mf_pred, mf_gt, num_plot_hist2D=10, plot_prob=0.0
                     # Extract a sub-volume of size (f, k, k) for PRED ang GT
                     mag_vol_pred, angle_vol_pred = get_mag_angle_volume(mag_rho_rs_pred, angle_phi_rs_pred, i, row, col, mf_pred.f, mf_pred.k)
                     mag_vol_gt, angle_vol_gt = get_mag_angle_volume(mag_rho_rs_gt, angle_phi_rs_gt, i, row, col, mf_gt.f, mf_gt.k)
-                    
+
                     # Compute 2D histogram (quantized magnitude vs angle)
                     hist_2D_pred, mag_edges_pred, angle_edges_pred = np.histogram2d(mag_vol_pred, angle_vol_pred, bins=[mf_pred.num_magnitude_bins, mf_pred.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
                     hist_2D_gt, mag_edges_gt, angle_edges_gt = np.histogram2d(mag_vol_gt, angle_vol_gt, bins=[mf_gt.num_magnitude_bins, mf_gt.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
 
-                    # Set zero angle to small magnitutes
+                    # Set zero angle to small magnitudes
                     hist_2D_pred = set_zero_angle_to_smallMag(hist_2D_pred)
                     hist_2D_gt = set_zero_angle_to_smallMag(hist_2D_gt)
 
