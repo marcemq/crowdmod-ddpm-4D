@@ -152,7 +152,7 @@ def get_motion_feature_2D_hist(mf_pred, mf_gt, num_plot_hist2D=10, plot_prob=0.0
                     hist_2D_pred, mag_edges_pred, angle_edges_pred = np.histogram2d(mag_vol_pred, angle_vol_pred, bins=[mf_pred.num_magnitude_bins, mf_pred.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
                     hist_2D_gt, mag_edges_gt, angle_edges_gt = np.histogram2d(mag_vol_gt, angle_vol_gt, bins=[mf_gt.num_magnitude_bins, mf_gt.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
 
-                    active_bins = np.sum(hist_2D_pred >= 2)
+                    active_bins = np.sum(hist_2D_gt >= 2)
                     if plotted < num_plot_hist2D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold:
                         plot_motion_feat_hist2D(hist_2D_pred, mag_edges_pred, angle_edges_pred, sample, i, row, col, plotted, mf_pred.output_dir, mf_pred.num_angle_bins, "pred")
                         plot_motion_feat_hist2D(hist_2D_gt, mag_edges_gt, angle_edges_gt, sample, i, row, col, plotted, mf_gt.output_dir, mf_gt.num_angle_bins, "gt")
@@ -207,7 +207,7 @@ def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.0
                         hist_1D_pred[bin_idx] = np.sum(np.power(mag_vol_pred[angle_bins_pred == bin_idx], mf_pred.gamma))
                         hist_1D_gt[bin_idx] = np.sum(np.power(mag_vol_gt[angle_bins_gt == bin_idx], mf_gt.gamma))
 
-                    active_bins = np.sum(hist_1D_pred >= 2)
+                    active_bins = np.sum(hist_1D_gt >= 2)
                     if plotted < num_plot_hist1D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold :
                         plot_motion_feat_hist1D(hist_1D_pred, sample, i, row, col, plotted, mf_pred.output_dir, mf_pred.num_angle_bins, "pred")
                         plot_motion_feat_hist1D(hist_1D_gt, sample, i, row, col, plotted, mf_gt.output_dir, mf_gt.num_angle_bins, "gt")
