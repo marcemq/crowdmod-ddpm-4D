@@ -2,7 +2,8 @@ import numpy as np
 import torch
 from skimage.metrics import structural_similarity as ssim
 from sklearn.metrics import mean_squared_error
-from utils.metrics.motionFeatureExtractor import MotionFeatureExtractor, get_bhattacharyya_dist_coef
+from utils.metrics.motionFeatureExtractor import MotionFeatureExtractor, get_bhattacharyya_dist_coef, get_motion_feature_2D_hist, get_motion_feature_1D_hist
+from sklearn.preprocessing import MinMaxScaler
 from models.guidance import compute_energy
 
 def my_psnr(y_gt, y_hat, data_range, eps):
@@ -182,10 +183,8 @@ def motion_feature_metrics(gt_seq_list, pred_seq_list, f, k, gamma, mse_metric=F
     mf_extractor_pred = MotionFeatureExtractor(pred_seq_list, f=f, k=k, gamma=gamma, output_dir=output_dir)
     mf_extractor_gt = MotionFeatureExtractor(gt_seq_list, f=f, k=k, gamma=gamma, output_dir=output_dir)
 
-    mf_2D_pred = mf_extractor_pred.motion_feature_2D_hist()
-    mf_2D_gt = mf_extractor_gt.motion_feature_2D_hist()
-    mf_1D_pred, all_mag_rho_vol_pred = mf_extractor_pred.motion_feature_1D_hist()
-    mf_1D_gt, all_mag_rho_vol_gt = mf_extractor_gt.motion_feature_1D_hist()
+    mf_2D_pred, mf_2D_gt = get_motion_feature_2D_hist(mf_extractor_pred, mf_extractor_gt)
+    mf_1D_pred, mf_1D_gt = get_motion_feature_1D_hist(mf_extractor_pred, mf_extractor_gt)
     mfeat_mse, mfeat_bhatt_dist, mfeat_bhatt_coef = None, None, None
 
     if mse_metric:
