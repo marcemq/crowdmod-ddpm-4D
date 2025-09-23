@@ -146,7 +146,8 @@ def plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col
     plt.imshow(hist_2D.T, origin='lower', aspect='auto', extent=[mag_edges[0], mag_edges[-1], angle_edges[0], angle_edges[-1]], cmap='viridis')
     plt.colorbar(label="Counts")
     # Magnitude ticks every 1
-    plt.xticks(np.arange(mag_edges[0], mag_edges[-1] + 1, 1))
+    x_step = 0.5 if mag_edges[-1] > 10 else 1.0
+    plt.xticks(np.arange(mag_edges[0], mag_edges[-1] + x_step, x_step))
 
     # Angle ticks at -π, -3π/4, -π/2, ..., π
     angle_ticks, angle_tick_labels = get_angle_tick_labels(num_angle_bins)
