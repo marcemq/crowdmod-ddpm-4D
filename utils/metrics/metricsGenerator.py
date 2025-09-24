@@ -1,6 +1,7 @@
 import numpy as np
 import logging, json, os
 import pandas as pd
+from skimage.metrics import structural_similarity as ssim
 
 from utils.plot.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
 
@@ -102,6 +103,46 @@ class MetricsGenerator:
 
         self.data_dict['PSNR']= nsamples_psnr
         self.data_dict['MAX-PSNR'] = max_psnr
+
+    def compute_ssim_metric(self, chunkRepdPastSeq):
+        """
+        Compute SSIM and MAX-SSIM for predicted and gt sequences.
+        """
+        mprops_factor = np.array(mprops_factor)[:self.params.MPROPS_COUNT, np.newaxis, np.newaxis, np.newaxis]
+        nsamples = len(self.pred_seq_list)
+        _, _, _, pred_len = self.pred_seq_list[0].shape
+        nsamples_ssim = np.zeros((nsamples, self.params.MPROPS_COUNT))
+        max_ssim = np.zeros((nsamples//chunkRepdPastSeq, self.params.MPROPS_COUNT))
+
+        rho_range, vx_range, vy_range = self._get_mprops_ranges(mprops_factor, self.params.MPROPS_COUNT)
+
+        for i in range(nsamples):
+            one_pred_seq = self.pred_seq_list[i].cpu().numpy()
+            one_gt_seq = self.gt_seq_list[i].cpu().numpy()
+
+            mprops_factor = np.array(mprops_factor)
+            one_pred_seq = one_pred_seq * mprops_factor
+            one_gt_seq = one_gt_seq * mprops_factor
+
+            ssim_rho, ssim_vx, ssim_vy = 0, 0, 0
+            for j in range(pred_len):
+                ssim_rho += ssim(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
+                ssim_vx  += ssim(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range)
+                ssim_vy  += ssim(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range)
+
+            # Average SSIM across frames, except for unc channel
+            nsamples_ssim[i] = (ssim_rho/pred_len, ssim_vx/pred_len, ssim_vy/pred_len)
+
+        # Compute the MAX SSIM by repeteaded seqs on each macroprops
+        for i in range(0, nsamples, chunkRepdPastSeq):
+            ssim_chunk = nsamples_ssim[i:i+chunkRepdPastSeq]
+            max_rho = ssim_chunk[:, 0].max()
+            max_vx  = ssim_chunk[:, 1].max()
+            max_vy  = ssim_chunk[:, 2].max()
+            max_ssim[i // chunkRepdPastSeq] = (max_rho, max_vx, max_vy)
+
+        self.data_dict['SSIM']= nsamples_ssim
+        self.data_dict['MAX-SSIM'] = max_ssim
 
     def _save_metric_data(self, match, data, metric, header, samples_per_batch):
         file_name = f"{self.output_dir}/{metric}_NS{samples_per_batch}_{match.group()}.csv"

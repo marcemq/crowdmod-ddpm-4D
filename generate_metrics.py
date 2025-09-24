@@ -89,6 +89,8 @@ def compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batc
     #metricsGenerator = MetricsGenerator(pred_seq_allSamples, gt_seq_allSamples, metrics_params, output_dir)
     if metric in ['PSNR', 'ALL']:
         metricsGenerator.compute_psnr_metric(chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+    if metric in ['SSIM', 'ALL']:
+        metricsGenerator.compute_ssim_metric(chunkRepdPastSeq)
 
     title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})-(DDPM-UNet)"
     metricsGenerator.save_data_metrics(match, title, samples_per_batch)
