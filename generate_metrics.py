@@ -13,6 +13,7 @@ from models.generate import generate_ddpm, generate_ddim, generate_convGRU
 from utils.myparser import getYamlConfig
 from utils.utils import create_directory, get_filenames_paths, get_test_dataset, get_model_fullname
 from utils.plot.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
+from utils.metrics.metricsGenerator import MetricsGenerator
 from utils.metrics.computeMetrics import psnr_mprops_seq, ssim_mprops_seq, motion_feature_metrics, energy_mprops_seq, re_density_mprops_seq
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
@@ -84,7 +85,16 @@ def get_metrics_dicts():
                     }
     return metrics_data_dict, metrics_header_dict
 
-def compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq, output_dir):
+def compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch) :
+    #metricsGenerator = MetricsGenerator(pred_seq_allSamples, gt_seq_allSamples, metrics_params, output_dir)
+    if metric in ['PSNR', 'ALL']:
+        metricsGenerator.compute_psnr_metric(chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+
+    title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})-(DDPM-UNet)"
+    metricsGenerator.save_data_metrics(match, title, samples_per_batch)
+    metricsGenerator.save_metrics_boxplots(title)
+
+def compute_metrics_base(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq, output_dir):
     if metric in ['PSNR', 'ALL']:
         mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.METRICS.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.METRICS.MPROPS_COUNT)
         metrics_data_dict['PSNR'].append(mprops_psnr)
@@ -141,7 +151,7 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
     diffusionmodel.to(device)
     taus = 1
     count_batch = 0
-    metrics_data_dict, metrics_header_dict = get_metrics_dicts()
+    pred_seq_list, gt_seq_list = [], []
     # cicle over batched test data
     for batch in batched_test_data:
         logging.info("===" * 20)
@@ -172,19 +182,16 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
             logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
         future_samples_pred = x
-        pred_seq_list, gt_seq_list = [], []
         for i in range(len(random_past_idx)):
             pred_seq_list.append(future_samples_pred[i])
             gt_seq_list.append(random_future_samples[i])
 
-        compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq, output_dir)
         count_batch += 1
         if count_batch == batches_to_use:
             break
 
-    title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})-(DDPM-UNet)"
-    save_all_metrics(match, metrics_data_dict, metrics_header_dict, title, samples_per_batch, output_dir)
-    save_all_boxplots_metrics(metrics_data_dict, metrics_header_dict, title, output_dir)
+    metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, cfg.METRICS, output_dir)
+    compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch)
 
 def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count):
     torch.manual_seed(42)
