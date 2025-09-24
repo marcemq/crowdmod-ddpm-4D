@@ -30,6 +30,7 @@ class MetricsGenerator:
         self.output_dir = output_dir
         self.data_dict = {name: None for name in self.HEADERS}
 
+    # ----------------------------- Internal Helpers ----------------------------- #
     def _get_mprops_ranges(self, mprops_factor, mprops_count):
         nsamples = len(self.gt_seq_list)
         # Initialize arrays to store max and min values for each sample and each property
@@ -67,6 +68,32 @@ class MetricsGenerator:
         psnr = tmp_num - tmp_den
         return psnr
 
+    def _motion_feature_by_mse(self, mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt):
+        motion_feat_mse = np.zeros((len(mf_2D_pred), 2))
+        for sample in range(len(mf_2D_pred)):
+            mse_2D = mean_squared_error(mf_2D_gt[sample], mf_2D_pred[sample])
+            mse_1D = mean_squared_error(mf_1D_gt[sample], mf_1D_pred[sample])
+            motion_feat_mse[sample] = (mse_2D, mse_1D)
+
+        return motion_feat_mse
+
+    def _motion_feature_by_bhattacharyya(self, mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt):
+        motion_feat_bhatt_dist = np.zeros((len(mf_2D_pred), 2))
+        motion_feat_bhatt_coef = np.zeros((len(mf_2D_pred), 2))
+        for sample in range(len(mf_2D_pred)):
+            bhat_dist_2D, bhat_coef_2D = get_bhattacharyya_dist_coef(mf_2D_gt[sample], mf_2D_pred[sample])
+            bhat_dist_1D, bhat_coef_1D  = get_bhattacharyya_dist_coef(mf_1D_gt[sample], mf_1D_pred[sample])
+            motion_feat_bhatt_dist[sample] = (bhat_dist_2D, bhat_dist_1D)
+            motion_feat_bhatt_coef[sample] = (bhat_coef_2D, bhat_coef_1D)
+
+        return motion_feat_bhatt_dist, motion_feat_bhatt_coef
+
+    def _save_metric_data(self, match, data, metric, header, samples_per_batch):
+        file_name = f"{self.output_dir}/{metric}_NS{samples_per_batch}_{match.group()}.csv"
+        np.savetxt(file_name, data, delimiter=",", header=header, comments="")
+        return file_name
+
+    # ----------------------------- Metrics ----------------------------- #
     def compute_psnr_metric(self, chunkRepdPastSeq, eps):
         """
         Compute PSNR and MAX-PSNR for predicted and gt sequences.
@@ -147,26 +174,6 @@ class MetricsGenerator:
 
         self.data_dict['SSIM']= nsamples_ssim
         self.data_dict['MAX-SSIM'] = max_ssim
-
-    def _motion_feature_by_mse(self, mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt):
-        motion_feat_mse = np.zeros((len(mf_2D_pred), 2))
-        for sample in range(len(mf_2D_pred)):
-            mse_2D = mean_squared_error(mf_2D_gt[sample], mf_2D_pred[sample])
-            mse_1D = mean_squared_error(mf_1D_gt[sample], mf_1D_pred[sample])
-            motion_feat_mse[sample] = (mse_2D, mse_1D)
-
-        return motion_feat_mse
-
-    def _motion_feature_by_bhattacharyya(self, mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt):
-        motion_feat_bhatt_dist = np.zeros((len(mf_2D_pred), 2))
-        motion_feat_bhatt_coef = np.zeros((len(mf_2D_pred), 2))
-        for sample in range(len(mf_2D_pred)):
-            bhat_dist_2D, bhat_coef_2D = get_bhattacharyya_dist_coef(mf_2D_gt[sample], mf_2D_pred[sample])
-            bhat_dist_1D, bhat_coef_1D  = get_bhattacharyya_dist_coef(mf_1D_gt[sample], mf_1D_pred[sample])
-            motion_feat_bhatt_dist[sample] = (bhat_dist_2D, bhat_dist_1D)
-            motion_feat_bhatt_coef[sample] = (bhat_coef_2D, bhat_coef_1D)
-
-        return motion_feat_bhatt_dist, motion_feat_bhatt_coef
 
     def compute_motion_feature_metrics(self, mse_metric=False, bhatt_metrics=False):
         """
@@ -249,11 +256,7 @@ class MetricsGenerator:
         self.data_dict['RE_DENSITY'] = nsamples_re_density
         self.data_dict['MIN_RE_DENSITY'] = min_re_density
 
-    def _save_metric_data(self, match, data, metric, header, samples_per_batch):
-        file_name = f"{self.output_dir}/{metric}_NS{samples_per_batch}_{match.group()}.csv"
-        np.savetxt(file_name, data, delimiter=",", header=header, comments="")
-        return file_name
-
+    # ----------------------------- Saving and Plotting ----------------------------- #
     def save_data_metrics(self, match, title, samples_per_batch):
         """
         Save all non-empty metrics to CSV and record their filenames in a JSON.
@@ -273,6 +276,9 @@ class MetricsGenerator:
         logging.info(f"Metrics filenames saved to {json_path}")
 
     def save_metrics_boxplots(self, title):
+        """
+        Metrics boxplots created and saved at output_dir
+        """
         # Convert the dictionary of arrays into a dictionary of DataFrames
         metrics_df_dict = {key: pd.DataFrame(value, columns=self.HEADERS[key].split(",")) for key, value in self.data_dict.items()}
         if len(metrics_df_dict['MAX-PSNR']) != 0:
