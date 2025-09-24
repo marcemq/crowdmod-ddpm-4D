@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from fractions import Fraction
 from matplotlib import pyplot as plt
 
 def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
@@ -116,3 +117,62 @@ def merge_and_plot_boxplot(df_max, df, title, save_path, ytick_step, prefix='max
         createBoxPlotWithOutlierInfo(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path)
     else:
         createBoxPlot(overall_df, title=title, columns_to_plot=overall_df.columns.tolist(), save_path=save_path, ytick_step=ytick_step)
+
+def get_angle_tick_labels(num_angle_bins):
+    # Angle ticks depend on num_angle_bins
+    step = np.pi / (num_angle_bins // 2)
+    angle_ticks = np.arange(-np.pi, np.pi + step, step)
+
+    def format_pi(x):
+        frac = x / np.pi
+        if np.isclose(frac, 0): return "0"
+        if np.isclose(frac, 1): return r"$\pi$"
+        if np.isclose(frac, -1): return r"$-\pi$"
+
+        # Limit denominator for cleaner fractions (like 2, 4, 8, 16)
+        frac = Fraction(frac).limit_denominator(16)
+        num, den = frac.numerator, frac.denominator
+
+        if den == 1:
+            return fr"${num}\pi$"
+        else:
+            return fr"${num}\pi/{den}$"
+
+    angle_tick_labels = [format_pi(val) for val in angle_ticks]
+    return angle_ticks, angle_tick_labels
+
+def plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col, plotted_idx, output_dir, num_angle_bins, label):
+    plt.figure(figsize=(5, 4))
+    plt.imshow(hist_2D.T, origin='lower', aspect='auto', extent=[mag_edges[0], mag_edges[-1], angle_edges[0], angle_edges[-1]], cmap='viridis')
+    plt.colorbar(label="Counts")
+    # Magnitude ticks every 1
+    x_step = 0.5 if mag_edges[-1] > 10 else 1.0
+    plt.xticks(np.arange(mag_edges[0], mag_edges[-1] + x_step, x_step))
+
+    # Angle ticks at -π, -3π/4, -π/2, ..., π
+    angle_ticks, angle_tick_labels = get_angle_tick_labels(num_angle_bins)
+    plt.yticks(angle_ticks, angle_tick_labels)
+
+    plt.xlabel("Magnitude bin")
+    plt.ylabel("Angle bin (radians)")
+    plt.title(f"2D Motion Hist | Sample {sample}, Block ({i},{row},{col})")
+    save_path = f"{output_dir}/mf_hist2D_plot{plotted_idx}_{label}.png"
+    plt.savefig(save_path, bbox_inches='tight')
+    plt.close()
+
+def plot_motion_feat_hist1D(hist_1D, sample, i, row, col, num_plot, output_dir, num_angle_bins, label):
+    angle_bin_edges = np.linspace(-np.pi, np.pi, num_angle_bins+1)
+    angle_bin_centers = (angle_bin_edges[:-1] + angle_bin_edges[1:]) / 2
+
+    plt.figure(figsize=(5, 4))
+    plt.bar(angle_bin_centers, hist_1D, width=(2*np.pi / len(hist_1D)), align='center', alpha=0.7, color='steelblue', edgecolor='black')
+    # Set ticks every π/4 or π/8 
+    xticks, xtick_labels = get_angle_tick_labels(num_angle_bins)
+    plt.xticks(xticks, xtick_labels, rotation=45, ha="right")
+
+    plt.xlabel("Angle (radians)")
+    plt.ylabel("Weighted magnitude sum")
+    plt.title(f"1D Motion Hist | Sample {sample}, Block (t={i}, r={row}, c={col})")
+    save_path = f"{output_dir}/mf_hist1D_plot{num_plot}_{label}.png"
+    plt.savefig(save_path, bbox_inches='tight')
+    plt.close()

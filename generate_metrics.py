@@ -84,7 +84,7 @@ def get_metrics_dicts():
                     }
     return metrics_data_dict, metrics_header_dict
 
-def compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq):
+def compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq, output_dir):
     if metric in ['PSNR', 'ALL']:
         mprops_psnr, mprops_max_psnr = psnr_mprops_seq(gt_seq_list, pred_seq_list, cfg.METRICS.PRED_MPROPS_FACTOR, chunkRepdPastSeq, cfg.MACROPROPS.EPS, cfg.METRICS.MPROPS_COUNT)
         metrics_data_dict['PSNR'].append(mprops_psnr)
@@ -97,7 +97,7 @@ def compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunk
         mse_flag = metric == 'MOTION_FEAT_MSE' or metric == 'ALL'
         bhatt_flag = metric == 'MOTION_FEAT_BHATT' or metric == 'ALL'
 
-        mfeat_mse, mfeat_bhatt_dist, mfeat_bhatt_coef = motion_feature_metrics(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA, mse_flag, bhatt_flag)
+        mfeat_mse, mfeat_bhatt_dist, mfeat_bhatt_coef = motion_feature_metrics(gt_seq_list, pred_seq_list, cfg.METRICS.MOTION_FEATURE.f, cfg.METRICS.MOTION_FEATURE.k, cfg.METRICS.MOTION_FEATURE.GAMMA, mse_flag, bhatt_flag, output_dir)
 
         if mse_flag:
             metrics_data_dict["MOTION_FEAT_MSE"].append(mfeat_mse)
@@ -177,7 +177,7 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
             pred_seq_list.append(future_samples_pred[i])
             gt_seq_list.append(random_future_samples[i])
 
-        compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq)
+        compute_metrics(metric, gt_seq_list, pred_seq_list, metrics_data_dict, chunkRepdPastSeq, output_dir)
         count_batch += 1
         if count_batch == batches_to_use:
             break
