@@ -91,6 +91,10 @@ def compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batc
         metricsGenerator.compute_psnr_metric(chunkRepdPastSeq, cfg.MACROPROPS.EPS)
     if metric in ['SSIM', 'ALL']:
         metricsGenerator.compute_ssim_metric(chunkRepdPastSeq)
+    if metric in ['MF_MSE', 'MF_BHATT', 'ALL']:
+        mse_flag = metric == 'MF_MSE' or metric == 'ALL'
+        bhatt_flag = metric == 'MF_BHATT' or metric == 'ALL'
+        metricsGenerator.compute_motion_feature_metrics(mse_flag, bhatt_flag)
 
     title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})-(DDPM-UNet)"
     metricsGenerator.save_data_metrics(match, title, samples_per_batch)

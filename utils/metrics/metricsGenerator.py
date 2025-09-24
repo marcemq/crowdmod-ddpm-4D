@@ -2,8 +2,10 @@ import numpy as np
 import logging, json, os
 import pandas as pd
 from skimage.metrics import structural_similarity as ssim
+from sklearn.metrics import mean_squared_error
 
 from utils.plot.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
+from utils.metrics.motionFeatureExtractor import MotionFeatureExtractor, get_bhattacharyya_dist_coef, get_motion_feature_2D_hist, get_motion_feature_1D_hist
 
 class MetricsGenerator:
     HEADERS = {
@@ -108,7 +110,7 @@ class MetricsGenerator:
         """
         Compute SSIM and MAX-SSIM for predicted and gt sequences.
         """
-        mprops_factor = np.array(mprops_factor)[:self.params.MPROPS_COUNT, np.newaxis, np.newaxis, np.newaxis]
+        mprops_factor = np.array(self.params.PRED_MPROPS_FACTOR)[:self.params.MPROPS_COUNT, np.newaxis, np.newaxis, np.newaxis]
         nsamples = len(self.pred_seq_list)
         _, _, _, pred_len = self.pred_seq_list[0].shape
         nsamples_ssim = np.zeros((nsamples, self.params.MPROPS_COUNT))
@@ -143,6 +145,46 @@ class MetricsGenerator:
 
         self.data_dict['SSIM']= nsamples_ssim
         self.data_dict['MAX-SSIM'] = max_ssim
+
+def motion_feature_by_mse(self, mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt):
+    motion_feat_mse = np.zeros((len(mf_2D_pred), 2))
+    for sample in range(len(mf_2D_pred)):
+        mse_2D = mean_squared_error(mf_2D_gt[sample], mf_2D_pred[sample])
+        mse_1D = mean_squared_error(mf_1D_gt[sample], mf_1D_pred[sample])
+        motion_feat_mse[sample] = (mse_2D, mse_1D)
+
+    return motion_feat_mse
+
+def motion_feature_by_bhattacharyya(self, mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt):
+    motion_feat_bhatt_dist = np.zeros((len(mf_2D_pred), 2))
+    motion_feat_bhatt_coef = np.zeros((len(mf_2D_pred), 2))
+    for sample in range(len(mf_2D_pred)):
+        bhat_dist_2D, bhat_coef_2D = get_bhattacharyya_dist_coef(mf_2D_gt[sample], mf_2D_pred[sample])
+        bhat_dist_1D, bhat_coef_1D  = get_bhattacharyya_dist_coef(mf_1D_gt[sample], mf_1D_pred[sample])
+        motion_feat_bhatt_dist[sample] = (bhat_dist_2D, bhat_dist_1D)
+        motion_feat_bhatt_coef[sample] = (bhat_coef_2D, bhat_coef_1D)
+
+    return motion_feat_bhatt_dist, motion_feat_bhatt_coef
+
+def compute_motion_feature_metrics(self, mse_metric=False, bhatt_metrics=False):
+    """
+    Compute motion feature based metric for predicted and gt sequences.
+    """
+    mf_extractor_pred = MotionFeatureExtractor(self.pred_seq_list, f=self.params.MOTION_FEATURE.f, k=self.params.MOTION_FEATURE.k, gamma=self.params.MOTION_FEATURE.GAMMA, output_dir=self.output_dir)
+    mf_extractor_gt = MotionFeatureExtractor(self.gt_seq_list, f=self.params.MOTION_FEATURE.f, k=self.params.MOTION_FEATURE.k, gamma=self.params.MOTION_FEATURE.GAMMA, output_dir=self.output_dir)
+
+    mf_2D_pred, mf_2D_gt = get_motion_feature_2D_hist(mf_extractor_pred, mf_extractor_gt)
+    mf_1D_pred, mf_1D_gt = get_motion_feature_1D_hist(mf_extractor_pred, mf_extractor_gt)
+    mfeat_mse, mfeat_bhatt_dist, mfeat_bhatt_coef = None, None, None
+
+    if mse_metric:
+        mfeat_mse = motion_feature_by_mse(mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt)
+    if bhatt_metrics:
+        mfeat_bhatt_dist, mfeat_bhatt_coef = motion_feature_by_bhattacharyya(mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt)
+
+    self.data_dict['MF_MSE']= mfeat_mse
+    self.data_dict['MF_BHATT_DIST'] = mfeat_bhatt_dist
+    self.data_dict['MF_BHATT_COEF'] = mfeat_bhatt_coef
 
     def _save_metric_data(self, match, data, metric, header, samples_per_batch):
         file_name = f"{self.output_dir}/{metric}_NS{samples_per_batch}_{match.group()}.csv"
