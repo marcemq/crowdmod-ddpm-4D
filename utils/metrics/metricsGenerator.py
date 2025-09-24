@@ -221,6 +221,34 @@ class MetricsGenerator:
         self.data_dict['ENERGY'] = nsamples_energy
         self.data_dict['MIN-ENERGY'] = min_energy
 
+    def compute_re_density_metric(self, chunkRepdPastSeq, eps):
+        nsamples = len(self.pred_seq_list)
+        _, _, _, pred_len = self.pred_seq_list[0].shape
+        nsamples_re_density = np.zeros((nsamples, pred_len))
+        min_re_density = np.zeros((nsamples//chunkRepdPastSeq, pred_len))
+
+        for i in range(nsamples):
+            one_pred_seq = self.pred_seq_list[i].cpu().numpy()
+            one_gt_seq = self.gt_seq_list[i].cpu().numpy()
+
+            density_pred = one_pred_seq[0]  # shape: (R, C, L)
+            density_gt   = one_gt_seq[0]    # shape: (R, C, L)
+
+            pred_total_density = density_pred.sum(axis=(0, 1))
+            gt_total_density = density_gt.sum(axis=(0, 1))
+
+            rel_error = np.abs(pred_total_density - gt_total_density) / (gt_total_density + eps)
+            nsamples_re_density[i] = rel_error
+
+        # Compute the MAX DENSITY by repeteaded seqs on each macroprops
+        for i in range(0, nsamples, chunkRepdPastSeq):
+            density_chunk = nsamples_re_density[i:i+chunkRepdPastSeq]
+            min_rel_errors = density_chunk.min(axis=0)
+            min_re_density[i // chunkRepdPastSeq] = min_rel_errors
+
+        self.data_dict['RE_DENSITY'] = nsamples_re_density
+        self.data_dict['MIN_RE_DENSITY'] = min_re_density
+
     def _save_metric_data(self, match, data, metric, header, samples_per_batch):
         file_name = f"{self.output_dir}/{metric}_NS{samples_per_batch}_{match.group()}.csv"
         np.savetxt(file_name, data, delimiter=",", header=header, comments="")

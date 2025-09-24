@@ -95,7 +95,9 @@ def compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batc
         bhatt_flag = metric == 'MF_BHATT' or metric == 'ALL'
         metricsGenerator.compute_motion_feature_metrics(mse_flag, bhatt_flag)
     if metric in ['ENERGY', 'ALLA']:
-         metricsGenerator.compute_energy_metric()
+         metricsGenerator.compute_energy_metric(chunkRepdPastSeq)
+    if metric in ['RE_DENSITY', 'ALL']:
+        metricsGenerator.compute_re_density_metric(chunkRepdPastSeq, cfg.MACROPROPS.EPS)
 
     title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})-(DDPM-UNet)"
     metricsGenerator.save_data_metrics(match, title, samples_per_batch)
