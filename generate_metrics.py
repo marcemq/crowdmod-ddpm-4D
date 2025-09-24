@@ -155,7 +155,7 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
     # cicle over batched test data
     for batch in batched_test_data:
         logging.info("===" * 20)
-        logging.info(f'Computing metrics on batch:{count_batch+1}')
+        logging.info(f'Computing sampling on batch:{count_batch+1}')
         past_test, future_test = batch
         past_test, future_test = past_test.float(), future_test.float()
         past_test, future_test = past_test.to(device=device), future_test.to(device=device)
@@ -190,6 +190,8 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
         if count_batch == batches_to_use:
             break
 
+    logging.info("===" * 20)
+    logging.info(f'Computing metrics on predicted mprops sequences.')
     metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, cfg.METRICS, output_dir)
     compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch)
 
