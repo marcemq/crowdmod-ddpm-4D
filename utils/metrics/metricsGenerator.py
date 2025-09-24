@@ -1,9 +1,11 @@
-import numpy as np
 import logging, json, os
+import torch
+import numpy as np
 import pandas as pd
 from skimage.metrics import structural_similarity as ssim
 from sklearn.metrics import mean_squared_error
 
+from models.guidance import compute_energy
 from utils.plot.plot_metrics import createBoxPlot, createBoxPlot_bhatt, merge_and_plot_boxplot
 from utils.metrics.motionFeatureExtractor import MotionFeatureExtractor, get_bhattacharyya_dist_coef, get_motion_feature_2D_hist, get_motion_feature_1D_hist
 
@@ -185,6 +187,39 @@ class MetricsGenerator:
         self.data_dict['MF_MSE']= mfeat_mse
         self.data_dict['MF_BHATT_DIST'] = mfeat_bhatt_dist
         self.data_dict['MF_BHATT_COEF'] = mfeat_bhatt_coef
+
+    def compute_energy_metric(self, chunkRepdPastSeq):
+        """
+        Compute energy metric for predicted and gt sequences based on eq:
+        """
+        mprops_factor = np.array(mprops_factor)[:self.params.PRED_MPROPS_FACTOR, np.newaxis, np.newaxis, np.newaxis]
+        nsamples = len(self.pred_seq_list)
+        nsamples_energy = np.zeros((nsamples, 2))
+        min_energy = np.zeros((nsamples//chunkRepdPastSeq, 2))
+        mprops_factor = np.array(mprops_factor)
+        # AR: next tensor definition might not be necessary
+        pred_seq_tensor = torch.stack(self.pred_seq_list).cpu()
+        gt_seq_tensor = torch.stack(self.gt_seq_list).cpu()
+
+        pred_seq_tensor = pred_seq_tensor * mprops_factor[np.newaxis, ...]
+        gt_seq_tensor = gt_seq_tensor * mprops_factor[np.newaxis, ...]
+
+        # compute_energy design at batch level. AR review in detail this call
+        pred_seq_energy = compute_energy(pred_seq_tensor, delta_t=1, delta_l=1)
+        gt_seq_energy = compute_energy(gt_seq_tensor, delta_t=1, delta_l=1)
+
+        nsamples_energy[:, 0] = gt_seq_energy
+        nsamples_energy[:, 1] = pred_seq_energy
+
+        # Compute the MIN energy by repeteaded seqs
+        for i in range(0, nsamples, chunkRepdPastSeq):
+            energy_chunk = nsamples_energy[i:i+chunkRepdPastSeq]
+            min_gt_energy = energy_chunk[:, 0].min()
+            min_pred_energy = energy_chunk[:, 1].min()
+            min_energy[i // chunkRepdPastSeq] = (min_gt_energy, min_pred_energy)
+
+        self.data_dict['ENERGY'] = nsamples_energy
+        self.data_dict['MIN-ENERGY'] = min_energy
 
     def _save_metric_data(self, match, data, metric, header, samples_per_batch):
         file_name = f"{self.output_dir}/{metric}_NS{samples_per_batch}_{match.group()}.csv"
