@@ -146,7 +146,7 @@ def set_zero_angle_to_smallMag(hist_2D, num_angle_bins):
 
 class Hist_2D_info:
     def __init__(self, hist_2D, mag_edges, angle_edges, sample, i, row, col, output_dir, label):
-        self.hist_2D = hist_2D
+        self.hist_data = hist_2D
         self.mag_edges = mag_edges
         self.angle_edges = angle_edges
         self.sample = sample
@@ -158,7 +158,7 @@ class Hist_2D_info:
 
 class Hist_1D_info:
     def __init__(self, hist_1D, sample, i, row, col,  output_dir, num_angle_bins, label):
-        self.hist_1D = hist_1D
+        self.hist_data = hist_1D
         self.sample = sample
         self.i = i
         self.row = row
