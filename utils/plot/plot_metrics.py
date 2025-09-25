@@ -143,7 +143,7 @@ def get_angle_tick_labels(num_angle_bins):
 
 def plot_motion_feat_hist2D(hist_2D_list, global_count):
     # Angle ticks at -π, -3π/4, -π/2, ..., π
-    angle_ticks, angle_tick_labels = get_angle_tick_labels(len(hist_2D[0].angle_edges))
+    angle_ticks, angle_tick_labels = get_angle_tick_labels(len(hist_2D_list[0].angle_edges))
     for i, hist_2D in enumerate(hist_2D_list):
         plt.figure(figsize=(5, 4))
         plt.imshow(hist_2D.hist_data.T,
@@ -168,7 +168,7 @@ def plot_motion_feat_hist2D(hist_2D_list, global_count):
 
 def plot_motion_feat_hist1D(hist_1D_list, global_count):
     # Set ticks every π/4 or π/8
-    xticks, xtick_labels = get_angle_tick_labels(hist_1D[0].num_angle_bins)
+    xticks, xtick_labels = get_angle_tick_labels(hist_1D_list[0].num_angle_bins)
 
     for i, hist_1D in enumerate(hist_1D_list):
         angle_bin_edges = np.linspace(-np.pi, np.pi, hist_1D.num_angle_bins+1)
