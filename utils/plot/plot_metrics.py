@@ -142,6 +142,8 @@ def get_angle_tick_labels(num_angle_bins):
     return angle_ticks, angle_tick_labels
 
 def plot_motion_feat_hist2D(hist_2D_list, global_count):
+    # Angle ticks at -π, -3π/4, -π/2, ..., π
+    angle_ticks, angle_tick_labels = get_angle_tick_labels(len(hist_2D[0].angle_edges))
     for i, hist_2D in enumerate(hist_2D_list):
         plt.figure(figsize=(5, 4))
         plt.imshow(hist_2D.hist_data.T,
@@ -155,9 +157,6 @@ def plot_motion_feat_hist2D(hist_2D_list, global_count):
         # Magnitude ticks every 1
         x_step = 0.5 if len(hist_2D.mag_edges) > 10 else 1.0
         plt.xticks(np.arange(hist_2D.mag_edges[0], hist_2D.mag_edges[-1] + x_step, x_step))
-
-        # Angle ticks at -π, -3π/4, -π/2, ..., π
-        angle_ticks, angle_tick_labels = get_angle_tick_labels(len(hist_2D.angle_edges))
         plt.yticks(angle_ticks, angle_tick_labels)
 
         plt.xlabel("Magnitude bin")
@@ -168,6 +167,9 @@ def plot_motion_feat_hist2D(hist_2D_list, global_count):
         plt.close()
 
 def plot_motion_feat_hist1D(hist_1D_list, global_count):
+    # Set ticks every π/4 or π/8
+    xticks, xtick_labels = get_angle_tick_labels(hist_1D[0].num_angle_bins)
+
     for i, hist_1D in enumerate(hist_1D_list):
         angle_bin_edges = np.linspace(-np.pi, np.pi, hist_1D.num_angle_bins+1)
         angle_bin_centers = (angle_bin_edges[:-1] + angle_bin_edges[1:]) / 2
@@ -175,15 +177,13 @@ def plot_motion_feat_hist1D(hist_1D_list, global_count):
         plt.figure(figsize=(5, 4))
         plt.bar(angle_bin_centers,
                 hist_1D.hist_data,
-                width=(2*np.pi / len(hist_1D)),
+                width=(2*np.pi / len(hist_1D.hist_data)),
                 align='center',
                 alpha=0.7,
                 color='steelblue',
                 edgecolor='black')
         # Force y-axis to match global maximum
         plt.ylim(0, global_count)
-        # Set ticks every π/4 or π/8
-        xticks, xtick_labels = get_angle_tick_labels(hist_1D.num_angle_bins)
         plt.xticks(xticks, xtick_labels, rotation=45, ha="right")
 
         plt.xlabel("Angle (radians)")
