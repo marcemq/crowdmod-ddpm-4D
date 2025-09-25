@@ -157,7 +157,7 @@ def plot_motion_feat_hist2D(hist_2D_list, global_count):
         # Magnitude ticks every 1
         x_step = 0.5 if len(hist_2D.mag_edges) > 10 else 1
         positions = np.arange(hist_2D.mag_edges[0], hist_2D.mag_edges[-1] + x_step, x_step)
-        labels = [f"$\\frac{{{k+1}}}{{{len(positions)}}}$" for k in range(len(positions))]
+        labels = [f"$\\frac{{{k}}}{{{2}}}$" for k in range(len(positions)- 1)]
         plt.xticks(positions, labels, ha="center")
         plt.yticks(angle_ticks, angle_tick_labels)
 
