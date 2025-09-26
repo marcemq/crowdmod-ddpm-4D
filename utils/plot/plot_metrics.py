@@ -162,7 +162,7 @@ def plot_motion_feat_hist2D(hist_2D_list, global_count):
         plt.xlabel("Magnitude bin")
         plt.ylabel("Angle bin (radians)")
         plt.title(f"2D Motion Hist | Sample {hist_2D.sample}, Block ({hist_2D.i},{hist_2D.row},{hist_2D.col})")
-        save_path = f"{hist_2D.output_dir}/mf_hist2D_plot{i}_{hist_2D.label}.png"
+        save_path = f"{hist_2D.output_dir}/mf_hist2D_plot{i}_{hist_2D.label}.pdf"
         plt.savefig(save_path, bbox_inches='tight')
         plt.close()
 
@@ -189,6 +189,6 @@ def plot_motion_feat_hist1D(hist_1D_list, global_count):
         plt.xlabel("Angle (radians)")
         plt.ylabel("Weighted magnitude sum")
         plt.title(f"1D Motion Hist | Sample {hist_1D.sample}, Block (t={hist_1D.i}, r={hist_1D.row}, c={hist_1D.col})")
-        save_path = f"{hist_1D.output_dir}/mf_hist1D_plot{i}_{hist_1D.label}.png"
+        save_path = f"{hist_1D.output_dir}/mf_hist1D_plot{i}_{hist_1D.label}.pdf"
         plt.savefig(save_path, bbox_inches='tight')
         plt.close()
