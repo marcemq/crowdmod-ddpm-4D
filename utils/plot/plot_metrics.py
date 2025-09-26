@@ -141,38 +141,54 @@ def get_angle_tick_labels(num_angle_bins):
     angle_tick_labels = [format_pi(val) for val in angle_ticks]
     return angle_ticks, angle_tick_labels
 
-def plot_motion_feat_hist2D(hist_2D, mag_edges, angle_edges, sample, i, row, col, plotted_idx, output_dir, num_angle_bins, label):
-    plt.figure(figsize=(5, 4))
-    plt.imshow(hist_2D.T, origin='lower', aspect='auto', extent=[mag_edges[0], mag_edges[-1], angle_edges[0], angle_edges[-1]], cmap='viridis')
-    plt.colorbar(label="Counts")
-    # Magnitude ticks every 1
-    x_step = 0.5 if mag_edges[-1] > 10 else 1.0
-    plt.xticks(np.arange(mag_edges[0], mag_edges[-1] + x_step, x_step))
-
+def plot_motion_feat_hist2D(hist_2D_list, global_count):
     # Angle ticks at -π, -3π/4, -π/2, ..., π
-    angle_ticks, angle_tick_labels = get_angle_tick_labels(num_angle_bins)
-    plt.yticks(angle_ticks, angle_tick_labels)
+    angle_ticks, angle_tick_labels = get_angle_tick_labels(len(hist_2D_list[0].angle_edges))
+    for i, hist_2D in enumerate(hist_2D_list):
+        plt.figure(figsize=(5, 4))
+        plt.imshow(hist_2D.hist_data.T,
+                   origin='lower',
+                   aspect='auto',
+                   extent=[hist_2D.mag_edges[0], hist_2D.mag_edges[-1], hist_2D.angle_edges[0], hist_2D.angle_edges[-1]],
+                   cmap='viridis',
+                   vmin=0,
+                   vmax=global_count)
+        plt.colorbar(label="Counts")
+        # Magnitude ticks every 1
+        x_step = 0.5 if len(hist_2D.mag_edges) > 10 else 1
+        plt.xticks(np.arange(hist_2D.mag_edges[0], hist_2D.mag_edges[-1] + x_step, x_step), rotation=90, ha="center")
+        plt.yticks(angle_ticks, angle_tick_labels)
 
-    plt.xlabel("Magnitude bin")
-    plt.ylabel("Angle bin (radians)")
-    plt.title(f"2D Motion Hist | Sample {sample}, Block ({i},{row},{col})")
-    save_path = f"{output_dir}/mf_hist2D_plot{plotted_idx}_{label}.png"
-    plt.savefig(save_path, bbox_inches='tight')
-    plt.close()
+        plt.xlabel("Magnitude bin")
+        plt.ylabel("Angle bin (radians)")
+        plt.title(f"2D Motion Hist | Sample {hist_2D.sample}, Block ({hist_2D.i},{hist_2D.row},{hist_2D.col})")
+        save_path = f"{hist_2D.output_dir}/mf_hist2D_plot{i}_{hist_2D.label}.pdf"
+        plt.savefig(save_path, bbox_inches='tight')
+        plt.close()
 
-def plot_motion_feat_hist1D(hist_1D, sample, i, row, col, num_plot, output_dir, num_angle_bins, label):
-    angle_bin_edges = np.linspace(-np.pi, np.pi, num_angle_bins+1)
-    angle_bin_centers = (angle_bin_edges[:-1] + angle_bin_edges[1:]) / 2
+def plot_motion_feat_hist1D(hist_1D_list, global_count):
+    # Set ticks every π/4 or π/8
+    xticks, xtick_labels = get_angle_tick_labels(hist_1D_list[0].num_angle_bins)
 
-    plt.figure(figsize=(5, 4))
-    plt.bar(angle_bin_centers, hist_1D, width=(2*np.pi / len(hist_1D)), align='center', alpha=0.7, color='steelblue', edgecolor='black')
-    # Set ticks every π/4 or π/8 
-    xticks, xtick_labels = get_angle_tick_labels(num_angle_bins)
-    plt.xticks(xticks, xtick_labels, rotation=45, ha="right")
+    for i, hist_1D in enumerate(hist_1D_list):
+        angle_bin_edges = np.linspace(-np.pi, np.pi, hist_1D.num_angle_bins+1)
+        angle_bin_centers = (angle_bin_edges[:-1] + angle_bin_edges[1:]) / 2
 
-    plt.xlabel("Angle (radians)")
-    plt.ylabel("Weighted magnitude sum")
-    plt.title(f"1D Motion Hist | Sample {sample}, Block (t={i}, r={row}, c={col})")
-    save_path = f"{output_dir}/mf_hist1D_plot{num_plot}_{label}.png"
-    plt.savefig(save_path, bbox_inches='tight')
-    plt.close()
+        plt.figure(figsize=(5, 4))
+        plt.bar(angle_bin_centers,
+                hist_1D.hist_data,
+                width=(2*np.pi / len(hist_1D.hist_data)),
+                align='center',
+                alpha=0.7,
+                color='steelblue',
+                edgecolor='black')
+        # Force y-axis to match global maximum
+        plt.ylim(0, global_count)
+        plt.xticks(xticks, xtick_labels, rotation=45, ha="right")
+
+        plt.xlabel("Angle (radians)")
+        plt.ylabel("Weighted magnitude sum")
+        plt.title(f"1D Motion Hist | Sample {hist_1D.sample}, Block (t={hist_1D.i}, r={hist_1D.row}, c={hist_1D.col})")
+        save_path = f"{hist_1D.output_dir}/mf_hist1D_plot{i}_{hist_1D.label}.pdf"
+        plt.savefig(save_path, bbox_inches='tight')
+        plt.close()

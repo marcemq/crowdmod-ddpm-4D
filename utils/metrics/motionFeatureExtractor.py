@@ -3,7 +3,7 @@ from utils.plot.plot_metrics import plot_motion_feat_hist2D, plot_motion_feat_hi
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
-    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=18, num_angle_bins=16, output_dir=None):
+    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=17, num_angle_bins=16, output_dir=None):
         self.f = f
         self.k = k
         self.gamma = gamma
@@ -136,18 +136,43 @@ def get_mag_angle_volume(mag_rho_rs, angle_phi_rs, i, row, col, f, k):
     angle_vol = angle_phi_rs[i:i+f, row:row+k, col:col+k].flatten()
     return mag_vol, angle_vol
 
-def set_zero_angle_to_smallMag(hist_2D):
+def set_zero_angle_to_smallMag(hist_2D, num_angle_bins):
     total_first_mag = np.sum(hist_2D[0, :])
     # Reset first magnitude bin
     hist_2D[0, :] = 0
     # Put everything into angle=0 position
-    hist_2D[0, 0] = total_first_mag
+    hist_2D[0, num_angle_bins//2] = total_first_mag
     return hist_2D
 
+class Hist_2D_info:
+    def __init__(self, hist_2D, mag_edges, angle_edges, sample, i, row, col, output_dir, label):
+        self.hist_data = hist_2D
+        self.mag_edges = mag_edges
+        self.angle_edges = angle_edges
+        self.sample = sample
+        self.i = i
+        self.row = row
+        self.col = col
+        self.output_dir = output_dir
+        self.label = label
+
+class Hist_1D_info:
+    def __init__(self, hist_1D, sample, i, row, col,  output_dir, num_angle_bins, label):
+        self.hist_data = hist_1D
+        self.sample = sample
+        self.i = i
+        self.row = row
+        self.col = col
+        self.output_dir = output_dir
+        self.num_angle_bins = num_angle_bins
+        self.label = label
+
 def get_motion_feature_2D_hist(mf_pred, mf_gt, num_plot_hist2D=10, plot_prob=0.05, active_bins_threshold=5):
+    hist_2D_pred_4plot, hist_2D_gt_4plot = [], []
     all_mf_pred, all_mf_gt = [], []
     plotted = 0
     global_count = 0
+
     for sample in range(mf_pred.nsamples):
         mf_vec_pred, mf_vec_gt = [], []
         # Reshape each frame's data back into a (r, c) grid
@@ -166,16 +191,18 @@ def get_motion_feature_2D_hist(mf_pred, mf_gt, num_plot_hist2D=10, plot_prob=0.0
                     hist_2D_gt, mag_edges_gt, angle_edges_gt = np.histogram2d(mag_vol_gt, angle_vol_gt, bins=[mf_gt.num_magnitude_bins, mf_gt.num_angle_bins], range=[[0, 8.0], [-np.pi, np.pi]])
 
                     # Set zero angle to small magnitudes
-                    hist_2D_pred = set_zero_angle_to_smallMag(hist_2D_pred)
-                    hist_2D_gt = set_zero_angle_to_smallMag(hist_2D_gt)
+                    hist_2D_pred = set_zero_angle_to_smallMag(hist_2D_pred, mf_gt.num_angle_bins)
+                    hist_2D_gt = set_zero_angle_to_smallMag(hist_2D_gt, mf_gt.num_angle_bins)
                     # Get counts from hist_2D
                     count = np.sum(hist_2D_gt[1:, :])
                     global_count = max(global_count, count)
 
                     active_bins = np.sum(hist_2D_gt >= 1)
                     if plotted < num_plot_hist2D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold:
-                        plot_motion_feat_hist2D(hist_2D_pred, mag_edges_pred, angle_edges_pred, sample, i, row, col, plotted, mf_pred.output_dir, mf_pred.num_angle_bins, "pred")
-                        plot_motion_feat_hist2D(hist_2D_gt, mag_edges_gt, angle_edges_gt, sample, i, row, col, plotted, mf_gt.output_dir, mf_gt.num_angle_bins, "gt")
+                        hist_2D_info_pred = Hist_2D_info(hist_2D_pred, mag_edges_pred, angle_edges_pred, sample, i, row, col, mf_pred.output_dir, "pred")
+                        hist_2D_info_gt = Hist_2D_info(hist_2D_gt, mag_edges_gt, angle_edges_gt, sample, i, row, col, mf_gt.output_dir, "gt")
+                        hist_2D_pred_4plot.append(hist_2D_info_pred)
+                        hist_2D_gt_4plot.append(hist_2D_info_gt)
                         plotted += 1
                     # Flatten and add to the motion feature vector
                     hist_2D_pred = hist_2D_pred.flatten()
@@ -191,11 +218,15 @@ def get_motion_feature_2D_hist(mf_pred, mf_gt, num_plot_hist2D=10, plot_prob=0.0
 
         all_mf_pred.append(mf_vec_pred)
         all_mf_gt.append(mf_vec_gt)
-    print(f"==========>>>> Global count, hist_2D:{global_count}")
+
+    plot_motion_feat_hist2D(hist_2D_pred_4plot, global_count)
+    plot_motion_feat_hist2D(hist_2D_gt_4plot, global_count)
+
     # Return the motion feature vectors for all pred and GT sequences
     return np.array(all_mf_pred), np.array(all_mf_gt)
 
 def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.05, active_bins_threshold=5):
+    hist_1D_pred_4plot, hist_1D_gt_4plot = [], []
     all_mf_pred, all_mf_gt = [], []
     plotted = 0
     global_count = 0
@@ -227,9 +258,11 @@ def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.0
                     count = np.sum(hist_1D_gt[1:])
                     global_count = max(global_count, count)
                     active_bins = np.sum(hist_1D_gt >= 1)
-                    if plotted < num_plot_hist1D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold :
-                        plot_motion_feat_hist1D(hist_1D_pred, sample, i, row, col, plotted, mf_pred.output_dir, mf_pred.num_angle_bins, "pred")
-                        plot_motion_feat_hist1D(hist_1D_gt, sample, i, row, col, plotted, mf_gt.output_dir, mf_gt.num_angle_bins, "gt")
+                    if plotted < num_plot_hist1D and np.random.rand() < plot_prob and active_bins >= active_bins_threshold:
+                        hist_1D_info_pred = Hist_1D_info(hist_1D_pred, sample, i, row, col, mf_pred.output_dir, mf_pred.num_angle_bins, "pred")
+                        hist_1D_info_gt = Hist_1D_info(hist_1D_gt, sample, i, row, col, mf_gt.output_dir, mf_gt.num_angle_bins, "gt")
+                        hist_1D_pred_4plot.append(hist_1D_info_pred)
+                        hist_1D_gt_4plot.append(hist_1D_info_gt)
                         plotted += 1
                     # Append this histogram to the motion feature vector avoing division by cero
                     mf_vec_pred.append(hist_1D_pred)
@@ -243,7 +276,10 @@ def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.0
 
         all_mf_pred.append(mf_vec_pred)
         all_mf_gt.append(mf_vec_gt)
-    print(f"==========>>>> Global count, hist_1D:{global_count}")
+
+    plot_motion_feat_hist1D(hist_1D_pred_4plot, global_count)
+    plot_motion_feat_hist1D(hist_1D_gt_4plot, global_count)
+
      # Return the motion feature vectors for all sequences
     return np.array(all_mf_pred), np.array(all_mf_gt)
 
