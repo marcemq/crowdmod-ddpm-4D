@@ -3,7 +3,7 @@ from utils.plot.plot_metrics import plot_motion_feat_hist2D, plot_motion_feat_hi
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
-    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=18, num_angle_bins=16, output_dir=None):
+    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=17, num_angle_bins=16, output_dir=None):
         self.f = f
         self.k = k
         self.gamma = gamma
