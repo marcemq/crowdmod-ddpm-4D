@@ -156,7 +156,7 @@ def plot_motion_feat_hist2D(hist_2D_list, global_count):
         plt.colorbar(label="Counts")
         # Magnitude ticks every 1
         x_step = 0.5 if len(hist_2D.mag_edges) > 10 else 1
-        plt.xticks(np.arange(hist_2D.mag_edges[0], hist_2D.mag_edges[-1] + x_step, x_step), rotation=45, ha="right")
+        plt.xticks(np.arange(hist_2D.mag_edges[0], hist_2D.mag_edges[-1] + x_step, x_step), rotation=90, ha="center")
         plt.yticks(angle_ticks, angle_tick_labels)
 
         plt.xlabel("Magnitude bin")
