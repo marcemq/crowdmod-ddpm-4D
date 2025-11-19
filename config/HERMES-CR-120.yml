@@ -40,10 +40,10 @@ MODEL:
   NSAMPLES: 1280      # Define number of predicted samples (64 BS * 20 rep, default values)
   NSAMPLES4PLOTS: 20  # Define number of predicted samples to plot static and dynamic seqs
   DDPM:
-    SAMPLER: "DDPM"
+    SAMPLER: "DDPM"     # Available options: DDPM|DDIM
     TIMESTEPS: 1000     # Define canonical number of diffusion timesteps
     SCALE: 0.5          # Define scale for betas in model
-    DDIM_DIVIDER: 90    # Define number of timesteps to divide by
+    DDIM_DIVIDER: 50    # Define number of timesteps for taus subset
     GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
     MODEL_SAMPLES: 7
     TRAIN:
