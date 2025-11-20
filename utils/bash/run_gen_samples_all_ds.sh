@@ -32,6 +32,9 @@ for i in "${!configs_list[@]}"; do
     echo "  Datafile :  $datafiles"
     echo "======================================"
 
+    yq -i '.MODEL.DDPM.SAMPLER = "DDIM"' "$config"
+    yq -i '.MODEL.DDPM.GUIDANCE = "sparsity"' "$config"
+
     python3 generate_samples.py \
             --config-yml-file="$config" \
             --configList-yml-file="$datafiles" \

@@ -95,7 +95,7 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
         random_future_samples = future_test[random_past_idx]
         if cfg.MODEL.DDPM.SAMPLER == "DDPM":
             predictions, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS, mprops_count=mprops_count) # AR review .cpu() call here
-            if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE == "none":
+            if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE == "None":
                 l1 = torch.mean(torch.abs(predictions[:,0,:,:,:])).cpu().detach().numpy()
                 logging.info('L1 norm {:.2f}'.format(l1))
         elif cfg.MODEL.DDPM.SAMPLER == "DDIM":
