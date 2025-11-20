@@ -17,27 +17,29 @@ datafiles_list=(
 )
 
 # Final global output dir
-final_dir="outputs_ddim"
+final_dir="output_ddim"
 mkdir -p "$final_dir"
 
-for config in "${configs_list[@]}"; do
-    for datafiles in "${datafiles_list[@]}"; do
+# Loop over indices
+for i in "${!configs_list[@]}"; do
 
-        echo "======================================"
-        echo "Running with:"
-        echo "  Config:     $config"
-        echo "  Datafile :  $datafiles"
-        echo "======================================"
+    config="${configs_list[$i]}"
+    datafiles="${datafiles_list[$i]}"
 
-        python3 generate_samples.py \
+    echo "======================================"
+    echo "Running with:"
+    echo "  Config:     $config"
+    echo "  Datafile :  $datafiles"
+    echo "======================================"
+
+    python3 generate_samples.py \
             --config-yml-file="$config" \
             --configList-yml-file="$datafiles" \
             --model-sample-to-load="000" \
             --plot-type="Dynamic" \
             --arch="DDPM-UNet"
 
-        echo ""
-    done
+    echo ""
 done
 
 mv output_* "$final_dir"/ 2>/dev/null
