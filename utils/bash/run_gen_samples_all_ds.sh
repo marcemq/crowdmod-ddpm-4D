@@ -43,6 +43,8 @@ for i in "${!configs_list[@]}"; do
             --arch="DDPM-UNet"
 
     echo ""
+
+    git restore $config
 done
 
 mv output_* "$final_dir"/ 2>/dev/null
