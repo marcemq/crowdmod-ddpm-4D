@@ -79,7 +79,6 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
     timesteps=cfg.MODEL.DDPM.TIMESTEPS
     diffusionmodel = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS)
     diffusionmodel.to(device)
-    taus = 1
 
     for batch in batched_test_data:
         past_test, future_test = batch
@@ -95,12 +94,12 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
         random_future_samples = future_test[random_past_idx]
         if cfg.MODEL.DDPM.SAMPLER == "DDPM":
             predictions, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS, mprops_count=mprops_count) # AR review .cpu() call here
-            if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE == "none":
+            if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE == "None":
                 l1 = torch.mean(torch.abs(predictions[:,0,:,:,:])).cpu().detach().numpy()
                 logging.info('L1 norm {:.2f}'.format(l1))
         elif cfg.MODEL.DDPM.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.MODEL.DDPM.DDIM_DIVIDER)
-            logging.info(f'taus:{taus}')
+            logging.info(f'Shape of subset taus:{taus.shape}')
             predictions, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS, mprops_count=mprops_count) # AR review .cpu() call here
         else:
             logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")

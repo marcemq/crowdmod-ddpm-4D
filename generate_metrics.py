@@ -61,7 +61,7 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
     timesteps = cfg.MODEL.DDPM.TIMESTEPS
     diffusionmodel = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS)
     diffusionmodel.to(device)
-    taus = 1
+
     count_batch = 0
     pred_seq_list, gt_seq_list = [], []
     # cicle over batched test data
@@ -88,7 +88,7 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
                 logging.info(f'L1 norm {l1:.2f} using {cfg.MODEL.DDPM.GUIDANCE} guidance')
         elif cfg.MODEL.DDPM.SAMPLER == "DDIM":
             taus = np.arange(0,timesteps,cfg.MODEL.DDPM.DDIM_DIVIDER)
-            logging.info(f'taus:{taus}')
+            logging.info(f'Shape of subset taus:{taus.shape}')
             x, _ = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, samples_per_batch, mprops_count=mprops_count) # AR review .cpu() call here
         else:
             logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
