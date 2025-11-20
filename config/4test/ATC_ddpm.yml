@@ -44,7 +44,7 @@ MODEL:
     SAMPLER: "DDPM"     # Available options: DDPM|DDIM
     TIMESTEPS: 1000     # Define canonical number of diffusion timesteps
     SCALE: 0.5          # Define scale for betas in model
-    DDIM_DIVIDER: 50    # Define number of timesteps for taus subset
+    DDIM_DIVIDER: 2     # Define number of timesteps for taus subset
     GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
     MODEL_SAMPLES: 2
     TRAIN:
