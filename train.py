@@ -21,7 +21,7 @@ from utils.model_details import count_trainable_params
 from models.diffusion.forward import ForwardSampler
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
-from models.training import train_one_epoch, train_one_epoch_convGRU
+from models.training import train_one_epoch, train_one_epoch_convGRU, train_one_epoch_fm
 from models.convGRU.forecaster import Forecaster
 from functools import partial
 
@@ -83,6 +83,61 @@ def train_ddpm(cfg, batched_train_data, arch, mprops_count):
             logging.info(f"Epoch {epoch}: in sample set, saving model sample.")
             save_checkpoint(optimizer, denoiser, epoch, cfg, arch)
 
+def train_fm(cfg, batched_train_data, arch, mprops_count):
+    torch.manual_seed(42)
+    # Setting the device to work with
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Instanciate the UNet for the reverse diffusion
+    unet_model = MacropropsDenoiser(input_channels  = mprops_count,
+                                  output_channels = mprops_count,
+                                  num_res_blocks  = cfg.MODEL.FLOW_MATCHING.UNET.NUM_RES_BLOCKS,
+                                  base_channels           = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH,
+                                  base_channels_multiples = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.FLOW_MATCHING.UNET.APPLY_ATTENTION,
+                                  dropout_rate            = cfg.MODEL.FLOW_MATCHING.UNET.DROPOUT_RATE,
+                                  time_multiple           = cfg.MODEL.FLOW_MATCHING.UNET.TIME_EMB_MULT,
+                                  condition               = cfg.MODEL.FLOW_MATCHING.UNET.CONDITION)
+    unet_model.to(device)
+    trainable_params = count_trainable_params(unet_model)
+    logging.info(f"Total trainable parameters at model_unet:{trainable_params}")
+
+    # The optimizer (Adam with weight decay)
+    optimizer = optim.Adam(unet_model.parameters(),lr=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.LR, betas=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.BETAS,weight_decay=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.WEIGHT_DECAY)
+
+    best_loss      = 1e6
+    consecutive_nan_count = 0
+    low = int(cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS * 0.75)
+    high = cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS + 1  # randint upper bound is exclusive
+    epoch_model_samples = np.random.randint(low, high, size=cfg.MODEL.FLOW_MATCHING.MODEL_SAMPLES)
+    # Training loop
+    for epoch in range(1,cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS + 1):
+        torch.cuda.empty_cache()
+        gc.collect()
+
+        # One epoch of training
+        epoch_loss = train_one_epoch_fm(unet_model,batched_train_data,optimizer,device,epoch=epoch,total_epochs=cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, time_max_pos=cfg.MODEL.FLOW_MATCHING.TIME_MAX_POS)
+        wandb.log({"train_loss": epoch_loss})
+        # NaN handling / early stopping
+        if np.isnan(epoch_loss):
+            consecutive_nan_count += 1
+            logging.warning(f"Epoch {epoch}: loss is NaN ({consecutive_nan_count} consecutive)")
+            if consecutive_nan_count >= 3:
+                logging.error("Loss has been NaN for 3 consecutive epochs; terminating training early.")
+                wandb.finish()
+                break
+        else:
+            consecutive_nan_count = 0  # reset on valid loss
+
+        # Save best checkpoint from all training
+        if epoch_loss < best_loss:
+            best_loss = epoch_loss
+            save_checkpoint(optimizer, unet_model, "000", cfg, arch)
+
+        # Save model samples at stable loss
+        if epoch in epoch_model_samples:
+            logging.info(f"Epoch {epoch}: in sample set, saving model sample.")
+            save_checkpoint(optimizer, train_one_epoch_fm, epoch, cfg, arch)
+    
 def train_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count):
     torch.manual_seed(42)
     # Setting the device to work with
@@ -147,6 +202,8 @@ def training_mgmt(args, cfg):
     logging.info(f"=======>>>> Init training for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
         train_ddpm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
+    elif args.arch == "FM-UNet":
+        train_fm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
     elif args.arch == "ConvGRU":
         train_convGRU(cfg, batched_train_data, batched_val_data, arch=args.arch, mprops_count=mprops_count)
     else:
