@@ -89,6 +89,8 @@ def get_checkpoint_save_path(cfg, arch, epoch):
     """
     if arch == "DDPM-UNet":
         save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+    elif arch == "FM-UNet":
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     elif arch == "ConvGRU":
         save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVGRU.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     else:
@@ -111,10 +113,10 @@ def get_model_fullname(cfg, arch, epoch):
     """
     if arch == "DDPM-UNet":
         model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
-    elif arch == "ConvGRU":
-        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVGRU.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     elif arch == "FM-UNet":
         model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+    elif arch == "ConvGRU":
+        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVGRU.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     else:
         logging.error("Architecture not supported.")
 
