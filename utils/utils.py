@@ -139,6 +139,21 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
                 "solver_betas": cfg.MODEL.DDPM.TRAIN.SOLVER.BETAS,
             }
         )
+    elif arch == "FM-UNet":
+        wandb.init(
+            project=project_name,
+            config={
+                "architecture": arch,
+                "dataset": cfg.DATASET.NAME,
+                "learning_rate": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.LR,
+                "epochs": cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS,
+                "batch_size": cfg.DATASET.BATCH_SIZE,
+                "past_len": cfg.DATASET.PAST_LEN,
+                "future_len": cfg.DATASET.FUTURE_LEN,
+                "weight_decay": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.WEIGHT_DECAY,
+                "solver_betas": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.BETAS,
+            }
+        )
     elif arch == "ConvGRU":
         wandb.init(
             project=project_name,
