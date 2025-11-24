@@ -53,7 +53,7 @@ def train_ddpm(cfg, batched_train_data, arch, mprops_count):
     consecutive_nan_count = 0
     low = int(cfg.MODEL.DDPM.TRAIN.EPOCHS * 0.75)
     high = cfg.MODEL.DDPM.TRAIN.EPOCHS + 1  # randint upper bound is exclusive
-    epoch_model_samples = np.random.randint(low, high, size=cfg.MODEL.DDPM.MODEL_SAMPLES)
+    epochs_cktp_to_save = np.random.randint(low, high, size=cfg.MODEL.DDPM.CHECKPOINTS_TO_KEEP)
     # Training loop
     for epoch in range(1,cfg.MODEL.DDPM.TRAIN.EPOCHS + 1):
         torch.cuda.empty_cache()
@@ -79,7 +79,7 @@ def train_ddpm(cfg, batched_train_data, arch, mprops_count):
             save_checkpoint(optimizer, denoiser, "000", cfg, arch)
 
         # Save model samples at stable loss
-        if epoch in epoch_model_samples:
+        if epoch in epochs_cktp_to_save:
             logging.info(f"Epoch {epoch}: in sample set, saving model sample.")
             save_checkpoint(optimizer, denoiser, epoch, cfg, arch)
 
@@ -108,7 +108,7 @@ def train_fm(cfg, batched_train_data, arch, mprops_count):
     consecutive_nan_count = 0
     low = int(cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS * 0.75)
     high = cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS + 1  # randint upper bound is exclusive
-    epoch_model_samples = np.random.randint(low, high, size=cfg.MODEL.FLOW_MATCHING.MODEL_SAMPLES)
+    epochs_cktp_to_save = np.random.randint(low, high, size=cfg.MODEL.FLOW_MATCHING.CHECKPOINTS_TO_KEEP)
     # Training loop
     for epoch in range(1,cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS + 1):
         torch.cuda.empty_cache()
@@ -134,7 +134,7 @@ def train_fm(cfg, batched_train_data, arch, mprops_count):
             save_checkpoint(optimizer, unet_model, "000", cfg, arch)
 
         # Save model samples at stable loss
-        if epoch in epoch_model_samples:
+        if epoch in epochs_cktp_to_save:
             logging.info(f"Epoch {epoch}: in sample set, saving model sample.")
             save_checkpoint(optimizer, train_one_epoch_fm, epoch, cfg, arch)
     

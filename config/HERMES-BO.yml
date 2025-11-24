@@ -45,7 +45,7 @@ MODEL:
     SCALE: 0.5          # Define scale for betas in model
     DDIM_DIVIDER: 2     # Define number of timesteps for taus subset
     GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
-    MODEL_SAMPLES: 7
+    CHECKPOINTS_TO_KEEP: 7
     TRAIN:
       EPOCHS: 200
       SOLVER:
@@ -66,7 +66,8 @@ MODEL:
     VIT:
       TMP_VAR: "Placeholder"
   FLOW_MATCHING:
-    TIME_MAX_POS: 1000 
+    TIME_MAX_POS: 1000
+    CHECKPOINTS_TO_KEEP: 7
     TRAIN:
       EPOCHS: 200
       SOLVER:
