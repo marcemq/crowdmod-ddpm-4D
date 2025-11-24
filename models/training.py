@@ -76,7 +76,7 @@ def train_one_epoch_fm(unet_model:nn.Module, loader, optimizer, device, epoch, t
             x0 = torch.randn_like(x1, device=device)
 
             t = torch.rand(x1.size(0), device=device)
-            t = t.view(-1, 1, 1, 1)
+            t = t.view(-1, 1, 1, 1, 1)
 
             u_target = x1 - x0
 
