@@ -80,7 +80,7 @@ def train_ddpm(cfg, batched_train_data, arch, mprops_count):
 
         # Save model samples at stable loss
         if epoch in epochs_cktp_to_save:
-            logging.info(f"Epoch {epoch}: in sample set, saving model sample.")
+            logging.info(f"Epoch {epoch}: in checkpoints_to_keep set, saving model.")
             save_checkpoint(optimizer, denoiser, epoch, cfg, arch)
 
 def train_fm(cfg, batched_train_data, arch, mprops_count):
@@ -135,8 +135,8 @@ def train_fm(cfg, batched_train_data, arch, mprops_count):
 
         # Save model samples at stable loss
         if epoch in epochs_cktp_to_save:
-            logging.info(f"Epoch {epoch}: in sample set, saving model sample.")
-            save_checkpoint(optimizer, train_one_epoch_fm, epoch, cfg, arch)
+            logging.info(f"Epoch {epoch}: in checkpoints_to_keep set, saving model.")
+            save_checkpoint(optimizer, unet_model, epoch, cfg, arch)
     
 def train_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count):
     torch.manual_seed(42)

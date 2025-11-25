@@ -69,7 +69,7 @@ MODEL:
     TIME_MAX_POS: 1000
     CHECKPOINTS_TO_KEEP: 7
     TRAIN:
-      EPOCHS: 200
+      EPOCHS: 70
       SOLVER:
         LR: 0.00005
         WEIGHT_DECAY: 0.003
