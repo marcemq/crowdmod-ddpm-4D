@@ -90,7 +90,7 @@ def generate_fm(unet_model:nn.Module, past:torch.Tensor, cfg, device, nsamples, 
     time_max_pos=cfg.MODEL.FLOW_MATCHING.TIME_MAX_POS
     delta = 1 / cfg.MODEL.FLOW_MATCHING.EULER_STEPS
 
-    pbar = tqdm.tqdm(range(1, cfg.MODEL.FLOW_MATCHING.EULER_STEPS + 1), desc="Sampling")
+    pbar = tqdm(range(1, cfg.MODEL.FLOW_MATCHING.EULER_STEPS + 1), desc="Sampling")
 
     # Cycle over the integration steps
     for i, t in enumerate(torch.linspace(0, 1, cfg.MODEL.FLOW_MATCHING.EULER_STEPS, device=device), start=1):
