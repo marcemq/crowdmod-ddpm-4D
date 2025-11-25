@@ -82,6 +82,31 @@ def generate_ddim(denoiser_model:nn.Module, past:torch.Tensor, taus, backward_sa
     return xnoisy, xnoisy_over_time
 
 @torch.inference_mode()
+def generate_fm(unet_model:nn.Module, past:torch.Tensor, cfg, device, nsamples, history=False, mprops_count=4):
+    # Set the model in evaluation mode
+    unet_model.eval()
+    # Noise from a normal distribution
+    xt = torch.randn((nsamples, mprops_count, cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS, cfg.DATASET.FUTURE_LEN), device=device)
+    time_max_pos=cfg.MODEL.FLOW_MATCHING.TIME_MAX_POS
+    delta = 1 / cfg.MODEL.FLOW_MATCHING.EULER_STEPS
+
+    pbar = tqdm.tqdm(range(1, cfg.MODEL.FLOW_MATCHING.EULER_STEPS + 1), desc="Sampling")
+
+    # Cycle over the integration steps
+    for i, t in enumerate(torch.linspace(0, 1, cfg.MODEL.FLOW_MATCHING.EULER_STEPS, device=device), start=1):
+      time_indices = (t * time_max_pos).clamp(0, time_max_pos-1).long()
+      time_indices = time_indices.to(device).expand(xt.size(0))
+      # Apply the velocity to get the velocity
+      # TUTORIAL
+      u = torch.zeros_like(xt,device=device)
+      # Integration step
+      xt           = xt + delta * u
+      pbar.update(1)
+
+    pbar.close()
+    return xt
+
+@torch.inference_mode()
 def generate_convGRU(convGRU_model, x_test, y_test, teacher_forcing):
     # Set the model in evaluation mode
     convGRU_model.eval()

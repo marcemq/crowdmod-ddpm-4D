@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os, re
 import logging
-from models.generate import generate_ddpm, generate_ddim, generate_convGRU
+from models.generate import generate_ddpm, generate_ddim, generate_fm, generate_convGRU
 
 from models.unet import MacropropsDenoiser
 from models.diffusion.ddpm import DDPM
@@ -107,6 +107,41 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
         set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
         break
 
+def generate_samples_fm(cfg, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
+    torch.manual_seed(42)
+    # Setting the device to work with
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Instanciate the UNet for the reverse diffusion
+    unet_model = MacropropsDenoiser(input_channels  = mprops_count,
+                                  output_channels = mprops_count,
+                                  num_res_blocks  = cfg.MODEL.FLOW_MATCHING.UNET.NUM_RES_BLOCKS,
+                                  base_channels           = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH,
+                                  base_channels_multiples = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.FLOW_MATCHING.UNET.APPLY_ATTENTION,
+                                  dropout_rate            = cfg.MODEL.FLOW_MATCHING.UNET.DROPOUT_RATE,
+                                  time_multiple           = cfg.MODEL.FLOW_MATCHING.UNET.TIME_EMB_MULT,
+                                  condition               = cfg.MODEL.FLOW_MATCHING.UNET.CONDITION)
+
+    logging.info(f'model full name:{model_fullname}')
+    unet_model.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
+    unet_model.to(device)
+
+    for batch in batched_test_data:
+        past_test, future_test = batch
+        past_test, future_test = past_test.float(), future_test.float()
+        past_test, future_test = past_test.to(device=device), future_test.to(device=device)
+        random_past_idx = torch.randperm(past_test.shape[0])[:cfg.MODEL.NSAMPLES4PLOTS]
+        # Predict different sequences for the same past sequence
+        if samePastSeq:
+            fixed_past_idx = random_past_idx[0]
+            random_past_idx.fill_(fixed_past_idx)
+
+        random_past_samples = past_test[random_past_idx]
+        random_future_samples = future_test[random_past_idx]
+        predictions, xnoisy_over_time  = generate_fm(unet_model, random_past_samples, cfg, device, cfg.MODEL.NSAMPLES4PLOTS, mprops_count=mprops_count) # AR review .cpu() call here
+        set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
+        break
+
 def generate_samples_convGRU(cfg, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
     torch.manual_seed(42)
     # Setting the device to work with
@@ -160,6 +195,8 @@ def sampling_mgmt(args, cfg):
     logging.info(f"=======>>>> Init sampling for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
         generate_samples_ddpm(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
+    elif args.arch == "FM-UNet":
+        generate_samples_fm(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     elif args.arch == "ConvGRU":
         generate_samples_convGRU(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     else:
@@ -177,7 +214,7 @@ if __name__ == '__main__':
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
     parser.add_argument('--model-sample-to-load', type=str, default="000", help='Model sample to be used for generate mprops samples. Default value is for best model.')
-    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|ConvGRU')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvGRU')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
