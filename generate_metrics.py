@@ -147,7 +147,7 @@ def generate_metrics_fm(cfg, batched_test_data, chunkRepdPastSeq, metric, batche
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
 
-        x, _  = generate_fm(unet_model, random_past_samples, cfg, device, samples_per_batch, mprops_count=mprops_count) # AR review .cpu() call here
+        x  = generate_fm(unet_model, random_past_samples, cfg, device, samples_per_batch, mprops_count=mprops_count) # AR review .cpu() call here
         future_samples_pred = x
         for i in range(len(random_past_idx)):
             pred_seq_list.append(future_samples_pred[i])
