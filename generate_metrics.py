@@ -8,7 +8,7 @@ import os, re
 import logging
 
 from tqdm import tqdm
-from models.generate import generate_ddpm, generate_ddim, generate_convGRU
+from models.generate import generate_ddpm, generate_ddim, generate_fm, generate_convGRU
 
 from utils.myparser import getYamlConfig
 from utils.utils import create_directory, get_filenames_paths, get_test_dataset, get_model_fullname
@@ -107,6 +107,61 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
     metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, cfg.METRICS, output_dir)
     compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch)
 
+def generate_metrics_fm(cfg, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count):
+    torch.manual_seed(42)
+    # Setting the device to work with
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Instanciate the UNet for the reverse diffusion
+    unet_model = MacropropsDenoiser(input_channels  = mprops_count,
+                                  output_channels = mprops_count,
+                                  num_res_blocks  = cfg.MODEL.FLOW_MATCHING.UNET.NUM_RES_BLOCKS,
+                                  base_channels           = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH,
+                                  base_channels_multiples = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.FLOW_MATCHING.UNET.APPLY_ATTENTION,
+                                  dropout_rate            = cfg.MODEL.FLOW_MATCHING.UNET.DROPOUT_RATE,
+                                  time_multiple           = cfg.MODEL.FLOW_MATCHING.UNET.TIME_EMB_MULT,
+                                  condition               = cfg.MODEL.FLOW_MATCHING.UNET.CONDITION)
+
+    # Load model
+    logging.info(f'model full name:{model_fullname}')
+    unet_model.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
+    unet_model.to(device)
+    match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
+
+    count_batch = 0
+    pred_seq_list, gt_seq_list = [], []
+    # cicle over batched test data
+    for batch in batched_test_data:
+        logging.info("===" * 20)
+        logging.info(f'Computing sampling on batch:{count_batch+1}')
+        past_test, future_test = batch
+        past_test, future_test = past_test.float(), future_test.float()
+        past_test, future_test = past_test.to(device=device), future_test.to(device=device)
+        # Compute the idx of the past sequences to work on
+        if past_test.shape[0] < samples_per_batch:
+            random_past_idx = torch.randperm(past_test.shape[0])
+        else:
+            random_past_idx = torch.randperm(past_test.shape[0])[:samples_per_batch]
+        expanded_random_past_idx = torch.repeat_interleave(random_past_idx, chunkRepdPastSeq)
+        random_past_idx = expanded_random_past_idx[:samples_per_batch]
+        random_past_samples = past_test[random_past_idx]
+        random_future_samples = future_test[random_past_idx]
+
+        x, _  = generate_ddpm(unet_model, random_past_samples, cfg, device, samples_per_batch, mprops_count=mprops_count) # AR review .cpu() call here
+        future_samples_pred = x
+        for i in range(len(random_past_idx)):
+            pred_seq_list.append(future_samples_pred[i])
+            gt_seq_list.append(random_future_samples[i])
+
+        count_batch += 1
+        if count_batch == batches_to_use:
+            break
+
+    logging.info("===" * 20)
+    logging.info(f'Computing metrics on predicted mprops sequences with FM-UNet model.')
+    metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, cfg.METRICS, output_dir)
+    compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch)
+
 def generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count):
     torch.manual_seed(42)
     # Setting the device to work with
@@ -192,6 +247,8 @@ def metrics_mgmt(args, cfg):
     logging.info(f"=======>>>> Init metrics compute for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
         generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count=mprops_count)
+    elif args.arch == "DDPM-UNet":
+        generate_metrics_fm(cfg, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count=mprops_count)
     elif args.arch == "ConvGRU":
         generate_metrics_convGRU(cfg, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count=mprops_count)
     else:
@@ -205,7 +262,7 @@ if __name__ == '__main__':
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
     parser.add_argument('--model-sample-to-load', type=str, default="000", help='Model sample to be used for generate mprops samples.')
-    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|ConvGRU')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvGRU')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
