@@ -138,7 +138,7 @@ def generate_samples_fm(cfg, batched_test_data, plotType, model_fullname, plotMp
 
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
-        predictions, xnoisy_over_time  = generate_fm(unet_model, random_past_samples, cfg, device, cfg.MODEL.NSAMPLES4PLOTS, mprops_count=mprops_count) # AR review .cpu() call here
+        predictions  = generate_fm(unet_model, random_past_samples, cfg, device, cfg.MODEL.NSAMPLES4PLOTS, mprops_count=mprops_count) # AR review .cpu() call here
         set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
         break
 
