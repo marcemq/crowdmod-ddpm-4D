@@ -97,8 +97,7 @@ def generate_fm(unet_model:nn.Module, past:torch.Tensor, cfg, device, nsamples, 
       time_indices = (t * time_max_pos).clamp(0, time_max_pos-1).long()
       time_indices = time_indices.to(device).expand(xt.size(0))
       # Apply the velocity to get the velocity
-      # TUTORIAL
-      u = torch.zeros_like(xt,device=device)
+      u = unet_model(xt, time_indices, past)
       # Integration step
       xt           = xt + delta * u
       pbar.update(1)
