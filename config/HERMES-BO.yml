@@ -70,9 +70,9 @@ MODEL:
     CHECKPOINTS_TO_KEEP: 7
     EULER_STEPS: 1000
     TRAIN:
-      EPOCHS: 70
+      EPOCHS: 200
       SOLVER:
-        LR: 0.0005
+        LR: 0.00001
         WEIGHT_DECAY: 0.003
         BETAS:
           - 0.5
