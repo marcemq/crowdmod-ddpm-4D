@@ -191,6 +191,24 @@ def get_sweep_configuration(arch):
                 "timesteps": {"values": [500, 1000, 1500]},
             },
         }
+    elif arch == "FM-UNet":
+        sweep_configuration = {
+            "name": "sweep_crowdmod_fm",
+            "method": "random",
+            "metric": {"goal": "minimize", "name": "train_loss"},
+            "parameters": {
+                "learning_rate": {"min": 0.000005, "max": 0.0001},
+                "weight_decay": {"values": [0.0003, 0.001, 0.01]},
+                "betas": {"values": [[0.5, 0.999], [0.7, 0.999], [0.9, 0.999]]},
+                "optimizer": {"values": ["Adam", "AdamW"]},
+                "batch_size": {"values": [16, 32, 64]},
+                "epochs": {"values": [150, 180, 200]},
+                "base_ch": {"values": [32, 64]},
+                "dropout_rate": {"values": [0.05, 0.1, 0.15]},
+                "time_emb_mult": {"values": [2, 4, 8]},
+                "time_max_pos": {"values": [800, 1000, 1200]},
+            },
+        }
     elif arch == "ConvGRU":
         sweep_configuration = {
             "name": "sweep_crowdmod_ConvGRU",
