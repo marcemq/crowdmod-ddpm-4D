@@ -75,11 +75,11 @@ def train_sweep_fm(cfg, filenames, arch, mprops_count, project_name):
     unet_model = MacropropsDenoiser(input_channels = mprops_count,
                                   output_channels = mprops_count,
                                   num_res_blocks = cfg.MODEL.FLOW_MATCHING.UNET.NUM_RES_BLOCKS,
-                                  base_channels           = wandb.config.base_ch,
+                                  base_channels           = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH,
                                   base_channels_multiples = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH_MULT,
                                   apply_attention         = cfg.MODEL.FLOW_MATCHING.UNET.APPLY_ATTENTION,
                                   dropout_rate            = wandb.config.dropout_rate,
-                                  time_multiple           = wandb.config.time_emb_mult,
+                                  time_multiple           = cfg.MODEL.FLOW_MATCHING.UNET.TIME_EMB_MULT,
                                   condition               = cfg.MODEL.FLOW_MATCHING.UNET.CONDITION)
     unet_model.to(device)
     optimizer = get_optimizer(unet_model)
