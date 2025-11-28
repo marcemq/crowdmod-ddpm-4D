@@ -73,7 +73,7 @@ MODEL:
       EPOCHS: 200
       SOLVER:
         LR: 0.00001
-        WEIGHT_DECAY: 0.003
+        WEIGHT_DECAY: 0.001
         BETAS:
           - 0.5
           - 0.999
@@ -84,7 +84,7 @@ MODEL:
       BASE_CH: 32  # 64, 128, 256, 512
       BASE_CH_MULT: [1, 2, 4] # 32, 16, 8, 4
       APPLY_ATTENTION: [False, False, True, False]
-      DROPOUT_RATE: 0.1
+      DROPOUT_RATE: 0.05
       TIME_EMB_MULT: 4 # 128
   CONVGRU:
     TEACHER_FORCING: True
