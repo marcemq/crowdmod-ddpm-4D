@@ -1,8 +1,8 @@
 import gc,logging,re
 import torch
-import tqdm
 import wandb
 import numpy as np
+from tqdm import tqdm
 from torchmetrics import MeanMetric
 
 from utils.utils import save_checkpoint, init_wandb
