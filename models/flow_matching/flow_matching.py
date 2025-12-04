@@ -18,8 +18,12 @@ class FM_model:
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.u_predictor = self._get_u_predictor()
-        self.optimizer   = torch.optim.Adam(self.u_predictor.parameters(), lr=self.cfg.GEN_MODEL.FM.TRAIN.LR)
         self.u_predictor.to(self.device)
+
+        self.optimizer = torch.optim.Adam(self.u_predictor.parameters(),
+                                          lr = self.cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.LR,
+                                          betas=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.BETAS,
+                                          weight_decay=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.WEIGHT_DECAY)
 
         self.w_type_fns = {
             "Linear": self.w_linear,
