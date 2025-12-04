@@ -75,7 +75,7 @@ class FM_model:
         # Set in training mode
         self.u_predictor.train()
 
-        wtype = self.cfg.FLOW_MATCHING.W_TYPE
+        wtype = self.cfg.MODEL.FLOW_MATCHING.W_TYPE
         try:
             w_fn = self.w_type_fns[wtype]
         except KeyError:
