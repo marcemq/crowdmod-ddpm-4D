@@ -20,6 +20,12 @@ class FM_model:
         self.u_predictor = self._get_u_predictor(arch, mprops_count)
         self.optimizer   = torch.optim.Adam(self.model.parameters(), lr=self.cfg.GEN_MODEL.FM.TRAIN.LR)
         self.u_predictor.to(self.device)
+
+        self.w_type_fns = {
+            "Linear": self.w_linear,
+            "Conic": self.w_conic,
+        }
+
         self.integrators = {
             "Euler": self.sampling_with_euler,
             "Heun": self.sampling_with_euler,
@@ -45,11 +51,32 @@ class FM_model:
 
         return u_predictor
 
+    def w_linear(self, x0, x1, t):
+        #Sampling x: x0 + t * (x1 - x0)
+        xt = x0 + t * (x1 - x0)
+        # This is the reference we take for u
+        u_target = x1 - x0
+        return xt, u_target
+
+    def w_conic(self, x0, x1, t):
+        # Sampling x: x \sim N(tx1,(1-t)I)
+        xt = t * x1 + (1 - t) * x0
+        # This is the reference we take for u
+        u_target = (x1 - xt)/(1-t)
+        return xt, u_target
+
     def _train_one_epoch_fm(self, loader, epoch):
         total_epochs = self.cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS
         time_max_pos = self.cfg.MODEL.FLOW_MATCHING.TIME_MAX_POS
         # Set in training mode
         self.u_predictor.train()
+
+        wtype = self.cfg.FLOW_MATCHING.W_TYPE
+        try:
+            w_fn = self.w_type_fns[wtype]
+        except KeyError:
+            raise ValueError(f"Unsupported W_TYPE '{wtype}'. "
+                             f"Available: {list(self.w_type_fns.keys())}")
 
         with tqdm(total=len(loader), dynamic_ncols=True) as tq:
             loss_record = MeanMetric()
@@ -61,31 +88,22 @@ class FM_model:
                 past_train, future_train = batched_train_data
                 past_train, future_train = past_train.float(), future_train.float()
                 past_train, future_train = past_train.to(device=self.device), future_train.to(device=self.device)
+
                 # 1. Sampling w
                 x1 = future_train
                 x0 = torch.randn_like(x1, device=self.device)
+
                 # 2. Sampling random time step t for each sample in the batch
                 t = torch.rand(x1.size(0), device=self.device)
                 t = t.view(-1, 1, 1, 1, 1)
-                # 3. Sampling x: here it is deterministic:
-                if self.cfg.FLOW_MATCHING.W_TYPE == "Linear":
-                    xt = x0 + t * (x1 - x0)
-                elif self.cfg.FLOW_MATCHING.W_TYPE == "Conic":
-                    xt = t * x1 + (1 - t) * x0 #AR: Ask to JB if (1-t^2) instead?
-                else:
-                    logging.info("W_TYPE not supported. Check config file for available options.")
 
-                # This is the reference we take for u:
-                if self.cfg.FLOW_MATCHING.W_TYPE == "Linear":
-                    u_target = x1 - x0
-                elif self.cfg.FLOW_MATCHING.W_TYPE == "Conic":
-                    u_target = (x1 - xt)/(1-t)
-                else:
-                    logging.info("W_TYPE not supported. Check config file for available options.")
+                # 3. Compute xt and target velocity via selected W mapping
+                xt, u_target = w_fn(x0, x1, t)
 
+               # 4. Predict velocity
                 u_pred  = self.u_predictor(xt, (t * time_max_pos).long().view(-1), past_train)
 
-                # Evaluating the loss
+                # 5. Evaluating the loss
                 loss = ((u_target - u_pred) ** 2).mean()
 
                 # Backpropagation
@@ -173,6 +191,13 @@ class FM_model:
         self.u_predictor.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
         self.u_predictor.to(self.device)
 
+        intg_type = self.cfg.FLOW_MATCHING.INTEGRATOR
+        try:
+            integrator = self.integrators[intg_type]
+        except KeyError:
+            raise ValueError(f"Unsupported INTEGRATOR '{intg_type}'. "
+                             f"Available: {list(self.integrators.keys())}")
+
         for batch in batched_test_data:
             past_test, future_test = batch
             past_test, future_test = past_test.float(), future_test.float()
@@ -186,7 +211,6 @@ class FM_model:
             random_past_samples = past_test[random_past_idx]
             random_future_samples = future_test[random_past_idx]
 
-            integrator = self.integrators[self.cfg.FLOW_MATCHING.INTEGRATOR]
             predictions = integrator(random_past_samples, self.cfg.MODEL.NSAMPLES4PLOTS)
 
             setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
