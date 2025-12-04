@@ -8,6 +8,7 @@ from models.generate import generate_ddpm, generate_ddim, generate_fm, generate_
 
 from models.unet import UNet
 from models.diffusion.ddpm import DDPM
+from models.flow_matching.flow_matching import FM_model
 from models.convGRU.forecaster import Forecaster
 from utils.utils import create_directory, get_filenames_paths, get_test_dataset, get_model_fullname
 from utils.plot.plot_sampled_mprops import MacropropPlotter
@@ -107,40 +108,10 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
         set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
         break
 
-def generate_samples_fm(cfg, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
+def generate_samples_fm(cfg, arch, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
     torch.manual_seed(42)
-    # Setting the device to work with
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # Instanciate the UNet for the reverse diffusion
-    unet_model = UNet(input_channels  = mprops_count,
-                                  output_channels = mprops_count,
-                                  num_res_blocks  = cfg.MODEL.FLOW_MATCHING.UNET.NUM_RES_BLOCKS,
-                                  base_channels           = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH,
-                                  base_channels_multiples = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH_MULT,
-                                  apply_attention         = cfg.MODEL.FLOW_MATCHING.UNET.APPLY_ATTENTION,
-                                  dropout_rate            = cfg.MODEL.FLOW_MATCHING.UNET.DROPOUT_RATE,
-                                  time_multiple           = cfg.MODEL.FLOW_MATCHING.UNET.TIME_EMB_MULT,
-                                  condition               = cfg.MODEL.FLOW_MATCHING.UNET.CONDITION)
-
-    logging.info(f'model full name:{model_fullname}')
-    unet_model.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
-    unet_model.to(device)
-
-    for batch in batched_test_data:
-        past_test, future_test = batch
-        past_test, future_test = past_test.float(), future_test.float()
-        past_test, future_test = past_test.to(device=device), future_test.to(device=device)
-        random_past_idx = torch.randperm(past_test.shape[0])[:cfg.MODEL.NSAMPLES4PLOTS]
-        # Predict different sequences for the same past sequence
-        if samePastSeq:
-            fixed_past_idx = random_past_idx[0]
-            random_past_idx.fill_(fixed_past_idx)
-
-        random_past_samples = past_test[random_past_idx]
-        random_future_samples = future_test[random_past_idx]
-        predictions  = generate_fm(unet_model, random_past_samples, cfg, device, cfg.MODEL.NSAMPLES4PLOTS, mprops_count=mprops_count) # AR review .cpu() call here
-        set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
-        break
+    fm_model = FM_model(cfg, arch, mprops_count)
+    fm_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
 def generate_samples_convGRU(cfg, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
     torch.manual_seed(42)
@@ -196,7 +167,7 @@ def sampling_mgmt(args, cfg):
     if args.arch == "DDPM-UNet":
         generate_samples_ddpm(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     elif args.arch == "FM-UNet":
-        generate_samples_fm(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
+        generate_samples_fm(cfg, args.arch, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     elif args.arch == "ConvGRU":
         generate_samples_convGRU(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     else:

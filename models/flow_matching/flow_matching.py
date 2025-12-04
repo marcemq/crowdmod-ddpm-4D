@@ -36,14 +36,14 @@ class FM_model:
                                dropout_rate            = self.MODEL.FLOW_MATCHING.UNET.DROPOUT_RATE,
                                time_multiple           = self.MODEL.FLOW_MATCHING.UNET.TIME_EMB_MULT,
                                condition               = self.MODEL.FLOW_MATCHING.UNET.CONDITION)
-    
+
         elif self.arch == "FM-ViT":
             u_predictor = None # Placeholder for ViT architecture
         else:
             logging.info("Architecture not supported.")
 
         return u_predictor
-    
+
     def _train_one_epoch_fm(self, loader, epoch):
         total_epochs = self.cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS
         time_max_pos = self.cfg.MODEL.FLOW_MATCHING.TIME_MAX_POS
@@ -162,7 +162,7 @@ class FM_model:
 
         pbar.close()
         return xt
-    
+
     @torch.inference_mode()
     def sampling_with_heun(self, past:torch.Tensor, nsamples):
         return 1
@@ -171,7 +171,7 @@ class FM_model:
         logging.info(f'model full name:{model_fullname}')
         self.u_predictor.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
         self.u_predictor.to(self.device)
-        
+
         for batch in batched_test_data:
             past_test, future_test = batch
             past_test, future_test = past_test.float(), future_test.float()
