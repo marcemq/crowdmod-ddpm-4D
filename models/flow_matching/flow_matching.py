@@ -37,12 +37,12 @@ class FM_model:
             u_predictor = UNet(input_channels  = self.mprops_count,
                                output_channels = self.mprops_count,
                                num_res_blocks  = self.cfg.MODEL.FLOW_MATCHING.UNET.NUM_RES_BLOCKS,
-                               base_channels           = self.MODEL.FLOW_MATCHING.UNET.BASE_CH,
-                               base_channels_multiples = self.MODEL.FLOW_MATCHING.UNET.BASE_CH_MULT,
-                               apply_attention         = self.MODEL.FLOW_MATCHING.UNET.APPLY_ATTENTION,
-                               dropout_rate            = self.MODEL.FLOW_MATCHING.UNET.DROPOUT_RATE,
-                               time_multiple           = self.MODEL.FLOW_MATCHING.UNET.TIME_EMB_MULT,
-                               condition               = self.MODEL.FLOW_MATCHING.UNET.CONDITION)
+                               base_channels           = self.cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH,
+                               base_channels_multiples = self.cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH_MULT,
+                               apply_attention         = self.cfg.MODEL.FLOW_MATCHING.UNET.APPLY_ATTENTION,
+                               dropout_rate            = self.cfg.MODEL.FLOW_MATCHING.UNET.DROPOUT_RATE,
+                               time_multiple           = self.cfg.MODEL.FLOW_MATCHING.UNET.TIME_EMB_MULT,
+                               condition               = self.cfg.MODEL.FLOW_MATCHING.UNET.CONDITION)
 
         elif self.arch == "FM-ViT":
             u_predictor = None # Placeholder for ViT architecture
