@@ -19,7 +19,7 @@ from utils.dataset import getDataset
 from utils.model_details import count_trainable_params
 from utils.utils import get_filenames_paths, get_training_dataset, get_sweep_configuration, save_checkpoint, init_wandb, create_directory, get_optimizer
 from models.diffusion.forward import ForwardSampler
-from models.unet import MacropropsDenoiser
+from models.unet import UNet
 from models.diffusion.ddpm import DDPM
 from models.training import train_one_epoch, train_one_epoch_fm, train_one_epoch_convGRU
 from models.convGRU.forecaster import Forecaster
@@ -35,7 +35,7 @@ def train_sweep_ddpm(cfg, filenames, arch, mprops_count, project_name):
     logging.info(f"Batched Traininig dataset loaded.")
 
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(input_channels = mprops_count,
+    denoiser = UNet(input_channels = mprops_count,
                                   output_channels = mprops_count,
                                   num_res_blocks = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
                                   base_channels           = wandb.config.base_ch,
@@ -72,7 +72,7 @@ def train_sweep_fm(cfg, filenames, arch, mprops_count, project_name):
     logging.info(f"Batched Traininig dataset loaded.")
 
     # Instanciate the UNet for the reverse diffusion
-    unet_model = MacropropsDenoiser(input_channels = mprops_count,
+    unet_model = UNet(input_channels = mprops_count,
                                   output_channels = mprops_count,
                                   num_res_blocks = cfg.MODEL.FLOW_MATCHING.UNET.NUM_RES_BLOCKS,
                                   base_channels           = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH,

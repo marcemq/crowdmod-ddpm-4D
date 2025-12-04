@@ -1,4 +1,4 @@
-import logging
+import logging, re
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -194,3 +194,22 @@ class MacropropPlotter:
             plt.close(fig)  # Avoid excessive memory usage
 
         logging.info(f"Density plots saved in {self.output_dir}")
+
+def setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter):
+    seq_frames = []
+    for i in range(len(random_past_idx)):
+        future_sample_pred = predictions[i]
+        future_sample_gt = random_future_samples[i]
+        past_sample = random_past_samples[i]
+        seq_pred = torch.cat([past_sample, future_sample_pred], dim=3)
+        seq_gt = torch.cat([past_sample, future_sample_gt], dim=3)
+        seq_frames.append(seq_pred)
+        seq_frames.append(seq_gt)
+
+    match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
+    if plotType == "Static":
+        macropropPlotter.plotStatic(seq_frames, match, plotMprop, plotPast)
+    elif plotType == "Dynamic":
+        macropropPlotter.plotDynamic(seq_frames)
+
+    macropropPlotter.plotDensityOverTime(seq_frames)

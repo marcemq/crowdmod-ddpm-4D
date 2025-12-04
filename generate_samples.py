@@ -6,7 +6,7 @@ import os, re
 import logging
 from models.generate import generate_ddpm, generate_ddim, generate_fm, generate_convGRU
 
-from models.unet import MacropropsDenoiser
+from models.unet import UNet
 from models.diffusion.ddpm import DDPM
 from models.convGRU.forecaster import Forecaster
 from utils.utils import create_directory, get_filenames_paths, get_test_dataset, get_model_fullname
@@ -61,7 +61,7 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(input_channels  = mprops_count,
+    denoiser = UNet(input_channels  = mprops_count,
                                   output_channels = mprops_count,
                                   num_res_blocks  = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
                                   base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
@@ -112,7 +112,7 @@ def generate_samples_fm(cfg, batched_test_data, plotType, model_fullname, plotMp
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Instanciate the UNet for the reverse diffusion
-    unet_model = MacropropsDenoiser(input_channels  = mprops_count,
+    unet_model = UNet(input_channels  = mprops_count,
                                   output_channels = mprops_count,
                                   num_res_blocks  = cfg.MODEL.FLOW_MATCHING.UNET.NUM_RES_BLOCKS,
                                   base_channels           = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH,

@@ -68,7 +68,11 @@ MODEL:
   FLOW_MATCHING:
     TIME_MAX_POS: 1000
     CHECKPOINTS_TO_KEEP: 7
-    EULER_STEPS: 1000
+    INTEGRATOR: "Euler"  # Available options: Euler|Heun
+    INTEGRATOR_STEPS:
+        EULER: 1000
+        HEUN: 500
+    W_TYPE: "Linear"    # Available options: Linear|Conic
     TRAIN:
       EPOCHS: 200
       SOLVER:

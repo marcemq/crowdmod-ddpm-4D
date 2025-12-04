@@ -4,7 +4,10 @@ from models.embeddings import SinusoidalPositionEmbeddings
 from models.layers import DownSample, UpSample, ResnetBlock
 
 
-class MacropropsDenoiser(nn.Module):
+class UNet(nn.Module):
+    """
+    UNet architecture to process macroprops sequences.
+    """
     def __init__(
         self,
         input_channels = 4,
@@ -122,7 +125,7 @@ class MacropropsDenoiser(nn.Module):
         """
         future: correspond to future frames to be predicted
         past: correspond to the past frames on which the condition states
-        return a tensor of shape future TODO: review that this is true
+        return a tensor of shape future
         """
         # Time embeddings
         time_emb = self.time_embeddings(t)

@@ -7,7 +7,7 @@ sys.path.append(project_root)
 import torch
 import torch.nn as nn
 from utils.myparser import getYamlConfig
-from models.unet import MacropropsDenoiser
+from models.unet import UNet
 from models.diffusion.ddpm import DDPM
 
 def num_params(module:nn.Module):
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     cfg = getYamlConfig(args.config_yml_file)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    denoiser_model = MacropropsDenoiser(num_res_blocks = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
+    denoiser_model = UNet(num_res_blocks = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
                                 base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
                                 base_channels_multiples = cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
                                 apply_attention         = cfg.MODEL.DDPM.UNET.APPLY_ATTENTION,
