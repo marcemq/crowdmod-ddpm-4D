@@ -154,7 +154,7 @@ def sampling_mgmt(args, cfg):
     # === Prepare file paths ===
     filenames_and_numSamples = get_filenames_paths(cfg)
     model_fullname = get_model_fullname(cfg, args.arch, args.model_sample_to_load)
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_VN{cfg.DATASET.VELOCITY_NORM}_modelE{args.model_sample_to_load}"
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}"
     create_directory(output_dir)
 
     # === Load test dataset ===
