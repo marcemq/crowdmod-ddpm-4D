@@ -1,4 +1,4 @@
-import gc,logging,os
+import gc,logging,re
 import torch
 import tqdm
 import wandb
@@ -7,6 +7,7 @@ from torchmetrics import MeanMetric
 
 from utils.utils import save_checkpoint, init_wandb
 from utils.plot.plot_sampled_mprops import setup_predictions_plot
+from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
 from models.unet import UNet
 
 class FM_model:
@@ -190,3 +191,46 @@ class FM_model:
 
             setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
             break
+
+    def generate_metrics(self, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir):
+        logging.info(f'model full name:{model_fullname}')
+        self.u_predictor.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
+        self.u_predictor.to(self.device)
+
+        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
+
+        count_batch = 0
+        pred_seq_list, gt_seq_list = [], []
+        # cicle over batched test data
+        for batch in batched_test_data:
+            logging.info("===" * 20)
+            logging.info(f'Computing sampling on batch:{count_batch+1}')
+            past_test, future_test = batch
+            past_test, future_test = past_test.float(), future_test.float()
+            past_test, future_test = past_test.to(device=self.device), future_test.to(device=self.device)
+            # Compute the idx of the past sequences to work on
+            if past_test.shape[0] < samples_per_batch:
+                random_past_idx = torch.randperm(past_test.shape[0])
+            else:
+                random_past_idx = torch.randperm(past_test.shape[0])[:samples_per_batch]
+
+            expanded_random_past_idx = torch.repeat_interleave(random_past_idx, chunkRepdPastSeq)
+            random_past_idx = expanded_random_past_idx[:samples_per_batch]
+            random_past_samples = past_test[random_past_idx]
+            random_future_samples = future_test[random_past_idx]
+
+            integrator = self.integrators[self.cfg.FLOW_MATCHING.INTEGRATOR]
+            x = integrator(random_past_samples, self.cfg.MODEL.NSAMPLES4PLOTS)
+            future_samples_pred = x
+            for i in range(len(random_past_idx)):
+                pred_seq_list.append(future_samples_pred[i])
+                gt_seq_list.append(random_future_samples[i])
+
+            count_batch += 1
+            if count_batch == batches_to_use:
+                break
+
+        logging.info("===" * 20)
+        logging.info(f'Computing metrics on predicted mprops sequences with FM-UNet model.')
+        metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
+        compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch)
