@@ -36,7 +36,7 @@ DATASET:
   DATASET_TYPE: 'BySplitRatio'    # Available options: ByFilenames|BySplitRatio|ByFilenames4Test
   VELOCITY_NORM: False
 MODEL:
-  NAME: "{}_HERMESBO_TE{}_PL{}_FL{}_CE{}_WT{}.pth"
+  NAME: "{}_HERMESBO_TE{}_PL{}_FL{}_CE{}_{}.pth"
   NSAMPLES: 1280      # Define number of predicted samples (64 BS * 20 rep, default values)
   NSAMPLES4PLOTS: 20  # Define number of predicted samples to plot static and dynamic seqs
   DDPM:
