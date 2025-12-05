@@ -5,16 +5,17 @@ import numpy as np
 from tqdm import tqdm
 from torchmetrics import MeanMetric
 
-from utils.utils import save_checkpoint, init_wandb
+from utils.utils import save_checkpoint, init_wandb, create_directory
 from utils.plot.plot_sampled_mprops import setup_predictions_plot
 from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
 from models.unet import UNet
 
 class FM_model:
-    def __init__(self, cfg, arch, mprops_count):
+    def __init__(self, cfg, arch, mprops_count, output_dir):
         self.cfg  = cfg
         self.arch = arch
         self.mprops_count = mprops_count
+        self.output_dir = output_dir
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.u_predictor = self._get_u_predictor()
@@ -192,6 +193,8 @@ class FM_model:
 
     def sampling(self, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter):
         logging.info(f'model full name:{model_fullname}')
+        create_directory(self.output_dir)
+
         self.u_predictor.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
         self.u_predictor.to(self.device)
 
@@ -222,6 +225,8 @@ class FM_model:
 
     def generate_metrics(self, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir):
         logging.info(f'model full name:{model_fullname}')
+        create_directory(self.output_dir)
+
         self.u_predictor.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
         self.u_predictor.to(self.device)
 

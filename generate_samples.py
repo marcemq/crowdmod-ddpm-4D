@@ -110,7 +110,9 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
 
 def generate_samples_fm(cfg, arch, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
     torch.manual_seed(42)
-    fm_model = FM_model(cfg, arch, mprops_count)
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FLOW_MATCHING.W_TYPE}_intg{cfg.MODEL.FLOW_MATCHING.INTEGRATOR}"
+
+    fm_model = FM_model(cfg, arch, mprops_count, output_dir)
     fm_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
 def generate_samples_convGRU(cfg, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
