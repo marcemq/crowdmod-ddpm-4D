@@ -195,7 +195,7 @@ class FM_model:
         self.u_predictor.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
         self.u_predictor.to(self.device)
 
-        intg_type = self.cfg.FLOW_MATCHING.INTEGRATOR
+        intg_type = self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR
         try:
             integrator = self.integrators[intg_type]
         except KeyError:
