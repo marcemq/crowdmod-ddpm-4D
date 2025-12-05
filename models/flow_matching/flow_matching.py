@@ -259,7 +259,7 @@ class FM_model:
             random_past_samples = past_test[random_past_idx]
             random_future_samples = future_test[random_past_idx]
 
-            x = integrator(random_past_samples, self.cfg.MODEL.NSAMPLES4PLOTS)
+            x = integrator(random_past_samples, samples_per_batch)
             future_samples_pred = x
             for i in range(len(random_past_idx)):
                 pred_seq_list.append(future_samples_pred[i])
