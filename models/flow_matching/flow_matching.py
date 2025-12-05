@@ -225,7 +225,14 @@ class FM_model:
         self.u_predictor.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
         self.u_predictor.to(self.device)
 
-        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
+        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_[LC]', model_fullname)
+
+        intg_type = self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR
+        try:
+            integrator = self.integrators[intg_type]
+        except KeyError:
+            raise ValueError(f"Unsupported INTEGRATOR '{intg_type}'. "
+                             f"Available: {list(self.integrators.keys())}")
 
         count_batch = 0
         pred_seq_list, gt_seq_list = [], []
@@ -247,7 +254,6 @@ class FM_model:
             random_past_samples = past_test[random_past_idx]
             random_future_samples = future_test[random_past_idx]
 
-            integrator = self.integrators[self.cfg.FLOW_MATCHING.INTEGRATOR]
             x = integrator(random_past_samples, self.cfg.MODEL.NSAMPLES4PLOTS)
             future_samples_pred = x
             for i in range(len(random_past_idx)):

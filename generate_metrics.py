@@ -110,6 +110,10 @@ def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batc
 
 def generate_metrics_fm(cfg, arch, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count):
     torch.manual_seed(42)
+
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FLOW_MATCHING.W_TYPE}_intg{cfg.MODEL.FLOW_MATCHING.INTEGRATOR}"
+    create_directory(output_dir)
+
     fm_model = FM_model(cfg, arch, mprops_count)
     fm_model.generate_metrics(batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir)
 
