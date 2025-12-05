@@ -108,11 +108,12 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
         set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
         break
 
-def generate_samples_fm(cfg, arch, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
+def generate_samples_fm(cfg, args, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
     torch.manual_seed(42)
     output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FLOW_MATCHING.W_TYPE}_intg{cfg.MODEL.FLOW_MATCHING.INTEGRATOR}"
+    macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)
 
-    fm_model = FM_model(cfg, arch, mprops_count, output_dir)
+    fm_model = FM_model(cfg, args.arch, mprops_count, output_dir)
     fm_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
 def generate_samples_convGRU(cfg, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
@@ -169,7 +170,7 @@ def sampling_mgmt(args, cfg):
     if args.arch == "DDPM-UNet":
         generate_samples_ddpm(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     elif args.arch == "FM-UNet":
-        generate_samples_fm(cfg, args.arch, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
+        generate_samples_fm(cfg, args, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     elif args.arch == "ConvGRU":
         generate_samples_convGRU(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     else:
