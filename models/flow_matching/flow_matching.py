@@ -178,9 +178,9 @@ class FM_model:
         for i, t in enumerate(torch.linspace(0, 1, self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR_STEPS.EULER, device=self.device), start=1):
             time_indices = (t * time_max_pos).clamp(0, time_max_pos-1).long()
             time_indices = time_indices.to(self.device).expand(xt.size(0))
-            # Apply the velocity to get the velocity
+            # Predict u 'velocity'
             u = self.u_predictor(xt, time_indices, past)
-            # Integration step
+            # Euler Integration step
             xt = xt + delta * u
             pbar.update(1)
 
@@ -189,7 +189,28 @@ class FM_model:
 
     @torch.inference_mode()
     def sampling_with_heun(self, past:torch.Tensor, nsamples):
-        return 1
+        # Set the model in evaluation mode
+        self.u_predictor.eval()
+        # Noise from a normal distribution
+        xt = torch.randn((nsamples, self.mprops_count, self.cfg.MACROPROPS.ROWS, self.cfg.MACROPROPS.COLS, self.cfg.DATASET.FUTURE_LEN), device=self.device)
+        time_max_pos = self.cfg.MODEL.FLOW_MATCHING.TIME_MAX_POS
+        delta = 1 / self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR_STEPS.HEUN
+
+        pbar = tqdm(range(1, self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR_STEPS.HEUN + 1), desc="Sampling (Heun)")
+        delta_k2 = 1
+        # Cycle over the integration steps
+        for i, t in enumerate(torch.linspace(0, 1, self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR_STEPS.HEUN, device=self.device), start=1):
+            time_indices = (t * time_max_pos).clamp(0, time_max_pos-1).long()
+            time_indices = time_indices.to(self.device).expand(xt.size(0))
+            # Apply Heun scheme RK2
+            k1 = self.u_predictor(xt, time_indices, past)
+            x_tilde = xt + delta * k1
+            k2 = self.u_predictor(x_tilde, time_indices + delta_k2, past)
+            xt = xt + 0.5*delta * (k1+k2)
+            pbar.update(1)
+
+        pbar.close()
+        return xt
 
     def sampling(self, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter):
         logging.info(f'model full name:{model_fullname}')
