@@ -11,7 +11,7 @@ from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
 from models.unet import UNet
 
 class FM_model:
-    def __init__(self, cfg, arch, mprops_count, output_dir):
+    def __init__(self, cfg, arch, mprops_count, output_dir=None):
         self.cfg  = cfg
         self.arch = arch
         self.mprops_count = mprops_count
