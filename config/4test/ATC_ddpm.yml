@@ -3,7 +3,7 @@ DATA_FS:
   AGG_DATA_DIR: 'datasets/ATC/aggData/'
   PICKLE_DIR: 'datasets/ATC/pickle/'
   OUTPUT_DIR : "output_atc"
-  SAVE_DIR: "saved_models/atc/"
+  SAVE_DIR: "trained_models/atc/"
   USE_PICKLE: False
 MACROPROPS:
   # Grid size
@@ -37,7 +37,7 @@ DATASET:
   DATASET_TYPE: 'ByFilenames'    # Available options: ByFilenames|BySplitRatio|ByFilenames4Test
   VELOCITY_NORM: False
 MODEL:
-  NAME: "ARCH-{}_ATC4TEST_TE{}_PL{}_FL{}_CE{}_VN{}.pth"
+  NAME: "{}_ATC4TEST_TE{}_PL{}_FL{}_CE{}_{}.pth"
   NSAMPLES: 640      # Define number of predicted samples (32 BS * 20 rep, default values)
   NSAMPLES4PLOTS: 20  # Define number of predicted samples to plot static and dynamic seqs
   DDPM:
@@ -67,7 +67,30 @@ MODEL:
     VIT:
       TMP_VAR: "Placeholder"
   FLOW_MATCHING:
-    TMP_VAR: "Placeholder"
+    TIME_MAX_POS: 1000
+    CHECKPOINTS_TO_KEEP: 7
+    W_TYPE: "Linear"     # Available options: Linear|Conic
+    INTEGRATOR: "Euler"  # Available options: Euler|Heun
+    INTEGRATOR_STEPS:
+        EULER: 1000
+        HEUN: 500
+    TRAIN:
+      EPOCHS: 200
+      SOLVER:
+        LR: 0.00001
+        WEIGHT_DECAY: 0.001
+        BETAS:
+          - 0.5
+          - 0.999
+    UNET:
+      CONDITION: "Past"
+      CONDITION_HANDLING: "embed"
+      NUM_RES_BLOCKS: 1
+      BASE_CH: 32  # 64, 128, 256, 512
+      BASE_CH_MULT: [1, 2, 4] # 32, 16, 8, 4
+      APPLY_ATTENTION: [False, False, True, False]
+      DROPOUT_RATE: 0.05
+      TIME_EMB_MULT: 4 # 128
   CONVGRU:
     TEACHER_FORCING: True
     ENC_HIDDEN_CH: [16, 64, 64, 96, 96, 96]

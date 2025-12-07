@@ -30,7 +30,7 @@ def train_one_epoch(denoiser_model:nn.Module,sampler:nn.Module,loader,optimizer,
     denoiser_model.train()
 
     with tqdm(total=len(loader), dynamic_ncols=True) as tq:
-        tq.set_description(f"Train :: Epoch: {epoch}/{total_epochs}")
+        tq.set_description(f"DDPM Train :: Epoch: {epoch}/{total_epochs}")
         # Scan the batches
         for batched_train_data in loader:
             tq.update(1)
@@ -54,6 +54,52 @@ def train_one_epoch(denoiser_model:nn.Module,sampler:nn.Module,loader,optimizer,
         mean_loss = loss_record.compute().item()
 
         tq.set_postfix_str(s=f"Epoch Loss: {mean_loss:.4f}")
+
+    return mean_loss
+
+def train_one_epoch_fm(unet_model:nn.Module, loader, optimizer, device, epoch, total_epochs, time_max_pos):
+    # Set in training mode
+    unet_model.train()
+
+    with tqdm(total=len(loader), dynamic_ncols=True) as tq:
+        loss_record = MeanMetric()
+        tq.set_description(f"FM Train :: Epoch: {epoch}/{total_epochs}")
+        # Scan the batches
+        for batched_train_data in loader:
+            tq.update(1)
+            # Take a batch of macropros sequences
+            past_train, future_train = batched_train_data
+            past_train, future_train = past_train.float(), future_train.float()
+            past_train, future_train = past_train.to(device=device), future_train.to(device=device)
+
+            x1 = future_train
+            x0 = torch.randn_like(x1, device=device)
+
+            t = torch.rand(x1.size(0), device=device)
+            t = t.view(-1, 1, 1, 1, 1)
+
+            u_target = x1 - x0
+
+            xt      = (1 - t) * x0 + t * x1
+
+            u_pred  = unet_model(xt, (t * time_max_pos).long().view(-1), past_train)
+
+            # Evaluating the loss
+            loss = ((u_target - u_pred) ** 2).mean()
+
+            # Backpropagation
+            loss.backward()
+            # Apply optimization step
+            optimizer.step()
+            optimizer.zero_grad()
+            loss_value = loss.detach().item()
+            loss_record.update(loss_value)
+
+            tq.set_postfix_str(s=f"FM Loss: {loss_value:.4f}")
+
+            mean_loss = loss_record.compute().item()
+
+        tq.set_postfix_str(s=f"FM Epoch Loss: {mean_loss:.4f}")
 
     return mean_loss
 

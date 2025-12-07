@@ -4,11 +4,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os, re
 import logging
-from models.generate import generate_ddpm, generate_ddim, generate_convGRU
+from models.generate import generate_ddpm, generate_ddim, generate_fm, generate_convGRU
 
-from models.unet import MacropropsDenoiser
+from models.unet import UNet
 from models.diffusion.ddpm import DDPM
 from models.convGRU.forecaster import Forecaster
+from models.flow_matching.flow_matching import FM_model
 from utils.utils import create_directory, get_filenames_paths, get_test_dataset, get_model_fullname
 from utils.plot.plot_sampled_mprops import MacropropPlotter
 from utils.myparser import getYamlConfig
@@ -61,7 +62,7 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(input_channels  = mprops_count,
+    denoiser = UNet(input_channels  = mprops_count,
                                   output_channels = mprops_count,
                                   num_res_blocks  = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
                                   base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
@@ -107,6 +108,14 @@ def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plot
         set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
         break
 
+def generate_samples_fm(cfg, args, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
+    torch.manual_seed(42)
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FLOW_MATCHING.W_TYPE}_intg{cfg.MODEL.FLOW_MATCHING.INTEGRATOR}"
+    macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)
+
+    fm_model = FM_model(cfg, args.arch, mprops_count, output_dir)
+    fm_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
+
 def generate_samples_convGRU(cfg, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
     torch.manual_seed(42)
     # Setting the device to work with
@@ -148,7 +157,7 @@ def sampling_mgmt(args, cfg):
     # === Prepare file paths ===
     filenames_and_numSamples = get_filenames_paths(cfg)
     model_fullname = get_model_fullname(cfg, args.arch, args.model_sample_to_load)
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_VN{cfg.DATASET.VELOCITY_NORM}_modelE{args.model_sample_to_load}"
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}"
     create_directory(output_dir)
 
     # === Load test dataset ===
@@ -160,6 +169,8 @@ def sampling_mgmt(args, cfg):
     logging.info(f"=======>>>> Init sampling for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
         generate_samples_ddpm(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
+    elif args.arch == "FM-UNet":
+        generate_samples_fm(cfg, args, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     elif args.arch == "ConvGRU":
         generate_samples_convGRU(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count, macropropPlotter)
     else:
@@ -177,7 +188,7 @@ if __name__ == '__main__':
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
     parser.add_argument('--model-sample-to-load', type=str, default="000", help='Model sample to be used for generate mprops samples. Default value is for best model.')
-    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|ConvGRU')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvGRU')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)

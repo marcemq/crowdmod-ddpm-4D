@@ -19,9 +19,10 @@ from utils.utils import create_directory, get_filenames_paths, get_training_data
 from utils.myparser import getYamlConfig
 from utils.model_details import count_trainable_params
 from models.diffusion.forward import ForwardSampler
-from models.unet import MacropropsDenoiser
+from models.unet import UNet
 from models.diffusion.ddpm import DDPM
-from models.training import train_one_epoch, train_one_epoch_convGRU
+from models.flow_matching.flow_matching import FM_model
+from models.training import train_one_epoch, train_one_epoch_convGRU, train_one_epoch_fm
 from models.convGRU.forecaster import Forecaster
 from functools import partial
 
@@ -30,7 +31,7 @@ def train_ddpm(cfg, batched_train_data, arch, mprops_count):
     # Setting the device to work with
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Instanciate the UNet for the reverse diffusion
-    denoiser = MacropropsDenoiser(input_channels  = mprops_count,
+    denoiser = UNet(input_channels  = mprops_count,
                                   output_channels = mprops_count,
                                   num_res_blocks  = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
                                   base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
@@ -53,7 +54,7 @@ def train_ddpm(cfg, batched_train_data, arch, mprops_count):
     consecutive_nan_count = 0
     low = int(cfg.MODEL.DDPM.TRAIN.EPOCHS * 0.75)
     high = cfg.MODEL.DDPM.TRAIN.EPOCHS + 1  # randint upper bound is exclusive
-    epoch_model_samples = np.random.randint(low, high, size=cfg.MODEL.DDPM.MODEL_SAMPLES)
+    epochs_cktp_to_save = np.random.randint(low, high, size=cfg.MODEL.DDPM.CHECKPOINTS_TO_KEEP)
     # Training loop
     for epoch in range(1,cfg.MODEL.DDPM.TRAIN.EPOCHS + 1):
         torch.cuda.empty_cache()
@@ -79,10 +80,18 @@ def train_ddpm(cfg, batched_train_data, arch, mprops_count):
             save_checkpoint(optimizer, denoiser, "000", cfg, arch)
 
         # Save model samples at stable loss
-        if epoch in epoch_model_samples:
-            logging.info(f"Epoch {epoch}: in sample set, saving model sample.")
+        if epoch in epochs_cktp_to_save:
+            logging.info(f"Epoch {epoch}: in checkpoints_to_keep set, saving model.")
             save_checkpoint(optimizer, denoiser, epoch, cfg, arch)
 
+def train_fm(cfg, batched_train_data, arch, mprops_count):
+    torch.manual_seed(42)
+    fm_model = FM_model(cfg, arch, mprops_count)
+    trainable_params = count_trainable_params(fm_model.u_predictor)
+    logging.info(f"Total trainable parameters at u_predictor:{trainable_params}")
+
+    fm_model.train(batched_train_data)
+    
 def train_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count):
     torch.manual_seed(42)
     # Setting the device to work with
@@ -147,6 +156,8 @@ def training_mgmt(args, cfg):
     logging.info(f"=======>>>> Init training for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
         train_ddpm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
+    elif args.arch == "FM-UNet":
+        train_fm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
     elif args.arch == "ConvGRU":
         train_convGRU(cfg, batched_train_data, batched_val_data, arch=args.arch, mprops_count=mprops_count)
     else:
@@ -156,7 +167,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
-    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|ConvGRU')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvGRU')
     args = parser.parse_args()
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
     training_mgmt(args, cfg)

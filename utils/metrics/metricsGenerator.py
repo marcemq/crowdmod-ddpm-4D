@@ -293,3 +293,21 @@ class MetricsGenerator:
             merge_and_plot_boxplot(df_max=metrics_df_dict['MIN-ENERGY'], df=metrics_df_dict['ENERGY'], title=f"ENERGY and MIN-ENERGY of {title}", save_path=f"{self.output_dir}/BP_ENERGY.png", ytick_step=None, prefix='min-')
         if len(metrics_df_dict['MIN_RE_DENSITY']) != 0:
             merge_and_plot_boxplot(df_max=metrics_df_dict['MIN_RE_DENSITY'], df=metrics_df_dict['RE_DENSITY'], title=f"Relative DENSITY and MIN_RE_DENSITY of {title}", save_path=f"{self.output_dir}/BP_RE_DENSITY.png", ytick_step=2, prefix='min-', outliersFlag=True)
+
+def compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch, arch="DDPM-UNet") :
+    if metric in ['PSNR', 'ALL']:
+        metricsGenerator.compute_psnr_metric(chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+    if metric in ['SSIM', 'ALL']:
+        metricsGenerator.compute_ssim_metric(chunkRepdPastSeq)
+    if metric in ['MF_MSE', 'MF_BHATT', 'ALL']:
+        mse_flag = metric == 'MF_MSE' or metric == 'ALL'
+        bhatt_flag = metric == 'MF_BHATT' or metric == 'ALL'
+        metricsGenerator.compute_motion_feature_metrics(mse_flag, bhatt_flag)
+    if metric in ['ENERGY', 'ALLA']:
+         metricsGenerator.compute_energy_metric(chunkRepdPastSeq)
+    if metric in ['RE_DENSITY', 'ALL']:
+        metricsGenerator.compute_re_density_metric(chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+
+    title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})-({arch})"
+    metricsGenerator.save_data_metrics(match, title, samples_per_batch)
+    metricsGenerator.save_metrics_boxplots(title)

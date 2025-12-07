@@ -89,6 +89,8 @@ def get_checkpoint_save_path(cfg, arch, epoch):
     """
     if arch == "DDPM-UNet":
         save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+    elif arch == "FM-UNet":
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FLOW_MATCHING.W_TYPE))
     elif arch == "ConvGRU":
         save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVGRU.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     else:
@@ -111,6 +113,8 @@ def get_model_fullname(cfg, arch, epoch):
     """
     if arch == "DDPM-UNet":
         model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
+    elif arch == "FM-UNet":
+        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FLOW_MATCHING.W_TYPE))
     elif arch == "ConvGRU":
         model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVGRU.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.DATASET.VELOCITY_NORM))
     else:
@@ -135,6 +139,21 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
                 "future_len": cfg.DATASET.FUTURE_LEN,
                 "weight_decay": cfg.MODEL.DDPM.TRAIN.SOLVER.WEIGHT_DECAY,
                 "solver_betas": cfg.MODEL.DDPM.TRAIN.SOLVER.BETAS,
+            }
+        )
+    elif arch == "FM-UNet":
+        wandb.init(
+            project=project_name,
+            config={
+                "architecture": arch,
+                "dataset": cfg.DATASET.NAME,
+                "learning_rate": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.LR,
+                "epochs": cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS,
+                "batch_size": cfg.DATASET.BATCH_SIZE,
+                "past_len": cfg.DATASET.PAST_LEN,
+                "future_len": cfg.DATASET.FUTURE_LEN,
+                "weight_decay": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.WEIGHT_DECAY,
+                "solver_betas": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.BETAS,
             }
         )
     elif arch == "ConvGRU":
@@ -170,6 +189,24 @@ def get_sweep_configuration(arch):
                 "time_emb_mult": {"values": [2, 4, 8]},
                 "scale": {"values": [0.1, 0.3, 0.5, 0.8]},
                 "timesteps": {"values": [500, 1000, 1500]},
+            },
+        }
+    elif arch == "FM-UNet":
+        sweep_configuration = {
+            "name": "sweep_crowdmod_fm",
+            "method": "random",
+            "metric": {"goal": "minimize", "name": "train_loss"},
+            "parameters": {
+                "learning_rate": {"min": 0.000005, "max": 0.0001},
+                "weight_decay": {"values": [0.0003, 0.001, 0.01]},
+                "betas": {"values": [[0.5, 0.999], [0.7, 0.999], [0.9, 0.999]]},
+                "optimizer": {"values": ["Adam", "AdamW"]},
+                "batch_size": {"values": [16, 32, 64]},
+                "epochs": {"values": [150, 180, 200]},
+                "base_ch": {"values": [32, 64]},
+                "dropout_rate": {"values": [0.05, 0.1, 0.15]},
+                "time_emb_mult": {"values": [2, 4, 8]},
+                "time_max_pos": {"values": [800, 1000, 1200]},
             },
         }
     elif arch == "ConvGRU":
