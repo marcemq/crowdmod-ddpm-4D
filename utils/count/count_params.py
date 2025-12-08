@@ -7,7 +7,7 @@ sys.path.append(project_root)
 import torch
 import torch.nn as nn
 from utils.myparser import getYamlConfig
-from models.unet import UNet
+from models.backbones.unet import UNet
 from models.diffusion.ddpm import DDPM
 
 def num_params(module:nn.Module):

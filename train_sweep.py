@@ -19,7 +19,7 @@ from utils.dataset import getDataset
 from utils.model_details import count_trainable_params
 from utils.utils import get_filenames_paths, get_training_dataset, get_sweep_configuration, save_checkpoint, init_wandb, create_directory, get_optimizer
 from models.diffusion.forward import ForwardSampler
-from models.unet import UNet
+from models.backbones.unet import UNet
 from models.diffusion.ddpm import DDPM
 from models.training import train_one_epoch, train_one_epoch_fm, train_one_epoch_convGRU
 from models.convGRU.forecaster import Forecaster

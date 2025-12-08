@@ -6,7 +6,7 @@ import os, re
 import logging
 from models.generate import generate_ddpm, generate_ddim, generate_fm, generate_convGRU
 
-from models.unet import UNet
+from models.backbones.unet import UNet
 from models.diffusion.ddpm import DDPM
 from models.convGRU.forecaster import Forecaster
 from models.flow_matching.flow_matching import FM_model
