@@ -19,7 +19,7 @@ from utils.utils import create_directory, get_filenames_paths, get_training_data
 from utils.myparser import getYamlConfig
 from utils.model_details import count_trainable_params
 from models.diffusion.forward import ForwardSampler
-from models.unet import UNet
+from models.backbones.unet import UNet
 from models.diffusion.ddpm import DDPM
 from models.flow_matching.flow_matching import FM_model
 from models.training import train_one_epoch, train_one_epoch_convGRU, train_one_epoch_fm

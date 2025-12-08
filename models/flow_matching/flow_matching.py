@@ -8,7 +8,7 @@ from torchmetrics import MeanMetric
 from utils.utils import save_checkpoint, init_wandb, create_directory
 from utils.plot.plot_sampled_mprops import setup_predictions_plot
 from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
-from models.unet import UNet
+from models.backbones.unet import UNet
 
 class FM_model:
     def __init__(self, cfg, arch, mprops_count, output_dir=None):
