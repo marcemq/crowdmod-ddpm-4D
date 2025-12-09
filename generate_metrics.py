@@ -38,7 +38,7 @@ def compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batc
 
 def generate_metrics_ddpm(cfg, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir, mprops_count):
     torch.manual_seed(42)
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_sampling-{cfg.MODEL.DDPM.SAMPLER}"
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}"
 
     ddpm_model = DDPM_model(cfg, args.arch, mprops_count, output_dir)
     ddpm_model.generate_metrics(batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir)
