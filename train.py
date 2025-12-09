@@ -18,71 +18,19 @@ from matplotlib import pyplot as plt
 from utils.utils import create_directory, get_filenames_paths, get_training_dataset, save_checkpoint, init_wandb
 from utils.myparser import getYamlConfig
 from utils.model_details import count_trainable_params
-from models.diffusion.forward import ForwardSampler
-from models.backbones.unet import UNet
-from models.diffusion.ddpm import DDPM
+from models.diffusion.ddpm import DDPM_model
 from models.flow_matching.flow_matching import FM_model
-from models.training import train_one_epoch, train_one_epoch_convGRU, train_one_epoch_fm
+from models.training import train_one_epoch_convGRU
 from models.convGRU.forecaster import Forecaster
 from functools import partial
 
 def train_ddpm(cfg, batched_train_data, arch, mprops_count):
     torch.manual_seed(42)
-    # Setting the device to work with
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # Instanciate the UNet for the reverse diffusion
-    denoiser = UNet(input_channels  = mprops_count,
-                                  output_channels = mprops_count,
-                                  num_res_blocks  = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
-                                  base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
-                                  base_channels_multiples = cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
-                                  apply_attention         = cfg.MODEL.DDPM.UNET.APPLY_ATTENTION,
-                                  dropout_rate            = cfg.MODEL.DDPM.UNET.DROPOUT_RATE,
-                                  time_multiple           = cfg.MODEL.DDPM.UNET.TIME_EMB_MULT,
-                                  condition               = cfg.MODEL.DDPM.UNET.CONDITION)
-    denoiser.to(device)
-    trainable_params = count_trainable_params(denoiser)
+    ddpm_model = DDPM_model(cfg, arch, mprops_count)
+    trainable_params = count_trainable_params(ddpm_model.denoiser)
     logging.info(f"Total trainable parameters at denoiser:{trainable_params}")
-    # The optimizer (Adam with weight decay)
-    optimizer = optim.Adam(denoiser.parameters(),lr=cfg.MODEL.DDPM.TRAIN.SOLVER.LR, betas=cfg.MODEL.DDPM.TRAIN.SOLVER.BETAS,weight_decay=cfg.MODEL.DDPM.TRAIN.SOLVER.WEIGHT_DECAY)
 
-    # Instantiate the diffusion model
-    diffusionmodel = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS, scale=cfg.MODEL.DDPM.SCALE)
-    diffusionmodel.to(device)
-
-    best_loss      = 1e6
-    consecutive_nan_count = 0
-    low = int(cfg.MODEL.DDPM.TRAIN.EPOCHS * 0.75)
-    high = cfg.MODEL.DDPM.TRAIN.EPOCHS + 1  # randint upper bound is exclusive
-    epochs_cktp_to_save = np.random.randint(low, high, size=cfg.MODEL.DDPM.CHECKPOINTS_TO_KEEP)
-    # Training loop
-    for epoch in range(1,cfg.MODEL.DDPM.TRAIN.EPOCHS + 1):
-        torch.cuda.empty_cache()
-        gc.collect()
-
-        # One epoch of training
-        epoch_loss = train_one_epoch(denoiser,diffusionmodel,batched_train_data,optimizer,device,epoch=epoch,total_epochs=cfg.MODEL.DDPM.TRAIN.EPOCHS)
-        wandb.log({"train_loss": epoch_loss})
-        # NaN handling / early stopping
-        if np.isnan(epoch_loss):
-            consecutive_nan_count += 1
-            logging.warning(f"Epoch {epoch}: loss is NaN ({consecutive_nan_count} consecutive)")
-            if consecutive_nan_count >= 3:
-                logging.error("Loss has been NaN for 3 consecutive epochs; terminating training early.")
-                wandb.finish()
-                break
-        else:
-            consecutive_nan_count = 0  # reset on valid loss
-
-        # Save best checkpoint from all training
-        if epoch_loss < best_loss:
-            best_loss = epoch_loss
-            save_checkpoint(optimizer, denoiser, "000", cfg, arch)
-
-        # Save model samples at stable loss
-        if epoch in epochs_cktp_to_save:
-            logging.info(f"Epoch {epoch}: in checkpoints_to_keep set, saving model.")
-            save_checkpoint(optimizer, denoiser, epoch, cfg, arch)
+    ddpm_model.train(batched_train_data)
 
 def train_fm(cfg, batched_train_data, arch, mprops_count):
     torch.manual_seed(42)
