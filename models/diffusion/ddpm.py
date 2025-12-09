@@ -274,7 +274,7 @@ class DDPM_model:
         self.denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
         self.denoiser.to(self.device)
 
-        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_[LC]', model_fullname)
+        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_NA', model_fullname)
         timesteps = self.cfg.MODEL.DDPM.TIMESTEPS
         backward_sampler = DDPM(timesteps=self.cfg.MODEL.DDPM.TIMESTEPS, scale=self.cfg.MODEL.DDPM.SCALE)
         backward_sampler.to(self.device)
