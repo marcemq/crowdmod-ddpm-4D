@@ -98,7 +98,7 @@ class DDPM_model:
                 past_train, future_train = past_train.float(), future_train.float()
                 past_train, future_train = past_train.to(device=self.device), future_train.to(device=self.device)
 
-                loss = self.train_step(future_train, past_train, forward_sampler)
+                loss = self._train_step(future_train, past_train, forward_sampler)
 
                 # Backpropagation and update
                 self.optimizer.zero_grad(set_to_none=True)
