@@ -14,6 +14,7 @@ from models.diffusion.forward import get_from_idx
 from models.guidance import sparsityGradient, preservationMassNumericalGradientOptimal
 from utils.utils import save_checkpoint, init_wandb, create_directory
 from utils.plot.plot_sampled_mprops import setup_predictions_plot
+from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
 
 class DDPM(ForwardSampler):
     # This will implement one step back in the reverse process
@@ -265,3 +266,61 @@ class DDPM_model:
 
             setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
             break
+
+    def generate_metrics(self, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir):
+        logging.info(f'model full name:{model_fullname}')
+        create_directory(self.output_dir)
+
+        self.denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
+        self.denoiser.to(self.device)
+
+        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_[LC]', model_fullname)
+        timesteps = self.cfg.MODEL.DDPM.TIMESTEPS
+        backward_sampler = DDPM(timesteps=self.cfg.MODEL.DDPM.TIMESTEPS, scale=self.cfg.MODEL.DDPM.SCALE)
+        backward_sampler.to(self.device)
+
+        count_batch = 0
+        pred_seq_list, gt_seq_list = [], []
+        # cicle over batched test data
+        for batch in batched_test_data:
+            logging.info("===" * 20)
+            logging.info(f'Computing sampling on batch:{count_batch+1}')
+            past_test, future_test = batch
+            past_test, future_test = past_test.float(), future_test.float()
+            past_test, future_test = past_test.to(device=self.device), future_test.to(device=self.device)
+            # Compute the idx of the past sequences to work on
+            if past_test.shape[0] < samples_per_batch:
+                random_past_idx = torch.randperm(past_test.shape[0])
+            else:
+                random_past_idx = torch.randperm(past_test.shape[0])[:samples_per_batch]
+
+            expanded_random_past_idx = torch.repeat_interleave(random_past_idx, chunkRepdPastSeq)
+            random_past_idx = expanded_random_past_idx[:samples_per_batch]
+            random_past_samples = past_test[random_past_idx]
+            random_future_samples = future_test[random_past_idx]
+
+            if self.cfg.MODEL.DDPM.SAMPLER == "DDPM":
+                x, _  = self._generate_ddpm(random_past_samples, backward_sampler, samples_per_batch) # AR review .cpu() call here
+                if self.cfg.MODEL.DDPM.GUIDANCE == "sparsity" or self.cfg.MODEL.DDPM.GUIDANCE=="mass_preservation" or self.cfg.MODEL.DDPM.GUIDANCE == "None":
+                    l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
+                    logging.info(f'L1 norm {l1:.2f} using {self.cfg.MODEL.DDPM.GUIDANCE} guidance')
+            elif self.cfg.MODEL.DDPM.SAMPLER == "DDIM":
+                taus = np.arange(0, timesteps, self.cfg.MODEL.DDPM.DDIM_DIVIDER)
+                logging.info(f'Shape of subset taus:{taus.shape}')
+                x, _ = self._generate_ddim(random_past_samples, taus, backward_sampler, samples_per_batch) # AR review .cpu() call here
+            else:
+                logging.info(f"{self.cfg.MODEL.DDPM.SAMPLER} sampler not supported")
+
+            future_samples_pred = x
+            for i in range(len(random_past_idx)):
+                pred_seq_list.append(future_samples_pred[i])
+                gt_seq_list.append(random_future_samples[i])
+
+            count_batch += 1
+            if count_batch == batches_to_use:
+                break
+
+        logging.info("===" * 20)
+        logging.info(f'Computing metrics on predicted mprops sequences with DDPM model.')
+        metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
+        compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch, self.arch)
