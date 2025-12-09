@@ -186,7 +186,7 @@ class DDPM_model:
         return xnoisy, xnoisy_over_time
 
     @torch.inference_mode()
-    def generate_ddim(self, past:torch.Tensor, taus, backward_sampler:DDPM, nsamples, history=False):
+    def _generate_ddim(self, past:torch.Tensor, taus, backward_sampler:DDPM, nsamples, history=False):
         # Set the model in evaluation mode
         self.denoiser.eval()
         # Noise from a normal distribution
