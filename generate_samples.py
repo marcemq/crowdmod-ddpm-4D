@@ -4,10 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os, re
 import logging
-from models.generate import generate_ddpm, generate_ddim, generate_fm, generate_convGRU
+from models.generate import generate_convGRU
 
-from models.backbones.unet import UNet
-from models.diffusion.ddpm import DDPM
+from models.diffusion.ddpm import DDPM_model
 from models.convGRU.forecaster import Forecaster
 from models.flow_matching.flow_matching import FM_model
 from utils.utils import create_directory, get_filenames_paths, get_test_dataset, get_model_fullname
@@ -59,54 +58,11 @@ def set_predictions_plot(predictions, random_past_idx, random_past_samples, rand
 
 def generate_samples_ddpm(cfg, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
     torch.manual_seed(42)
-    # Setting the device to work with
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # Instanciate the UNet for the reverse diffusion
-    denoiser = UNet(input_channels  = mprops_count,
-                                  output_channels = mprops_count,
-                                  num_res_blocks  = cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
-                                  base_channels           = cfg.MODEL.DDPM.UNET.BASE_CH,
-                                  base_channels_multiples = cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
-                                  apply_attention         = cfg.MODEL.DDPM.UNET.APPLY_ATTENTION,
-                                  dropout_rate            = cfg.MODEL.DDPM.UNET.DROPOUT_RATE,
-                                  time_multiple           = cfg.MODEL.DDPM.UNET.TIME_EMB_MULT,
-                                  condition               = cfg.MODEL.DDPM.UNET.CONDITION)
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}"
+    macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)
 
-    logging.info(f'model full name:{model_fullname}')
-    denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
-    denoiser.to(device)
-
-    # Instantiate the diffusion model 
-    timesteps=cfg.MODEL.DDPM.TIMESTEPS
-    diffusionmodel = DDPM(timesteps=cfg.MODEL.DDPM.TIMESTEPS)
-    diffusionmodel.to(device)
-
-    for batch in batched_test_data:
-        past_test, future_test = batch
-        past_test, future_test = past_test.float(), future_test.float()
-        past_test, future_test = past_test.to(device=device), future_test.to(device=device)
-        random_past_idx = torch.randperm(past_test.shape[0])[:cfg.MODEL.NSAMPLES4PLOTS]
-        # Predict different sequences for the same past sequence
-        if samePastSeq:
-            fixed_past_idx = random_past_idx[0]
-            random_past_idx.fill_(fixed_past_idx)
-
-        random_past_samples = past_test[random_past_idx]
-        random_future_samples = future_test[random_past_idx]
-        if cfg.MODEL.DDPM.SAMPLER == "DDPM":
-            predictions, xnoisy_over_time  = generate_ddpm(denoiser, random_past_samples, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS, mprops_count=mprops_count) # AR review .cpu() call here
-            if cfg.MODEL.DDPM.GUIDANCE == "sparsity" or cfg.MODEL.DDPM.GUIDANCE == "None":
-                l1 = torch.mean(torch.abs(predictions[:,0,:,:,:])).cpu().detach().numpy()
-                logging.info('L1 norm {:.2f}'.format(l1))
-        elif cfg.MODEL.DDPM.SAMPLER == "DDIM":
-            taus = np.arange(0,timesteps,cfg.MODEL.DDPM.DDIM_DIVIDER)
-            logging.info(f'Shape of subset taus:{taus.shape}')
-            predictions, xnoisy_over_time = generate_ddim(denoiser, random_past_samples, taus, diffusionmodel, cfg, device, cfg.MODEL.NSAMPLES4PLOTS, mprops_count=mprops_count) # AR review .cpu() call here
-        else:
-            logging.info(f"{cfg.MODEL.DDPM.SAMPLER} sampler not supported")
-
-        set_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
-        break
+    ddpm_model = DDPM_model(cfg, args.arch, mprops_count, output_dir)
+    ddpm_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
 def generate_samples_fm(cfg, args, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count, macropropPlotter):
     torch.manual_seed(42)
