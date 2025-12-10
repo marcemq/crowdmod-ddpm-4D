@@ -6,7 +6,7 @@ import logging
 from models.diffusion.ddpm import DDPM_model
 from models.convGRU.convGRU import ConvGRU_model
 from models.flow_matching.flow_matching import FM_model
-from utils.utils import create_directory, get_filenames_paths, get_test_dataset, get_model_fullname
+from utils.utils import get_filenames_paths, get_test_dataset, get_model_fullname
 from utils.plot.plot_sampled_mprops import MacropropPlotter
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
