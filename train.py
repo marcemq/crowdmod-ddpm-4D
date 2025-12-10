@@ -1,6 +1,5 @@
 import argparse
-import sys
-import os, re
+import sys, os
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
@@ -8,21 +7,15 @@ sys.path.append(project_root)
 import logging
 import torch
 import sys
-import wandb
-import numpy as np
 from torchvision.utils import make_grid
-import torch.optim as optim
-import gc,logging,os
+import logging,os
 
-from matplotlib import pyplot as plt
-from utils.utils import create_directory, get_filenames_paths, get_training_dataset, save_checkpoint, init_wandb
+from utils.utils import create_directory, get_filenames_paths, get_training_dataset, init_wandb
 from utils.myparser import getYamlConfig
 from utils.model_details import count_trainable_params
 from models.diffusion.ddpm import DDPM_model
+from models.convGRU.convGRU import ConvGRU_model
 from models.flow_matching.flow_matching import FM_model
-from models.training import train_one_epoch_convGRU
-from models.convGRU.forecaster import Forecaster
-from functools import partial
 
 def train_ddpm(cfg, batched_train_data, arch, mprops_count):
     torch.manual_seed(42)
@@ -42,48 +35,11 @@ def train_fm(cfg, batched_train_data, arch, mprops_count):
     
 def train_convGRU(cfg, batched_train_data, batched_val_data, arch, mprops_count):
     torch.manual_seed(42)
-    # Setting the device to work with
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    logging.info(f"Batched Traininig  and Validation dataset loaded.")
-
-    convGRU_model = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
-                               input_channels       = mprops_count,
-                               enc_hidden_channels  = cfg.MODEL.CONVGRU.ENC_HIDDEN_CH,
-                               forc_hidden_channels = cfg.MODEL.CONVGRU.FORC_HIDDEN_CH,
-                               enc_kernels          = cfg.MODEL.CONVGRU.ENC_KERNELS,
-                               forc_kernels         = cfg.MODEL.CONVGRU.FORC_KERNELS,
-                               device               = device,
-                               bias                 = False)
-
-    trainable_params = count_trainable_params(convGRU_model)
+    convGRU_model = ConvGRU_model(cfg, arch, mprops_count)
+    trainable_params = count_trainable_params(convGRU_model.convGRU)
     logging.info(f"Total trainable parameters at ConvGRU model:{trainable_params}")
-    # The optimizer (Adam with weight decay)
-    optimizer = optim.Adam(convGRU_model.parameters(),lr=cfg.MODEL.CONVGRU.TRAIN.SOLVER.LR, betas=cfg.MODEL.CONVGRU.TRAIN.SOLVER.BETAS,weight_decay=cfg.MODEL.CONVGRU.TRAIN.SOLVER.WEIGHT_DECAY)
-    best_loss      = 1e6
-    consecutive_nan_count = 0
-    # Training loop
-    for epoch in range(1,cfg.MODEL.CONVGRU.TRAIN.EPOCHS + 1):
-        torch.cuda.empty_cache()
-        gc.collect()
-        epoch_train_loss, epoch_val_loss = train_one_epoch_convGRU(convGRU_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=cfg.MODEL.CONVGRU.TRAIN.EPOCHS, teacher_forcing=cfg.MODEL.CONVGRU.TEACHER_FORCING)
-        wandb.log({
-            "train_loss": min(epoch_train_loss, 10),
-            "val_loss": min(epoch_val_loss, 10)
-        }, step=epoch)
-        # NaN handling / early stopping
-        if np.isnan(epoch_train_loss):
-            consecutive_nan_count += 1
-            logging.warning(f"Epoch {epoch}: loss is NaN ({consecutive_nan_count} consecutive)")
-            if consecutive_nan_count >= 3:
-                logging.error("Loss has been NaN for 3 consecutive epochs; terminating training early.")
-                wandb.finish()
-                break
-        else:
-            consecutive_nan_count = 0  # reset on valid loss
-        # Save best checkpoint from all training
-        if epoch_train_loss < best_loss:
-            best_loss = epoch_train_loss
-            save_checkpoint(optimizer, convGRU_model, "000", cfg, arch)
+
+    convGRU_model.train(batched_train_data, batched_val_data)
 
 def training_mgmt(args, cfg):
     """
