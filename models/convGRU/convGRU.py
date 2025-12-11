@@ -36,7 +36,7 @@ class ConvGRU_model:
                                           weight_decay=cfg.MODEL.CONVGRU.TRAIN.SOLVER.WEIGHT_DECAY)
 
     def _train_one_epoch(self, train_data_loader, val_data_loader, epoch):
-        self.convGRU_model.train()
+        self.convGRU.train()
         train_loss_record = MeanMetric()
         val_loss_record = MeanMetric()
 
