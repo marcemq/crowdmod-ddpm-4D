@@ -22,11 +22,11 @@ def generate_metrics_fm(cfg, arch, batched_test_data, chunkRepdPastSeq, metric, 
     fm_model = FM_model(cfg, arch, mprops_count, output_dir)
     fm_model.generate_metrics(batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir)
 
-def generate_metrics_convGRU(cfg, args, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, mprops_count):
+def generate_metrics_convGRU(cfg, arch, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, mprops_count):
     torch.manual_seed(42)
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}"
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{arch}_modelE{args.model_sample_to_load}"
 
-    convGRU_model = ConvGRU_model(cfg, args.arch, mprops_count, output_dir)
+    convGRU_model = ConvGRU_model(cfg, arch, mprops_count, output_dir)
     convGRU_model.generate_metrics(batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir)
 
 def metrics_mgmt(args, cfg):
