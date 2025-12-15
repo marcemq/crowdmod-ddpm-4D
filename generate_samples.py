@@ -77,7 +77,7 @@ def sampling_mgmt(args, cfg):
     elif args.arch == "FM-UNet":
         generate_samples_fm(cfg, args, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count)
     elif args.arch == "ConvGRU":
-        generate_samples_convGRU(cfg, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count)
+        generate_samples_convGRU(cfg, args, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count)
     else:
         logging.error("Architecture not supported.")
 
