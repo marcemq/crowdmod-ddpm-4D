@@ -197,5 +197,6 @@ class ConvGRU_model:
 
         logging.info("===" * 20)
         logging.info(f'Computing metrics on predicted mprops sequences with ConvGRU model.')
+        logging.info(f'Shape of seq PRED and GT:{pred_seq_list[0].shape}, {gt_seq_list[0].shape}')
         metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
         compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch)
