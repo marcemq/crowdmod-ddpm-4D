@@ -15,18 +15,18 @@ def generate_metrics_ddpm(cfg, args, batched_test_data, chunkRepdPastSeq, metric
     ddpm_model = DDPM_model(cfg, args.arch, mprops_count, output_dir)
     ddpm_model.generate_metrics(batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir)
 
-def generate_metrics_fm(cfg, arch, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, mprops_count):
+def generate_metrics_fm(cfg, args, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, mprops_count):
     torch.manual_seed(42)
     output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FLOW_MATCHING.W_TYPE}_intg{cfg.MODEL.FLOW_MATCHING.INTEGRATOR}"
 
-    fm_model = FM_model(cfg, arch, mprops_count, output_dir)
+    fm_model = FM_model(cfg, args.arch, mprops_count, output_dir)
     fm_model.generate_metrics(batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir)
 
-def generate_metrics_convGRU(cfg, arch, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, mprops_count):
+def generate_metrics_convGRU(cfg, args, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, mprops_count):
     torch.manual_seed(42)
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{arch}_modelE{args.model_sample_to_load}"
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}"
 
-    convGRU_model = ConvGRU_model(cfg, arch, mprops_count, output_dir)
+    convGRU_model = ConvGRU_model(cfg, args.arch, mprops_count, output_dir)
     convGRU_model.generate_metrics(batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir)
 
 def metrics_mgmt(args, cfg):
@@ -52,11 +52,11 @@ def metrics_mgmt(args, cfg):
     # === Generate metrics per architecture ===
     logging.info(f"=======>>>> Init metrics compute for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch == "DDPM-UNet":
-        generate_metrics_ddpm(cfg, args.arch, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, mprops_count=mprops_count)
+        generate_metrics_ddpm(cfg, args, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, mprops_count=mprops_count)
     elif args.arch == "FM-UNet":
-        generate_metrics_fm(cfg, args.arch, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, mprops_count=mprops_count)
+        generate_metrics_fm(cfg, args, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, mprops_count=mprops_count)
     elif args.arch == "ConvGRU":
-        generate_metrics_convGRU(cfg, args.arch, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, mprops_count=mprops_count)
+        generate_metrics_convGRU(cfg, args, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, mprops_count=mprops_count)
     else:
         logging.error("Architecture not supported.")
 
