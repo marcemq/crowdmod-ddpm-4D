@@ -183,11 +183,9 @@ class ConvGRU_model:
             random_future_samples = future_test[random_past_idx]
             predictions = self._generate_convGRU(random_past_samples, random_future_samples, teacher_forcing=False)
 
-            logging.info(f'***** Shape of seq PRED and GT BEFORE:{predictions.shape}, {random_future_samples.shape}')
             # mprops setup for metrics compute
             random_future_samples = random_future_samples[:, :self.cfg.METRICS.MPROPS_COUNT, :, :, :]
             predictions = predictions[:, :self.cfg.METRICS.MPROPS_COUNT, :, :, :]
-            logging.info(f'***** Shape of seq PRED and GT AFTER:{predictions.shape}, {random_future_samples.shape}')
 
             for i in range(len(random_past_idx)):
                 pred_seq_list.append(predictions[i])
@@ -199,6 +197,5 @@ class ConvGRU_model:
 
         logging.info("===" * 20)
         logging.info(f'Computing metrics on predicted mprops sequences with ConvGRU model.')
-        logging.info(f'Shape of seq PRED and GT:{pred_seq_list[0].shape}, {gt_seq_list[0].shape}')
         metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
         compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch)
