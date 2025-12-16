@@ -164,36 +164,38 @@ class ConvGRU_model:
         count_batch = 0
         pred_seq_list, gt_seq_list = [], []
 
-        with tqdm(total=batches_to_use) as tq:
-            # scan test batches
-            for batch in batched_test_data:
-                tq.set_description(f"Computing sampling on batch: {count_batch+1}/{batches_to_use}")
-                tq.update(1)
-                past_test, future_test = batch
-                past_test, future_test = past_test.float(), future_test.float()
-                past_test, future_test = past_test.to(device=self.device), future_test.to(device=self.device)
-                # Compute the idx of the past sequences to work on
-                if past_test.shape[0] < samples_per_batch:
-                    random_past_idx = torch.randperm(past_test.shape[0])
-                else:
-                    random_past_idx = torch.randperm(past_test.shape[0])[:samples_per_batch]
-                expanded_random_past_idx = torch.repeat_interleave(random_past_idx, chunkRepdPastSeq)
-                random_past_idx = expanded_random_past_idx[:samples_per_batch]
-                random_past_samples = past_test[random_past_idx]
-                random_future_samples = future_test[random_past_idx]
-                predictions = self._generate_convGRU(random_past_samples, random_future_samples, teacher_forcing=False)
+        # cicle over batched test data
+        for batch in batched_test_data:
+            logging.info("===" * 20)
+            logging.info(f'Computing sampling on batch:{count_batch+1}')
+            past_test, future_test = batch
+            past_test, future_test = past_test.float(), future_test.float()
+            past_test, future_test = past_test.to(device=self.device), future_test.to(device=self.device)
+            # Compute the idx of the past sequences to work on
+            if past_test.shape[0] < samples_per_batch:
+                random_past_idx = torch.randperm(past_test.shape[0])
+            else:
+                random_past_idx = torch.randperm(past_test.shape[0])[:samples_per_batch]
 
-                # mprops setup for metrics compute
-                random_future_samples = random_future_samples[:, :self.mprops_count, :, :, :]
-                predictions = predictions[:, :self.mprops_count, :, :, :]
+            expanded_random_past_idx = torch.repeat_interleave(random_past_idx, chunkRepdPastSeq)
+            random_past_idx = expanded_random_past_idx[:samples_per_batch]
+            random_past_samples = past_test[random_past_idx]
+            random_future_samples = future_test[random_past_idx]
+            predictions = self._generate_convGRU(random_past_samples, random_future_samples, teacher_forcing=False)
 
-                for i in range(len(random_past_idx)):
-                    pred_seq_list.append(predictions[i])
-                    gt_seq_list.append(random_future_samples[i])
+            logging.info(f'***** Shape of seq PRED and GT BEFORE:{predictions.shape}, {random_future_samples.shape}')
+            # mprops setup for metrics compute
+            random_future_samples = random_future_samples[:, :self.mprops_count, :, :, :]
+            predictions = predictions[:, :self.mprops_count, :, :, :]
+            logging.info(f'***** Shape of seq PRED and GT AFTER:{predictions.shape}, {random_future_samples.shape}')
 
-                count_batch += 1
-                if count_batch == batches_to_use:
-                    break
+            for i in range(len(random_past_idx)):
+                pred_seq_list.append(predictions[i])
+                gt_seq_list.append(random_future_samples[i])
+
+            count_batch += 1
+            if count_batch == batches_to_use:
+                break
 
         logging.info("===" * 20)
         logging.info(f'Computing metrics on predicted mprops sequences with ConvGRU model.')
