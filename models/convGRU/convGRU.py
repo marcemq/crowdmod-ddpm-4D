@@ -185,8 +185,8 @@ class ConvGRU_model:
 
             logging.info(f'***** Shape of seq PRED and GT BEFORE:{predictions.shape}, {random_future_samples.shape}')
             # mprops setup for metrics compute
-            random_future_samples = random_future_samples[:, :self.mprops_count, :, :, :]
-            predictions = predictions[:, :self.mprops_count, :, :, :]
+            random_future_samples = random_future_samples[:, :self.cfg.METRICS.MPROPS_COUNT, :, :, :]
+            predictions = predictions[:, :self.cfg.METRICS.MPROPS_COUNT, :, :, :]
             logging.info(f'***** Shape of seq PRED and GT AFTER:{predictions.shape}, {random_future_samples.shape}')
 
             for i in range(len(random_past_idx)):
