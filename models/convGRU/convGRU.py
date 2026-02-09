@@ -33,7 +33,8 @@ class ConvGRU_model:
         self.optimizer = torch.optim.Adam(self.convGRU.parameters(),
                                           lr = self.cfg.MODEL.CONVGRU.TRAIN.SOLVER.LR,
                                           betas=cfg.MODEL.CONVGRU.TRAIN.SOLVER.BETAS,
-                                          weight_decay=cfg.MODEL.CONVGRU.TRAIN.SOLVER.WEIGHT_DECAY)
+                                          weight_decay=cfg.MODEL.CONVGRU.TRAIN.SOLVER.WEIGHT_DECAY,
+                                          amsgrad=True)
 
     def _train_one_epoch(self, train_data_loader, val_data_loader, epoch):
         self.convGRU.train()
