@@ -52,8 +52,8 @@ def evaluate_loss(model, x, y, teacher_forcing):
     # Ground truth density
     rho_gt  = torch.clamp(y[:,0:1,:,:,:], min=1e-8, max=20)
     # Poisson loss
-    rloss = torch.nn.PoissonNLLLoss()
-    out_rloss = rloss(rho_hat, rho_gt, log_input=True)
+    rloss = torch.nn.PoissonNLLLoss(log_input=True)
+    out_rloss = rloss(rho_hat, rho_gt)
 
     # Estimated velocity means
     mu_hat  = yhat[:,1:3,:,:,:]
