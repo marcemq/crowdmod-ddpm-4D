@@ -20,7 +20,7 @@ class Forecaster(nn.Module):
         self.forc_kernels = forc_kernels
         self.bias = bias
         self.device = device
-        self.leakyReLU =nn.LeakyReLU(0.02)
+        self.leakyReLU =nn.LeakyReLU(0.2)
         self.encoder = Encoder(input_size=(self.height, self.width), input_channels=self.input_channels, hidden_channels=self.enc_hidden_channels, enc_kernels=self.enc_kernels, num_layers=len(self.enc_kernels), device=device, bias=self.bias)
 
         forecaster_cell_list = []
