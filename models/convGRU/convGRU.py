@@ -36,10 +36,36 @@ class ConvGRU_model:
                                           weight_decay=cfg.MODEL.CONVGRU.TRAIN.SOLVER.WEIGHT_DECAY,
                                           amsgrad=True)
 
+    def _plot_loss_history(self, train_loss_history, val_loss_history):
+        import matplotlib.pyplot as plt
+        import os
+
+        epochs = range(1, len(train_loss_history) + 1)
+
+        plt.figure(figsize=(8, 5))
+        plt.plot(epochs, train_loss_history, label="Train Loss")
+        plt.plot(epochs, val_loss_history, label="Validation Loss")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("ConvGRU Training History")
+        plt.legend()
+        plt.grid(True)
+
+        save_path = os.path.join(self.output_dir, "convgru_loss_history.png")
+
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=150)
+        plt.close()
+
+        print(f"[INFO] Loss history saved to: {save_path}")
+
     def _train_one_epoch(self, train_data_loader, val_data_loader, epoch):
         self.convGRU.train()
         train_loss_record = MeanMetric()
         val_loss_record = MeanMetric()
+        # For debug
+        train_rloss_list = []
+        train_vloss_list = []
 
         total_epochs = self.cfg.MODEL.CONVGRU.TRAIN.EPOCHS
         teacher_forcing=self.cfg.MODEL.CONVGRU.TEACHER_FORCING
@@ -62,8 +88,11 @@ class ConvGRU_model:
                 train_loss.backward()
                 # Update weights
                 self.optimizer.step()
+                # Record losses
                 train_loss_value = train_loss.detach().item()
                 train_loss_record.update(train_loss_value)
+                train_rloss_list.append(train_rloss.detach().item())
+                train_vloss_list.append(train_vloss.detach().item())
                 tq.set_postfix_str(s=f"ConvGRU Training Loss: {train_loss_value:.4f}")
 
             train_mean_loss = train_loss_record.compute().item()
@@ -78,9 +107,9 @@ class ConvGRU_model:
                     # Take a batch of macropros sequences
                     past_val, future_val = batched_val_data
                     past_val, future_val = past_val.float(), future_val.float()
-                    past_val, future_val = past_val.to(device=self.device), future_train.to(device=self.device)
+                    past_val, future_val = past_val.to(device=self.device), future_val.to(device=self.device)
                     # Evaluate validation losses
-                    val_rloss, val_vloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing)
+                    val_rloss, val_vloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing=False)
                     # Total validation loss
                     val_loss = val_rloss + val_vloss
                     val_loss_value = val_loss.detach().item()
@@ -90,16 +119,19 @@ class ConvGRU_model:
             val_mean_loss = val_loss_record.compute().item()
             tq.set_postfix_str(s=f"ConvGRU Epoch Loss: {val_mean_loss:.4f}")
 
-        return train_mean_loss, val_mean_loss
+        return train_mean_loss, val_mean_loss, train_rloss_list, train_vloss_list
 
     def train(self, batched_train_data, batched_val_data):
         best_loss      = 1e6
         consecutive_nan_count = 0
+        rloss_history, vloss_history = [], []
 
         for epoch in range(1, self.cfg.MODEL.CONVGRU.TRAIN.EPOCHS + 1):
             torch.cuda.empty_cache()
             gc.collect()
-            epoch_train_loss, epoch_val_loss = self._train_one_epoch(batched_train_data, batched_val_data, epoch=epoch)
+            epoch_train_loss, epoch_val_loss, e_train_rloss_list, e_train_vloss_list = self._train_one_epoch(batched_train_data, batched_val_data, epoch=epoch)
+            rloss_history.extend(e_train_rloss_list)
+            vloss_history.extend(e_train_vloss_list)
             wandb.log({
                 "train_loss": min(epoch_train_loss, 10),
                 "val_loss": min(epoch_val_loss, 10)
@@ -118,6 +150,9 @@ class ConvGRU_model:
             if epoch_train_loss < best_loss:
                 best_loss = epoch_train_loss
                 save_checkpoint(self.optimizer, self.convGRU, "000", self.cfg, self.arch)
+
+        # Plot once training is finished
+        self._plot_loss_history(rloss_history, vloss_history)
 
     @torch.inference_mode()
     def _generate_convGRU(self, x_test, y_test, teacher_forcing):
