@@ -53,16 +53,16 @@ class ConvGRU_model:
                 past_train, future_train = batched_train_data
                 past_train, future_train = past_train.float(), future_train.float()
                 past_train, future_train = past_train.to(device=self.device), future_train.to(device=self.device)
-                # Evaluate losses
-                rloss, vloss = evaluate_loss(self.convGRU, past_train, future_train, teacher_forcing)
-                # Total loss
-                loss = rloss + vloss
+                # Evaluate train losses
+                train_rloss, train_vloss = evaluate_loss(self.convGRU, past_train, future_train, teacher_forcing)
+                # Total train loss
+                train_loss = train_rloss + train_vloss
                 # Backward pass
                 self.optimizer.zero_grad()
-                loss.backward()
+                train_loss.backward()
                 # Update weights
                 self.optimizer.step()
-                train_loss_value = loss.detach().item()
+                train_loss_value = train_loss.detach().item()
                 train_loss_record.update(train_loss_value)
                 tq.set_postfix_str(s=f"ConvGRU Training Loss: {train_loss_value:.4f}")
 
@@ -79,10 +79,10 @@ class ConvGRU_model:
                     past_val, future_val = batched_val_data
                     past_val, future_val = past_val.float(), future_val.float()
                     past_val, future_val = past_val.to(device=self.device), future_train.to(device=self.device)
-                    rloss, vloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing)
-                    val_loss = rloss + vloss
-                    # Total loss
-                    val_loss = rloss + vloss
+                    # Evaluate validation losses
+                    val_rloss, val_vloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing)
+                    # Total validation loss
+                    val_loss = val_rloss + val_vloss
                     val_loss_value = val_loss.detach().item()
                     val_loss_record.update(val_loss_value)
                     tq.set_postfix_str(s=f"ConvGRU Val Loss: {val_loss_value:.4f}")
