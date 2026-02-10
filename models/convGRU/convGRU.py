@@ -129,7 +129,7 @@ class ConvGRU_model:
             val_mean_loss = val_loss_record.compute().item()
             tq.set_postfix_str(s=f"ConvGRU Epoch Loss: {val_mean_loss:.4f}")
 
-        return train_mean_loss, val_mean_loss, train_rloss_list, train_vloss_list, val_rloss_list, val_vloss_list 
+        return train_mean_loss, val_mean_loss, train_rloss_list, train_vloss_list, val_rloss_list, val_vloss_list
 
     def train(self, batched_train_data, batched_val_data):
         best_loss      = 1e6
