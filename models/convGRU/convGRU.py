@@ -40,13 +40,14 @@ class ConvGRU_model:
         import matplotlib.pyplot as plt
         import os
 
-        epochs = range(1, len(train_rloss_history) + 1)
+        t_epochs = range(1, len(train_rloss_history) + 1)
+        v_epochs = range(1, len(val_rloss_history) + 1)
 
         plt.figure(figsize=(8, 5))
-        plt.plot(epochs, train_rloss_history, label="Train rho Loss")
-        plt.plot(epochs, train_vloss_history, label="Train vel Loss")
-        plt.plot(epochs, val_rloss_history, label="Val rho Loss")
-        plt.plot(epochs, val_vloss_history, label="Val vel Loss")
+        plt.plot(t_epochs, train_rloss_history, label="Train rho Loss")
+        plt.plot(t_epochs, train_vloss_history, label="Train vel Loss")
+        plt.plot(v_epochs, val_rloss_history, label="Val rho Loss")
+        plt.plot(v_epochs, val_vloss_history, label="Val vel Loss")
 
         plt.xlabel("Epochs and batches")
         plt.ylabel("Loss")
@@ -114,7 +115,7 @@ class ConvGRU_model:
                     past_val, future_val = past_val.float(), future_val.float()
                     past_val, future_val = past_val.to(device=self.device), future_val.to(device=self.device)
                     # Evaluate validation losses
-                    val_rloss, val_vloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing=False)
+                    val_rloss, val_vloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing)
                     # Total validation loss
                     val_loss = val_rloss + val_vloss
                     # Record losses
