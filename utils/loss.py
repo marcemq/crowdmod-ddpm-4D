@@ -3,13 +3,10 @@ def divKLPoissonLoss(rho_hat, rho_gt):
     loss = rho_gt*torch.log(rho_gt/rho_hat) + rho_hat - rho_gt
     return loss
 
-def divKLGaussianLoss(mu_hat, sigma_hat, mu_gt, sigma_gt):
-    #print(f'mu_hat shape:{mu_hat.shape}')
-    #print(f'sigma_hat shape:{sigma_hat.shape}')
-    #print(f'mu_gt shape:{mu_gt.shape}')
-    #print(f'sigma_gt shape:{sigma_gt.shape}')
-    div = 1/sigma_hat
-    loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + sigma_gt*div - torch.log(sigma_gt*div) - 1
+def divKLGaussianLoss(mu_hat, sigma_hat, mu_gt, sigma_gt, eps=1e-06):
+    div = torch.max(1/sigma_hat, eps)
+    #loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + sigma_gt*div - torch.log(sigma_gt*div) - 1
+    loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt))
     return loss
 
 def evaluate_loss(model, x, y, teacher_forcing):
