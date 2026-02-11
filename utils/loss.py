@@ -16,9 +16,10 @@ def evaluate_loss(model, x, y, teacher_forcing):
     # Forward pass
     yhat = model(x, y, teacher_forcing=teacher_forcing)
     # Estimated density
-    rho_hat = torch.exp(yhat[:,0:1,:,:,:]).clamp(min=1e-8, max=20)
+    #rho_hat = torch.exp(yhat[:,0:1,:,:,:]).clamp(min=1e-8, max=20)
+    rho_hat = yhat[:,0:1,:,:,:].clamp(min=1e-8, max=20)
     # Ground truth density
-    rho_gt  = torch.clamp(y[:,0:1,:,:,:], min=1e-8, max=20)
+    rho_gt  = y[:,0:1,:,:,:].clamp(min=1e-8, max=20)
     # Poisson loss
     rloss   = divKLPoissonLoss(rho_hat, rho_gt)
     rloss   = rloss.mean()
@@ -28,9 +29,10 @@ def evaluate_loss(model, x, y, teacher_forcing):
     # Ground truth velocity means
     mu_gt   = y[:,1:3,:,:,:]
     # Estimated velocity variances
-    var_hat = torch.exp(yhat[:,3:4,:,:,:]).clamp(min=1e-8, max=20)
+    #var_hat = torch.exp(yhat[:,3:4,:,:,:]).clamp(min=1e-8, max=20)
+    var_hat = yhat[:,3:4,:,:,:].clamp(min=1e-8, max=20)
     # Estimated velocity variances
-    var_gt  = torch.clamp(y[:,3:4,:,:,:], min=1e-8, max=20)
+    var_gt  = y[:,3:4,:,:,:].clamp(min=1e-8, max=20)
     # Gaussian KL loss
     vloss   = divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt)
     vloss   = (rho_gt.repeat(1, 2, 1, 1, 1)*vloss).mean()
