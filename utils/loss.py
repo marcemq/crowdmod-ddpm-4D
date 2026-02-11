@@ -16,8 +16,7 @@ def evaluate_loss(model, x, y, teacher_forcing):
     # Forward pass
     yhat = model(x, y, teacher_forcing=teacher_forcing)
     # Estimated density
-    #rho_hat = torch.exp(yhat[:,0:1,:,:,:]).clamp(min=1e-8, max=20)
-    rho_hat = yhat[:,0:1,:,:,:].clamp(min=1e-8, max=20)
+    rho_hat = torch.exp(yhat[:,0:1,:,:,:]).clamp(min=1e-8, max=20)
     # Ground truth density
     rho_gt  = y[:,0:1,:,:,:].clamp(min=1e-8, max=20)
     # Poisson loss
@@ -29,8 +28,7 @@ def evaluate_loss(model, x, y, teacher_forcing):
     # Ground truth velocity means
     mu_gt   = y[:,1:3,:,:,:]
     # Estimated velocity variances
-    #var_hat = torch.exp(yhat[:,3:4,:,:,:]).clamp(min=1e-8, max=20)
-    var_hat = yhat[:,3:4,:,:,:].clamp(min=1e-8, max=20)
+    var_hat = torch.exp(yhat[:,3:4,:,:,:]).clamp(min=1e-8, max=20)
     # Estimated velocity variances
     var_gt  = y[:,3:4,:,:,:].clamp(min=1e-8, max=20)
     # Gaussian KL loss

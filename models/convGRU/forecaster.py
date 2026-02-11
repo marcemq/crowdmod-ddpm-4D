@@ -120,8 +120,11 @@ class Forecaster(nn.Module):
             if teacher_forcing:
                 last_frame = target_obs[:, :, :, :, t]
             else:
-                # AR validate adding exponential, but only to the density and variance n
-                last_frame = forcasted_next_frame
+                # Apply exp() to density and variance channels only
+                channels_to_exp = [0, 3]
+                last_frame = forcasted_next_frame.clone()
+                last_frame[:, channels_to_exp, :, :] = torch.exp(last_frame[:, channels_to_exp, :, :])
+
             x_obs = torch.cat((x_obs[:, :, :, :, 1:], last_frame.unsqueeze(4)), dim=4)
 
         return torch.stack(forcasted_frames, dim=-1)
