@@ -1,12 +1,11 @@
 import torch
 def divKLPoissonLoss(rho_hat, rho_gt):
-    loss = rho_gt*torch.log(rho_gt/rho_hat) + rho_hat - rho_gt
+    loss = rho_gt * (torch.log(rho_gt) - torch.log(rho_hat)) + rho_hat - rho_gt
     return loss
 
-def divKLGaussianLoss(mu_hat, sigma_hat, mu_gt, sigma_gt, eps=1e-06):
-    div = torch.max(1/sigma_hat, eps)
-    #loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + sigma_gt*div - torch.log(sigma_gt*div) - 1
-    loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt))
+def divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt):
+    div = 1/var_hat
+    loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + var_gt*div - torch.log(var_gt*div) - 1
     return loss
 
 def evaluate_loss(model, x, y, teacher_forcing):
@@ -32,12 +31,6 @@ def evaluate_loss(model, x, y, teacher_forcing):
     vloss   = divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt)
     vloss   = (rho_gt.repeat(1, 2, 1, 1, 1)*vloss).mean()
 
-    # min max rho, var of yhat to have an idea for cliping
-    #logging.debug(f"min-max rho:{torch.min(rho_hat):.4f} - {torch.max(rho_hat):.4f}")
-    #logging.debug(f"min-max var:{torch.min(var_hat):.4f} - {torch.max(var_hat):.4f}")
-    #logging.debug(f"min-max mu_x:{torch.min(yhat[:,1,:,:,:]):.4f} - {torch.max(yhat[:,1,:,:,:]):.4f}")
-    #logging.debug(f"min-max mu_y:{torch.min(yhat[:,2,:,:,:]):.4f} - {torch.max(yhat[:,2,:,:,:]):.4f}")
-   
     return rloss, vloss
 
 def evaluate_loss_bu(model, x, y, teacher_forcing):
