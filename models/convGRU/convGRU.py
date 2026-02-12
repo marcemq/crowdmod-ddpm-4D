@@ -115,7 +115,7 @@ class ConvGRU_model:
                     past_val, future_val = past_val.float(), future_val.float()
                     past_val, future_val = past_val.to(device=self.device), future_val.to(device=self.device)
                     # Evaluate validation losses
-                    val_rloss, val_vloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing=False)
+                    val_rloss, val_vloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing)
                     # Total validation loss
                     val_loss = val_rloss + val_vloss
                     # Record losses

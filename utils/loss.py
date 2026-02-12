@@ -30,8 +30,9 @@ def evaluate_loss(model, x, y, teacher_forcing):
     # Gaussian KL loss
     vloss   = divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt)
     vloss   = (rho_gt.repeat(1, 2, 1, 1, 1)*vloss).mean()
+    zero_vloss = torch.zeros_like(vloss)
 
-    return rloss, vloss
+    return rloss, zero_vloss
 
 def evaluate_loss_bu(model, x, y, teacher_forcing):
     # Forward pass
