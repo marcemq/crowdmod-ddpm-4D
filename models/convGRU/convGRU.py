@@ -118,6 +118,8 @@ class ConvGRU_model:
                 best_loss = epoch_train_loss
                 save_checkpoint(self.optimizer, self.convGRU, "000", self.cfg, self.arch)
 
+        logging.info(f"Trained model {self.arch} saved in {self.output_dir}")
+
     @torch.inference_mode()
     def _generate_convGRU(self, x_test, y_test, teacher_forcing):
         # Set the model in evaluation mode
@@ -150,6 +152,7 @@ class ConvGRU_model:
             random_future_samples = future_test[random_past_idx]
             predictions = self._generate_convGRU(random_past_samples, random_future_samples, teacher_forcing=False)
             setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
+            logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")
             break
 
     def generate_metrics(self, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir):
@@ -199,4 +202,4 @@ class ConvGRU_model:
         logging.info("===" * 20)
         logging.info(f'Computing metrics on predicted mprops sequences with ConvGRU model.')
         metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
-        compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch)
+        compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch, self.arch)
