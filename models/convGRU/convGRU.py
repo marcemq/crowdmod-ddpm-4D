@@ -55,6 +55,7 @@ class ConvGRU_model:
         plt.legend()
         plt.grid(True)
 
+        create_directory(self.output_dir)
         save_path = os.path.join(self.output_dir, "convgru_loss_history.png")
 
         plt.tight_layout()
