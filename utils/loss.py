@@ -5,7 +5,8 @@ def divKLPoissonLoss(rho_hat, rho_gt):
 
 def divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt):
     div = 1/var_hat
-    loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + var_gt*div - torch.log(var_gt*div) - 1
+    #loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + var_gt*div - torch.log(var_gt*div) - 1
+    loss = 0.5*((mu_hat-mu_gt)*(mu_hat-mu_gt))
     return loss
 
 def evaluate_loss(model, x, y, teacher_forcing):
@@ -30,9 +31,8 @@ def evaluate_loss(model, x, y, teacher_forcing):
     # Gaussian KL loss
     vloss   = divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt)
     vloss   = (rho_gt.repeat(1, 2, 1, 1, 1)*vloss).mean()
-    zero_vloss = torch.zeros_like(vloss)
 
-    return rloss, zero_vloss
+    return rloss, vloss
 
 def evaluate_loss_bu(model, x, y, teacher_forcing):
     # Forward pass
