@@ -163,6 +163,8 @@ class FM_model:
                 logging.info(f"Epoch {epoch}: in checkpoints_to_keep set, saving model.")
                 save_checkpoint(self.optimizer, self.u_predictor, epoch, self.cfg, self.arch)
 
+        logging.info(f"Trained model {self.arch} saved in {self.output_dir}")
+
     @torch.inference_mode()
     def sampling_with_euler(self, past:torch.Tensor, nsamples):
         # Set the model in evaluation mode
@@ -242,6 +244,7 @@ class FM_model:
             predictions = integrator(random_past_samples, self.cfg.MODEL.NSAMPLES4PLOTS)
 
             setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
+            logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")
             break
 
     def generate_metrics(self, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir):

@@ -154,6 +154,8 @@ class DDPM_model:
                 logging.info(f"Epoch {epoch}: in checkpoints_to_keep set, saving model.")
                 save_checkpoint(self.optimizer, self.denoiser, epoch, self.cfg, self.arch)
 
+        logging.info(f"Trained model {self.arch} saved in {self.output_dir}")
+
     @torch.inference_mode()
     def _generate_ddpm(self, past:torch.Tensor, backward_sampler:DDPM, nsamples, history=False):
         # Set the model in evaluation mode
@@ -265,6 +267,7 @@ class DDPM_model:
                 logging.info(f"{self.cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
             setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
+            logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")
             break
 
     def generate_metrics(self, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir):
