@@ -212,7 +212,14 @@ def getClassicDataset(cfg, filenames_and_numSamples, batch_size=None, split_rati
     all_data, _ = getMacropropsFromFilenames(filenames_and_numSamples, mprops_count, per_sample_shape)
 
     logging.info(f"Total number of sequences loaded: {len(all_data)} of shape {all_data.shape}")
+    # ---- GLOBAL NORMALIZATION (quick experiment) ----
+    mean = all_data.mean(axis=(0, 2, 3, 4))
+    std  = all_data.std(axis=(0, 2, 3, 4))
+    std  = np.clip(std, 1e-6, None)
 
+    all_data = (all_data - mean[None, :, None, None, None]) / std[None, :, None, None, None]
+    logging.info(f"Applied global normalization")
+    # --------------------------------------------------
     # Torch dataset: complete dataset and stride applied
     dataset = MacropropsDataset(all_data, cfg, mprops_count, stride=cfg.MACROPROPS.STRIDE)
     logging.info(f"Total number of sequences in dataset: {len(dataset)}")
@@ -222,17 +229,6 @@ def getClassicDataset(cfg, filenames_and_numSamples, batch_size=None, split_rati
 
     # Shuffle & split
     train_dataset, test_dataset = random_split(dataset, [train_len, test_len])
-
-    # Applied normalization with train data for ConvGRU architecture only, test after for DDPM and FM archs
-    train_indices = train_dataset.indices
-    train_data_subset = all_data[train_indices]
-
-    mean = train_data_subset.mean(axis=(0, 2, 3, 4))
-    std  = train_data_subset.std(axis=(0, 2, 3, 4))
-    std  = np.clip(std, 1e-6, None)
-
-    all_data -= mean[None, :, None, None, None]
-    all_data /= std[None, :, None, None, None]
 
     # Form DataLoaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, **cfg.DATASET.params)
