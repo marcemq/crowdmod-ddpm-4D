@@ -64,7 +64,7 @@ class ConvGRU_model:
 
         print(f"[INFO] Loss history saved to: {save_path}")
 
-    def _train_one_epoch(self, train_data_loader, val_data_loader, epoch, alpha=10):
+    def _train_one_epoch(self, train_data_loader, val_data_loader, epoch, alpha=1):
         self.convGRU.train()
         train_loss_record = MeanMetric()
         val_loss_record = MeanMetric()
