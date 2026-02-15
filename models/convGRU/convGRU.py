@@ -87,7 +87,7 @@ class ConvGRU_model:
                 # Evaluate train losses
                 train_rloss, train_vloss = evaluate_loss(self.convGRU, past_train, future_train, teacher_forcing)
                 # Total train loss
-                train_loss = train_rloss + alpha*train_vloss
+                train_loss = train_rloss + (alpha * train_vloss)
                 # Backward pass
                 self.optimizer.zero_grad()
                 train_loss.backward()
@@ -118,7 +118,7 @@ class ConvGRU_model:
                     # Evaluate validation losses
                     val_rloss, val_vloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing=False)
                     # Total validation loss
-                    val_loss = val_rloss + val_vloss
+                    val_loss = val_rloss + (alpha * val_vloss)
                     # Record losses
                     val_loss_value = val_loss.detach().item()
                     val_loss_record.update(val_loss_value)
