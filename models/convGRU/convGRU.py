@@ -64,7 +64,7 @@ class ConvGRU_model:
 
         print(f"[INFO] Loss history saved to: {save_path}")
 
-    def _train_one_epoch(self, train_data_loader, val_data_loader, epoch):
+    def _train_one_epoch(self, train_data_loader, val_data_loader, epoch, alpha=10):
         self.convGRU.train()
         train_loss_record = MeanMetric()
         val_loss_record = MeanMetric()
@@ -87,7 +87,7 @@ class ConvGRU_model:
                 # Evaluate train losses
                 train_rloss, train_vloss = evaluate_loss(self.convGRU, past_train, future_train, teacher_forcing)
                 # Total train loss
-                train_loss = train_rloss + train_vloss
+                train_loss = train_rloss + alpha*train_vloss
                 # Backward pass
                 self.optimizer.zero_grad()
                 train_loss.backward()

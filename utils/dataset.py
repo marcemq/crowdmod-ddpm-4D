@@ -212,14 +212,7 @@ def getClassicDataset(cfg, filenames_and_numSamples, batch_size=None, split_rati
     all_data, _ = getMacropropsFromFilenames(filenames_and_numSamples, mprops_count, per_sample_shape)
 
     logging.info(f"Total number of sequences loaded: {len(all_data)} of shape {all_data.shape}")
-    # ---- GLOBAL NORMALIZATION (quick experiment) ----
-    mean = all_data.mean(axis=(0, 2, 3, 4))
-    std  = all_data.std(axis=(0, 2, 3, 4))
-    std  = np.clip(std, 1e-6, None)
 
-    all_data = (all_data - mean[None, :, None, None, None]) / std[None, :, None, None, None]
-    logging.info(f"Applied global normalization")
-    # --------------------------------------------------
     # Torch dataset: complete dataset and stride applied
     dataset = MacropropsDataset(all_data, cfg, mprops_count, stride=cfg.MACROPROPS.STRIDE)
     logging.info(f"Total number of sequences in dataset: {len(dataset)}")
