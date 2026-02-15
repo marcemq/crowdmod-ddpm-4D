@@ -33,8 +33,8 @@ def evaluate_loss(model, x, y, teacher_forcing):
     var_gt  = y[:,3:4,:,:,:].clamp(min=1e-8, max=20)
     # Gaussian KL loss
     vloss   = divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt)
-    vloss = vloss.mean()
-    #vloss   = (rho_gt.repeat(1, 2, 1, 1, 1)*vloss).mean()
+    #vloss = vloss.mean()
+    vloss   = (rho_gt.repeat(1, 2, 1, 1, 1)*vloss).mean()
 
     return rloss, vloss
 
