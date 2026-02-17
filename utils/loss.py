@@ -8,8 +8,6 @@ def divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt):
     #loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + var_gt*div - torch.log(var_gt*div) - 1
     loss = ((mu_hat-mu_gt)*(mu_hat-mu_gt)) # MSE for mu
     #loss = ((mu_hat-mu_gt)*(mu_hat-mu_gt)) +  ((var_hat-var_gt)*(var_hat-var_gt)) # MSE for mu and var
-    #loss = ((mu_hat-mu_gt)*(mu_hat-mu_gt)) / var_hat + torch.log(var_hat)
-    #loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) - torch.log(var_gt*div)
     return loss
 
 def evaluate_loss(model, x, y, teacher_forcing, eps):
@@ -37,8 +35,7 @@ def evaluate_loss(model, x, y, teacher_forcing, eps):
     mask = mask.repeat(1, 2, 1, 1, 1)
     vloss   = divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt)
     weighted_vloss  = rho_gt.repeat(1, 2, 1, 1, 1)*vloss
-    vloss = (mask * weighted_vloss).sum() / (mask_sum + eps)
-    #vloss = (mask * vloss).sum() / (mask.sum() + eps)
+    vloss = (mask * vloss).sum() / (mask_sum + eps)
 
     return rloss, vloss
 
