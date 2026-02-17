@@ -32,12 +32,12 @@ def evaluate_loss(model, x, y, teacher_forcing, eps):
     # Estimated velocity variances
     var_gt  = y[:,3:4,:,:,:].clamp(min=1e-8, max=20)
     # Gaussian KL loss
-    mask = (rho_gt > eps).float()
+    mask = (rho_gt >= 1.0).float()
     mask = mask.repeat(1, 2, 1, 1, 1)
     vloss   = divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt)
     weighted_vloss  = rho_gt.repeat(1, 2, 1, 1, 1)*vloss
-    #vloss = (mask * weighted_vloss).sum() / (mask.sum() + eps)
-    vloss = (mask * vloss).sum() / (mask.sum() + eps)
+    vloss = (mask * weighted_vloss).sum() / (mask.sum() + eps)
+    #vloss = (mask * vloss).sum() / (mask.sum() + eps)
 
     return rloss, vloss
 

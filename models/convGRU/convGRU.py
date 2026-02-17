@@ -150,8 +150,8 @@ class ConvGRU_model:
             val_vloss_history.extend(e_val_vloss_list)
 
             wandb.log({
-                "train_loss": min(epoch_train_loss, 10),
-                "val_loss": min(epoch_val_loss, 10)
+                "train_loss": min(epoch_train_loss, 20),
+                "val_loss": min(epoch_val_loss, 20)
             }, step=epoch)
             # NaN handling / early stopping
             if np.isnan(epoch_train_loss):
