@@ -5,8 +5,8 @@ def divKLPoissonLoss(rho_hat, rho_gt):
 
 def divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt):
     div = 1/var_hat
-    loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + var_gt*div - torch.log(var_gt*div) - 1
-    #loss = ((mu_hat-mu_gt)*(mu_hat-mu_gt)) # MSE for mu
+    #loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + var_gt*div - torch.log(var_gt*div) - 1
+    loss = ((mu_hat-mu_gt)*(mu_hat-mu_gt)) # MSE for mu
     #loss = ((mu_hat-mu_gt)*(mu_hat-mu_gt)) +  ((var_hat-var_gt)*(var_hat-var_gt)) # MSE for mu and var
     #loss = ((mu_hat-mu_gt)*(mu_hat-mu_gt)) / var_hat + torch.log(var_hat)
     #loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) - torch.log(var_gt*div)
