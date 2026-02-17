@@ -5,14 +5,14 @@ def divKLPoissonLoss(rho_hat, rho_gt):
 
 def divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt):
     div = 1/var_hat
-    #loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + var_gt*div - torch.log(var_gt*div) - 1
-    loss = ((mu_hat-mu_gt)*(mu_hat-mu_gt)) # MSE for mu
+    loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) + var_gt*div - torch.log(var_gt*div) - 1
+    #loss = ((mu_hat-mu_gt)*(mu_hat-mu_gt)) # MSE for mu
     #loss = ((mu_hat-mu_gt)*(mu_hat-mu_gt)) +  ((var_hat-var_gt)*(var_hat-var_gt)) # MSE for mu and var
     #loss = ((mu_hat-mu_gt)*(mu_hat-mu_gt)) / var_hat + torch.log(var_hat)
     #loss = 0.5*div*((mu_hat-mu_gt)*(mu_hat-mu_gt)) - torch.log(var_gt*div)
     return loss
 
-def evaluate_loss(model, x, y, teacher_forcing):
+def evaluate_loss(model, x, y, teacher_forcing, eps):
     # Forward pass
     yhat = model(x, y, teacher_forcing=teacher_forcing)
     # Estimated density
@@ -32,9 +32,11 @@ def evaluate_loss(model, x, y, teacher_forcing):
     # Estimated velocity variances
     var_gt  = y[:,3:4,:,:,:].clamp(min=1e-8, max=20)
     # Gaussian KL loss
+    mask = (rho_gt > eps).float()
+    mask = mask.repeat(1, 2, 1, 1, 1)
     vloss   = divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt)
-    #vloss = vloss.mean()
-    vloss   = (rho_gt.repeat(1, 2, 1, 1, 1)*vloss).mean()
+    weighted_vloss  = rho_gt.repeat(1, 2, 1, 1, 1)*vloss
+    vloss = (mask * weighted_vloss).sum() / (mask.sum() + 1e-8)
 
     return rloss, vloss
 

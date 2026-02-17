@@ -85,7 +85,7 @@ class ConvGRU_model:
                 past_train, future_train = past_train.float(), future_train.float()
                 past_train, future_train = past_train.to(device=self.device), future_train.to(device=self.device)
                 # Evaluate train losses
-                train_rloss, train_vloss = evaluate_loss(self.convGRU, past_train, future_train, teacher_forcing)
+                train_rloss, train_vloss = evaluate_loss(self.convGRU, past_train, future_train, teacher_forcing, eps=self.cfg.MACROPROPS.EPS)
                 # Total train loss
                 train_loss = train_rloss + (alpha * train_vloss)
                 # Backward pass
@@ -116,7 +116,7 @@ class ConvGRU_model:
                     past_val, future_val = past_val.float(), future_val.float()
                     past_val, future_val = past_val.to(device=self.device), future_val.to(device=self.device)
                     # Evaluate validation losses
-                    val_rloss, val_vloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing=False)
+                    val_rloss, val_vloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing=False, eps=self.cfg.MACROPROPS.EPS)
                     # Total validation loss
                     val_loss = val_rloss + (alpha * val_vloss)
                     # Record losses
