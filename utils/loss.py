@@ -36,7 +36,8 @@ def evaluate_loss(model, x, y, teacher_forcing, eps):
     mask = mask.repeat(1, 2, 1, 1, 1)
     vloss   = divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt)
     weighted_vloss  = rho_gt.repeat(1, 2, 1, 1, 1)*vloss
-    vloss = (mask * weighted_vloss).sum() / (mask.sum() + 1e-8)
+    #vloss = (mask * weighted_vloss).sum() / (mask.sum() + eps)
+    vloss = (mask * vloss).sum() / (mask.sum() + eps)
 
     return rloss, vloss
 
