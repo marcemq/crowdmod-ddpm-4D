@@ -34,8 +34,12 @@ def evaluate_loss(model, x, y, teacher_forcing, eps):
     mask_sum = mask.sum() 
     mask = mask.repeat(1, 2, 1, 1, 1)
     vloss   = divKLGaussianLoss(mu_hat, var_hat, mu_gt, var_gt)
+    vel_norm = torch.sqrt(mu_hat[:,0:1]**2 + mu_hat[:,1:2]**2 + 1e-8)
+
+    empty_mask = (rho_gt < 1.0).float()
+    empty_sum = empty_mask.sum()
     weighted_vloss  = rho_gt.repeat(1, 2, 1, 1, 1)*vloss
-    vloss = (mask * vloss).sum() / (mask_sum + eps)
+    vloss = (mask * vloss).sum() / (mask_sum + eps) + (empty_mask * vel_norm).sum() / (empty_sum + eps)
 
     return rloss, vloss
 
