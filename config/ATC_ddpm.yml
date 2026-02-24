@@ -48,7 +48,7 @@ MODEL:
     GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
     MODEL_SAMPLES: 7
     TRAIN:
-      EPOCHS: 200
+      EPOCHS: 100
       SOLVER:
         LR: 0.00005
         WEIGHT_DECAY: 0.003
