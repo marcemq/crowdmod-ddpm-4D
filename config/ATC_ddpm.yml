@@ -48,7 +48,7 @@ MODEL:
     GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
     MODEL_SAMPLES: 7
     TRAIN:
-      EPOCHS: 100
+      EPOCHS: 200
       SOLVER:
         LR: 0.00005
         WEIGHT_DECAY: 0.003
@@ -98,7 +98,7 @@ MODEL:
     ENC_KERNELS: [3, 3, 3, 3, 3, 3]
     FORC_KERNELS: [3, 4, 3, 4, 3, 3, 3]
     TRAIN:
-      EPOCHS: 70
+      EPOCHS: 100
       SOLVER:
         LR: 0.001
         WEIGHT_DECAY: 0.0003
