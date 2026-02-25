@@ -3,7 +3,6 @@ import random
 import numpy as np
 import torch
 import logging
-import os
 from utils.data import preProcessData, filterDataByLU, filterDataByTime, getMacroPropertiesAtTimeStamp
 from torch.utils.data import Dataset, DataLoader, TensorDataset, random_split
 
