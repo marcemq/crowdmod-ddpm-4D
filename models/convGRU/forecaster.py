@@ -20,7 +20,7 @@ class Forecaster(nn.Module):
         self.forc_kernels = forc_kernels
         self.bias = bias
         self.device = device
-        self.leakyReLU =nn.LeakyReLU(0.02)
+        self.leakyReLU =nn.LeakyReLU(0.2)
         self.encoder = Encoder(input_size=(self.height, self.width), input_channels=self.input_channels, hidden_channels=self.enc_hidden_channels, enc_kernels=self.enc_kernels, num_layers=len(self.enc_kernels), device=device, bias=self.bias)
 
         forecaster_cell_list = []
@@ -120,7 +120,11 @@ class Forecaster(nn.Module):
             if teacher_forcing:
                 last_frame = target_obs[:, :, :, :, t]
             else:
-                last_frame = forcasted_next_frame
+                # Apply exp() to density and variance channels only
+                channels_to_exp = [0, 3]
+                last_frame = forcasted_next_frame.clone()
+                last_frame[:, channels_to_exp, :, :] = torch.exp(last_frame[:, channels_to_exp, :, :])
+
             x_obs = torch.cat((x_obs[:, :, :, :, 1:], last_frame.unsqueeze(4)), dim=4)
 
         return torch.stack(forcasted_frames, dim=-1)

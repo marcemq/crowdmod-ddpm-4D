@@ -3,7 +3,6 @@ import random
 import numpy as np
 import torch
 import logging
-import os
 from utils.data import preProcessData, filterDataByLU, filterDataByTime, getMacroPropertiesAtTimeStamp
 from torch.utils.data import Dataset, DataLoader, TensorDataset, random_split
 
@@ -21,17 +20,11 @@ class CustomTransform():
         return tensor, stats
 
 class MacropropsDataset(Dataset):
-    def __init__(self, seq_all, cfg, mprops_count, transform=None, stride=10):
-        self.transform = transform
+    def __init__(self, seq_all, cfg, mprops_count, stride=10):
         self.mprops_count = mprops_count
         self.stride = stride
         self.past_len = cfg.DATASET.PAST_LEN
         self.future_len = cfg.DATASET.FUTURE_LEN
-
-        if self.transform:
-            seq_all, stats = self.transform(seq_all, cfg, mprops_count)
-        else:
-            stats = None
 
         total_len = seq_all.shape[-1]
         window_len = self.past_len + self.future_len
@@ -43,7 +36,6 @@ class MacropropsDataset(Dataset):
                 self.indices.append((seq_idx, t))
 
         self.seq_all = seq_all
-        self.stats = stats
 
     def __len__(self):
         return len(self.indices)
@@ -164,27 +156,26 @@ def getDataset(cfg, filenames_and_numSamples, batch_size=None, train_data_only=F
     # Load the dataset and perform the split
     tmp_train_data, tmp_val_data, tmp_test_data, _, _, _ = dataHelper(cfg, filenames_and_numSamples, mprops_count, train_data_only, test_data_only)
     # Transfor set
-    custom_transform = CustomTransform()
     train_data, val_data, test_data = None, None, None
     batched_train_data, batched_val_data, batched_test_data = None, None, None
 
     if train_data_only:
         # Torch dataset
-        train_data = MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=None, stride=cfg.MACROPROPS.STRIDE)
+        train_data = MacropropsDataset(tmp_train_data, cfg, mprops_count, stride=cfg.MACROPROPS.STRIDE)
         logging.info(f"In getDataset func, total seqs in train_data:{len(train_data)}")
         # Form batches
         batched_train_data = DataLoader(train_data, batch_size=batch_size, **cfg.DATASET.params)
     elif test_data_only:
         # Torch dataset
-        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=None, stride=cfg.MACROPROPS.STRIDE)
+        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, stride=cfg.MACROPROPS.STRIDE)
         logging.info(f"In getDataset func, total seqs in test_data:{len(test_data)}")
         # Form batches
         batched_test_data  = DataLoader(test_data, batch_size=batch_size, **cfg.DATASET.params)
     else:
         # Torch dataset
-        train_data= MacropropsDataset(tmp_train_data, cfg, mprops_count, transform=None, stride=cfg.MACROPROPS.STRIDE)
-        val_data  = MacropropsDataset(tmp_val_data, cfg, mprops_count, transform=None, stride=cfg.MACROPROPS.STRIDE)
-        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, transform=None, stride=cfg.MACROPROPS.STRIDE)
+        train_data= MacropropsDataset(tmp_train_data, cfg, mprops_count, stride=cfg.MACROPROPS.STRIDE)
+        val_data  = MacropropsDataset(tmp_val_data, cfg, mprops_count, stride=cfg.MACROPROPS.STRIDE)
+        test_data = MacropropsDataset(tmp_test_data, cfg, mprops_count, stride=cfg.MACROPROPS.STRIDE)
         logging.info(f"In getDataset func, total seqs in train_data:{len(train_data)}, val_data:{len(val_data)}, test_data:{len(test_data)}")
         # Form batches
         batched_train_data = DataLoader(train_data, batch_size=batch_size, **cfg.DATASET.params)
@@ -203,7 +194,7 @@ def getDataset4Test(cfg, filenames, batch_size=None, mprops_count=4):
     logging.info(f"Total number of sequences loaded for test: {len(all_data)} of shape {all_data.shape}")
 
     # Torch dataset
-    test_dataset = MacropropsDataset(all_data, cfg, transform=CustomTransform(), stride=cfg.MACROPROPS.STRIDE)
+    test_dataset = MacropropsDataset(all_data, cfg, stride=cfg.MACROPROPS.STRIDE)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, **cfg.DATASET.params)
 
     logging.info(f"Test sequences: {len(test_dataset)}")
@@ -221,8 +212,8 @@ def getClassicDataset(cfg, filenames_and_numSamples, batch_size=None, split_rati
 
     logging.info(f"Total number of sequences loaded: {len(all_data)} of shape {all_data.shape}")
 
-    # Torch dataset
-    dataset = MacropropsDataset(all_data, cfg, mprops_count, transform=CustomTransform(), stride=cfg.MACROPROPS.STRIDE)
+    # Torch dataset: complete dataset and stride applied
+    dataset = MacropropsDataset(all_data, cfg, mprops_count, stride=cfg.MACROPROPS.STRIDE)
     logging.info(f"Total number of sequences in dataset: {len(dataset)}")
     # Calculate split sizes
     train_len = int(split_ratio * len(dataset))

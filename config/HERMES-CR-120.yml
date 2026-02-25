@@ -97,12 +97,12 @@ MODEL:
     ENC_KERNELS: [3, 3, 3, 3, 3, 3]
     FORC_KERNELS: [3, 4, 3, 4, 3, 3, 3]
     TRAIN:
-      EPOCHS: 100
+      EPOCHS: 60
       SOLVER:
-        LR: 0.0005
+        LR: 0.001
         WEIGHT_DECAY: 0.0003
         BETAS:
-          - 0.7
+          - 0.9
           - 0.999
 METRICS:
   PRED_MPROPS_FACTOR: [1, 1, 1]
