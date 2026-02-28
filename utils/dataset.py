@@ -220,7 +220,7 @@ def getClassicDataset(cfg, filenames_and_numSamples, batch_size=None, split_rati
     test_len = len(dataset) - train_len
 
     # Shuffle & split
-    train_dataset, test_dataset = random_split(dataset, [train_len, test_len])
+    train_dataset, test_dataset = random_split(dataset, [train_len, test_len], generator=torch.Generator().manual_seed(0))
 
     # Form DataLoaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, **cfg.DATASET.params)
