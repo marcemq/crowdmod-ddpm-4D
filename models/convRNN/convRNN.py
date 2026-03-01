@@ -249,7 +249,7 @@ class ConvRNN_model:
         self.convRNN.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
         self.convRNN.to(self.device)
 
-        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_NA', model_fullname)
+        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_(GRUCell|LSTMCell)', model_fullname)
 
         count_batch = 0
         pred_seq_list, gt_seq_list = [], []
