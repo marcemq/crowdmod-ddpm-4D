@@ -30,11 +30,11 @@ def train_fm(cfg, batched_train_data, arch, mprops_count):
     
 def train_convRNN(cfg, batched_train_data, batched_val_data, arch, mprops_count):
     torch.manual_seed(42)
-    convGRU_model = ConvRNN_model(cfg, arch, mprops_count, output_dir=cfg.DATA_FS.OUTPUT_DIR)
-    trainable_params = count_trainable_params(convGRU_model.convGRU)
+    convRNN_model = ConvRNN_model(cfg, arch, mprops_count, output_dir=cfg.DATA_FS.OUTPUT_DIR)
+    trainable_params = count_trainable_params(convRNN_model.convRNN)
     logging.info(f"Total trainable parameters at ConvGRU model:{trainable_params}")
 
-    convGRU_model.train(batched_train_data, batched_val_data)
+    convRNN_model.train(batched_train_data, batched_val_data)
 
 def training_mgmt(args, cfg):
     """
