@@ -25,6 +25,7 @@ class ConvRNN_model:
         self.arch = arch
         self.mprops_count = mprops_count
         self.output_dir = output_dir
+        self.base_cell_name = self.cfg.MODEL.CONVRNN.CELL_CLASS[4:]
 
         try:
             self.cell_class = CELL_REGISTRY[cfg.MODEL.CONVRNN.CELL_CLASS]
@@ -87,8 +88,6 @@ class ConvRNN_model:
         print(f"[INFO] Loss history saved to: {save_path}")
 
     def _train_one_epoch(self, train_data_loader, val_data_loader, epoch, alpha=1):
-        cell_class_name = self.cfg.MODEL.CONVRNN.CELL_CLASS
-        base_cell = cell_class_name[4:]
         self.convRNN.train()
         train_loss_record = MeanMetric()
         val_loss_record = MeanMetric()
@@ -128,10 +127,10 @@ class ConvRNN_model:
                 train_dloss_list.append(train_dloss.detach().item())
                 train_ndloss_list.append(train_ndloss.detach().item())
 
-                tq.set_postfix_str(s=f"CONVRNN-{base_cell} Training Loss: {train_loss_value:.4f}")
+                tq.set_postfix_str(s=f"CONVRNN-{self.base_cell_name} Training Loss: {train_loss_value:.4f}")
 
             train_mean_loss = train_loss_record.compute().item()
-            tq.set_postfix_str(s=f"CONVRNN-{base_cell} Epoch Loss: {train_mean_loss:.4f}")
+            tq.set_postfix_str(s=f"CONVRNN-{self.base_cell_name} Epoch Loss: {train_mean_loss:.4f}")
 
         with torch.no_grad():
             with tqdm(total=len(val_data_loader), dynamic_ncols=True) as tq:
@@ -156,10 +155,10 @@ class ConvRNN_model:
                     val_dloss_list.append(val_dloss.detach().item())
                     val_ndloss_list.append(val_ndloss.detach().item())
 
-                    tq.set_postfix_str(s=f"CONVRNN-{base_cell} Val Loss: {val_loss_value:.4f}")
+                    tq.set_postfix_str(s=f"CONVRNN-{self.base_cell_name} Val Loss: {val_loss_value:.4f}")
 
             val_mean_loss = val_loss_record.compute().item()
-            tq.set_postfix_str(s=f"CONVRNN-{base_cell} Epoch Loss: {val_mean_loss:.4f}")
+            tq.set_postfix_str(s=f"CONVRNN-{self.base_cell_name} Epoch Loss: {val_mean_loss:.4f}")
 
         return train_mean_loss, val_mean_loss, train_rloss_list, train_vloss_list, val_rloss_list, val_vloss_list, train_dloss_list, train_ndloss_list, val_dloss_list, val_ndloss_list
 
@@ -287,9 +286,7 @@ class ConvRNN_model:
                 if count_batch == batches_to_use:
                     break
 
-        cell_class_name = self.cfg.MODEL.CONVRNN.CELL_CLASS
-        base_cell = cell_class_name[4:]
         logging.info("===" * 20)
-        logging.info(f'Computing metrics on predicted mprops sequences with ConvRNN-{base_cell} model.')
+        logging.info(f'Computing metrics on predicted mprops sequences with ConvRNN-{self.base_cell_name} model.')
         metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
         compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch, self.arch)
