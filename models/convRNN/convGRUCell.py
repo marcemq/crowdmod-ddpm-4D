@@ -1,8 +1,5 @@
-
-import os
 import torch
 from torch import nn
-from torch.autograd import Variable
 
 class ConvGRUCell(nn.Module):
     def __init__(self, input_size, input_dim, hidden_dim, kernel_size, bias):
