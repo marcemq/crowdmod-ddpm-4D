@@ -96,17 +96,7 @@ class Forecaster(nn.Module):
         if hidden_state is not None:
             raise NotImplementedError("Stateful mode not implemented.")
         else:
-            hidden_state = self._init_hidden(batch_size=target_obs.size(0))
-            hidden_state = [h.to(self.device) for h in hidden_state]
-
-        # Move both h and c to device
-        for i in range(len(hidden_state)):
-            h, c = hidden_state[i]
-            if h is not None:
-                h = h.to(self.device)
-            if c is not None:
-                c = c.to(self.device)
-            hidden_state[i] = (h, c)
+            hidden_state = self._init_hidden(batch_size=target_obs.size(0), device=self.device)
 
         target_obs_seq_len = target_obs.size(4)
         forcasted_frames=[]
@@ -185,10 +175,10 @@ class Forecaster(nn.Module):
 
         return torch.stack(forcasted_frames, dim=-1)
 
-    def _init_hidden(self, batch_size):
+    def _init_hidden(self, batch_size, device):
         init_states = []
         for i in [0,2,4]:
-            h, c = self.forecaster_cell_list[i].init_hidden(batch_size)
+            h, c = self.forecaster_cell_list[i].init_hidden(batch_size, device)
             # Safety check: enforce tuple structure
             if not isinstance((h, c), tuple):
                 raise RuntimeError("At Forescaster: init_hidden must return (h, c)")
