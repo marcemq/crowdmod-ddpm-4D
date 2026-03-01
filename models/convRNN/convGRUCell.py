@@ -38,8 +38,9 @@ class ConvGRUCell(nn.Module):
                                    padding=self.padding,
                                    bias=self.bias)
      
-    def init_hidden(self, batch_size):
-        return torch.zeros(batch_size, self.hidden_dim, self.height, self.width)
+    def init_hidden(self, batch_size, device=None):
+        h = torch.zeros(batch_size, self.hidden_dim, self.height, self.width, device=device)
+        return (h, None)
 
     def forward(self, input, hidden_state):
         """
@@ -48,18 +49,20 @@ class ConvGRUCell(nn.Module):
         Args:
             input (b, c, h, w): input is actually the target_model
             hidden_state (b, c_hidden, h, w): current hidden and cell states respectively
+            hidden_state: tuple (h_prev, c_prev) c_prev is None for GRU
 
         Returns:
-            - new_hidden_state: next hidden state
+            (h_next, None)
         """
-        combined = torch.cat([input, hidden_state], dim=1)
+        h_prev, _ = hidden_state  # ignore cell state
+        combined = torch.cat([input, h_prev], dim=1)
 
         reset_gate = self.sigmoid(self.reset_gate(combined))
         update_gate = self.sigmoid(self.update_gate(combined))
 
-        combined_reset = torch.cat([input, reset_gate*hidden_state], dim=1)
+        combined_reset = torch.cat([input, reset_gate*h_prev], dim=1)
         candidate = self.tanh(self.conv_cand(combined_reset))
 
-        new_hidden_state = (1 - update_gate) * candidate + update_gate * hidden_state
+        new_hidden_state = (1 - update_gate) * candidate + update_gate * h_prev
 
-        return new_hidden_state
+        return new_hidden_state, None
