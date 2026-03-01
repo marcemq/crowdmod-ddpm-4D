@@ -7,10 +7,17 @@ from tqdm import tqdm
 from torchmetrics import MeanMetric
 
 from models.convRNN.forecaster import Forecaster
+from models.convRNN.convGRUCell import ConvGRUCell
+from models.convRNN.convLSTMCell import ConvLSTMCell
 from utils.loss import evaluate_loss
 from utils.utils import create_directory, save_checkpoint
 from utils.plot.plot_sampled_mprops import setup_predictions_plot
 from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
+
+CELL_REGISTRY = {
+    "ConvGRUCell": ConvGRUCell,
+    "ConvLSTMCell": ConvLSTMCell,
+}
 
 class ConvRNN_model:
     def __init__(self, cfg, arch, mprops_count=4, output_dir=None):
@@ -19,7 +26,13 @@ class ConvRNN_model:
         self.mprops_count = mprops_count
         self.output_dir = output_dir
 
+        try:
+            self.cell_class = CELL_REGISTRY[cfg.MODEL.CONVRNN.CELL_CLASS]
+        except KeyError:
+            raise ValueError(f"Unsupported cell class: {cfg.MODEL.CONVRNN.CELL_CLASS}")
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         self.convRNN = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
                                   input_channels       = mprops_count,
                                   enc_hidden_channels  = cfg.MODEL.CONVRNN.ENC_HIDDEN_CH,
@@ -27,7 +40,7 @@ class ConvRNN_model:
                                   enc_kernels          = cfg.MODEL.CONVRNN.ENC_KERNELS,
                                   forc_kernels         = cfg.MODEL.CONVRNN.FORC_KERNELS,
                                   device               = self.device,
-                                  cell_class           = cfg.MODEL.CONVRNN.CELL_CLASS,
+                                  cell_class           = self.cell_class,
                                   bias                 = False)
 
         self.convRNN.to(self.device)
@@ -274,7 +287,9 @@ class ConvRNN_model:
                 if count_batch == batches_to_use:
                     break
 
+        cell_class_name = self.cfg.MODEL.CONVRNN.CELL_CLASS
+        base_cell = cell_class_name[4:]
         logging.info("===" * 20)
-        logging.info(f'Computing metrics on predicted mprops sequences with ConvRNN- model.')
+        logging.info(f'Computing metrics on predicted mprops sequences with ConvRNN-{base_cell} model.')
         metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
         compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch, self.arch)
