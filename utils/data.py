@@ -46,7 +46,7 @@ def computeMacroPropsInROI(filename, lu, t_init, cfg, frames=10):
 
     for frame in range(frames):
         dataByTime = filterDataByTime(filteredData, time=t_init)
-        t_init += pd.to_timedelta(cfg.CONVGRU.TIME_RES, unit='s')
+        t_init += pd.to_timedelta(cfg.CONVRNN.TIME_RES, unit='s')
 
         rho, mu_vx, mu_vy, sigma2_v = getMacroPropertiesAtTimeStamp(dataByTime, LU=lu)
         macroProps[:,:,:,frame] = np.stack((rho, mu_vx, mu_vy, sigma2_v), axis=2)

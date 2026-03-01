@@ -117,8 +117,8 @@ def train_sweep_convRNN(cfg, filenames, arch, mprops_count, project_name):
                                input_channels       = mprops_count,
                                enc_hidden_channels  = wandb.config.enc_hidden_ch,
                                forc_hidden_channels = forc_hidden_ch,
-                               enc_kernels          = cfg.MODEL.CONVGRU.ENC_KERNELS,
-                               forc_kernels         = cfg.MODEL.CONVGRU.FORC_KERNELS,
+                               enc_kernels          = cfg.MODEL.CONVRNN.ENC_KERNELS,
+                               forc_kernels         = cfg.MODEL.CONVRNN.FORC_KERNELS,
                                device               = device,
                                bias                 = False)
 
@@ -135,7 +135,7 @@ def train_sweep_convRNN(cfg, filenames, arch, mprops_count, project_name):
     for epoch in range(1, wandb.config.epochs + 1):
         torch.cuda.empty_cache()
         gc.collect()
-        epoch_train_loss, epoch_val_loss = train_one_epoch_convRNN(convRNN_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=wandb.config.epochs, teacher_forcing=cfg.MODEL.CONVGRU.TEACHER_FORCING)
+        epoch_train_loss, epoch_val_loss = train_one_epoch_convRNN(convRNN_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=wandb.config.epochs, teacher_forcing=cfg.MODEL.CONVRNN.TEACHER_FORCING)
         wandb.log({
             "train_loss": epoch_train_loss,
             "val_loss": epoch_val_loss
