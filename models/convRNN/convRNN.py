@@ -6,13 +6,13 @@ import numpy as np
 from tqdm import tqdm
 from torchmetrics import MeanMetric
 
-from models.convGRU.forecaster import Forecaster
+from models.convRNN.forecaster import Forecaster
 from utils.loss import evaluate_loss
 from utils.utils import create_directory, save_checkpoint
 from utils.plot.plot_sampled_mprops import setup_predictions_plot
 from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
 
-class ConvGRU_model:
+class ConvRNN_model:
     def __init__(self, cfg, arch, mprops_count=4, output_dir=None):
         self.cfg  = cfg
         self.arch = arch

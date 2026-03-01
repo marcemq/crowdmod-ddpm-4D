@@ -91,7 +91,7 @@ def get_checkpoint_save_path(cfg, arch, epoch):
         save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
     elif arch == "FM-UNet":
         save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FLOW_MATCHING.W_TYPE))
-    elif arch == "ConvGRU":
+    elif arch == "ConvRNN":
         save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVGRU.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
     else:
         logging.error("Architecture not supported.")
@@ -115,7 +115,7 @@ def get_model_fullname(cfg, arch, epoch):
         model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
     elif arch == "FM-UNet":
         model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FLOW_MATCHING.W_TYPE))
-    elif arch == "ConvGRU":
+    elif arch == "ConvRNN":
         model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVGRU.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
     else:
         logging.error("Architecture not supported.")
@@ -156,7 +156,7 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
                 "solver_betas": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.BETAS,
             }
         )
-    elif arch == "ConvGRU":
+    elif arch == "ConvRNN":
         wandb.init(
             project=project_name,
             config={
@@ -209,7 +209,7 @@ def get_sweep_configuration(arch):
                 "time_max_pos": {"values": [800, 1000, 1200]},
             },
         }
-    elif arch == "ConvGRU":
+    elif arch == "ConvRNN":
         sweep_configuration = {
             "name": "sweep_crowdmod_ConvGRU",
             "method": "random",
