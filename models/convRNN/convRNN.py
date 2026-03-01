@@ -64,13 +64,13 @@ class ConvRNN_model:
             plt.plot(t_epochs, train_vloss_history, label="Train vel Loss")
             plt.plot(v_epochs, val_rloss_history, label="Val rho Loss")
             plt.plot(v_epochs, val_vloss_history, label="Val vel Loss")
-            figure_name = "convrnn_loss_history.png"
+            figure_name = f"convrnn_{self.base_cell_name}_loss_history.png"
         else:
             plt.plot(t_epochs, train_rloss_history, label="Train loss_considering_density")
             plt.plot(t_epochs, train_vloss_history, label="Train loss_not_considering_density")
             plt.plot(v_epochs, val_rloss_history, label="Val loss_considering_density")
             plt.plot(v_epochs, val_vloss_history, label="Val loss_not_considering_density")
-            figure_name = "convrnn_loss_history_for_used_masks.png"
+            figure_name = f"convrnn_{self.base_cell_name}_loss_history_for_used_masks.png"
 
         plt.xlabel("Epochs and batches")
         plt.ylabel("Loss")

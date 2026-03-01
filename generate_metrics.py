@@ -24,7 +24,8 @@ def generate_metrics_fm(cfg, args, batched_test_data, chunkRepdPastSeq, metric, 
 
 def generate_metrics_convRNN(cfg, args, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, mprops_count):
     torch.manual_seed(42)
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}"
+    base_cell_name = cfg.MODEL.CONVRNN.CELL_CLASS[4:]
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_{base_cell_name}_modelE{args.model_sample_to_load}"
 
     convRNN_model = ConvRNN_model(cfg, args.arch, mprops_count, output_dir)
     convRNN_model.generate_metrics(batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir)
