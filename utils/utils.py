@@ -215,7 +215,7 @@ def get_sweep_configuration(arch):
         }
     elif arch == "ConvRNN":
         sweep_configuration = {
-            "name": "sweep_crowdmod_ConvGRU",
+            "name": "sweep_crowdmod_ConvRNN",
             "method": "random",
             "metric": {"goal": "minimize", "name": "train_loss"},
             "parameters": {

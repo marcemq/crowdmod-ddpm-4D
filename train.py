@@ -32,7 +32,7 @@ def train_convRNN(cfg, batched_train_data, batched_val_data, arch, mprops_count)
     torch.manual_seed(42)
     convRNN_model = ConvRNN_model(cfg, arch, mprops_count, output_dir=cfg.DATA_FS.OUTPUT_DIR)
     trainable_params = count_trainable_params(convRNN_model.convRNN)
-    logging.info(f"Total trainable parameters at ConvGRU model:{trainable_params}")
+    logging.info(f"Total trainable parameters at ConvRNN model:{trainable_params}")
 
     convRNN_model.train(batched_train_data, batched_val_data)
 
