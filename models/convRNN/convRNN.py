@@ -51,7 +51,7 @@ class ConvRNN_model:
                                           weight_decay=cfg.MODEL.CONVRNN.TRAIN.SOLVER.WEIGHT_DECAY,
                                           amsgrad=True)
 
-    def _plot_loss_history(self, train_rloss_history, train_vloss_history, val_rloss_history, val_vloss_history, title="CONVRNN Training History"):
+    def _plot_loss_history(self, train_rloss_history, train_vloss_history, val_rloss_history, val_vloss_history, title):
         import matplotlib.pyplot as plt
         import os
 
@@ -59,7 +59,7 @@ class ConvRNN_model:
         v_epochs = range(1, len(val_rloss_history) + 1)
 
         plt.figure(figsize=(8, 5))
-        if title == "ConvRNN Training History":
+        if title == f"ConvRNN-{self.base_cell_name} Training History":
             plt.plot(t_epochs, train_rloss_history, label="Train rho Loss")
             plt.plot(t_epochs, train_vloss_history, label="Train vel Loss")
             plt.plot(v_epochs, val_rloss_history, label="Val rho Loss")
@@ -205,7 +205,7 @@ class ConvRNN_model:
 
         logging.info(f"Trained model {self.arch} saved in {self.output_dir}")
         # Plot once training is finished
-        self._plot_loss_history(train_rloss_history, train_vloss_history, val_rloss_history, val_vloss_history)
+        self._plot_loss_history(train_rloss_history, train_vloss_history, val_rloss_history, val_vloss_history, title=f"ConvRNN-{self.base_cell_name} Training History")
         self._plot_loss_history(train_dloss_history, train_ndloss_history, val_dloss_history, val_ndloss_history, title="Detailed loss using density mask")
 
     @torch.inference_mode()
