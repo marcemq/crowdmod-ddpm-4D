@@ -91,8 +91,10 @@ def get_checkpoint_save_path(cfg, arch, epoch):
         save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
     elif arch == "FM-UNet":
         save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FLOW_MATCHING.W_TYPE))
-    elif arch == "ConvGRU":
-        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVGRU.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
+    elif arch == "ConvRNN":
+        cell_class_name = cfg.MODEL.CONVRNN.CELL_CLASS
+        base_cell = cell_class_name[4:]
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVRNN.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, base_cell))
     else:
         logging.error("Architecture not supported.")
 
@@ -115,8 +117,10 @@ def get_model_fullname(cfg, arch, epoch):
         model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
     elif arch == "FM-UNet":
         model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FLOW_MATCHING.W_TYPE))
-    elif arch == "ConvGRU":
-        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVGRU.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
+    elif arch == "ConvRNN":
+        cell_class_name = cfg.MODEL.CONVRNN.CELL_CLASS
+        base_cell = cell_class_name[4:]
+        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.CONVRNN.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, base_cell))
     else:
         logging.error("Architecture not supported.")
 
@@ -156,19 +160,19 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
                 "solver_betas": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.BETAS,
             }
         )
-    elif arch == "ConvGRU":
+    elif arch == "ConvRNN":
         wandb.init(
             project=project_name,
             config={
                 "architecture": arch,
                 "dataset": cfg.DATASET.NAME,
-                "learning_rate": cfg.MODEL.CONVGRU.TRAIN.SOLVER.LR,
-                "epochs": cfg.MODEL.CONVGRU.TRAIN.EPOCHS,
+                "learning_rate": cfg.MODEL.CONVRNN.TRAIN.SOLVER.LR,
+                "epochs": cfg.MODEL.CONVRNN.TRAIN.EPOCHS,
                 "batch_size": cfg.DATASET.BATCH_SIZE,
                 "past_len": cfg.DATASET.PAST_LEN,
                 "future_len": cfg.DATASET.FUTURE_LEN,
-                "weight_decay": cfg.MODEL.CONVGRU.TRAIN.SOLVER.WEIGHT_DECAY,
-                "solver_betas": cfg.MODEL.CONVGRU.TRAIN.SOLVER.BETAS,
+                "weight_decay": cfg.MODEL.CONVRNN.TRAIN.SOLVER.WEIGHT_DECAY,
+                "solver_betas": cfg.MODEL.CONVRNN.TRAIN.SOLVER.BETAS,
             }
         )
     else:
@@ -209,9 +213,9 @@ def get_sweep_configuration(arch):
                 "time_max_pos": {"values": [800, 1000, 1200]},
             },
         }
-    elif arch == "ConvGRU":
+    elif arch == "ConvRNN":
         sweep_configuration = {
-            "name": "sweep_crowdmod_ConvGRU",
+            "name": "sweep_crowdmod_ConvRNN",
             "method": "random",
             "metric": {"goal": "minimize", "name": "train_loss"},
             "parameters": {

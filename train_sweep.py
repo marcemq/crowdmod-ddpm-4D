@@ -21,8 +21,8 @@ from utils.utils import get_filenames_paths, get_training_dataset, get_sweep_con
 from models.diffusion.forward import ForwardSampler
 from models.backbones.unet import UNet
 from models.diffusion.ddpm import DDPM
-from models.training import train_one_epoch, train_one_epoch_fm, train_one_epoch_convGRU
-from models.convGRU.forecaster import Forecaster
+from models.training import train_one_epoch, train_one_epoch_fm, train_one_epoch_convRNN
+from models.convRNN.forecaster import Forecaster
 from torchsummary import summary
 from functools import partial
 
@@ -97,7 +97,7 @@ def train_sweep_fm(cfg, filenames, arch, mprops_count, project_name):
             best_loss = epoch_loss
             save_checkpoint(optimizer, unet_model, "000", cfg, arch)
 
-def train_sweep_convGRU(cfg, filenames, arch, mprops_count, project_name):
+def train_sweep_convRNN(cfg, filenames, arch, mprops_count, project_name):
     init_wandb(cfg, arch, project_name)
     torch.manual_seed(42)
     # Setting the device to work with
@@ -112,20 +112,20 @@ def train_sweep_convGRU(cfg, filenames, arch, mprops_count, project_name):
                        (32, 64, 64, 128, 128, 128): [128, 128, 128, 128, 128, 64, 32]}
     forc_hidden_ch = forc_hidden_map[tuple(wandb.config.enc_hidden_ch)]
 
-    # Set convGRU model object
-    convGRU_model = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
+    # Set convRNN model object
+    convRNN_model = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
                                input_channels       = mprops_count,
                                enc_hidden_channels  = wandb.config.enc_hidden_ch,
                                forc_hidden_channels = forc_hidden_ch,
-                               enc_kernels          = cfg.MODEL.CONVGRU.ENC_KERNELS,
-                               forc_kernels         = cfg.MODEL.CONVGRU.FORC_KERNELS,
+                               enc_kernels          = cfg.MODEL.CONVRNN.ENC_KERNELS,
+                               forc_kernels         = cfg.MODEL.CONVRNN.FORC_KERNELS,
                                device               = device,
                                bias                 = False)
 
-    trainable_params = count_trainable_params(convGRU_model)
-    optimizer = get_optimizer(convGRU_model)
+    trainable_params = count_trainable_params(convRNN_model)
+    optimizer = get_optimizer(convRNN_model)
 
-    logging.info(f"Total trainable parameters at ConvGRU model:{trainable_params}")
+    logging.info(f"Total trainable parameters at ConvRNN model:{trainable_params}")
     logging.info(f"Selected optimizer: {wandb.config.optimizer}")
     logging.info(f"Selected enc_hidden_ch: {wandb.config.enc_hidden_ch}")
     logging.info(f"Selected forc_hidden_ch: {forc_hidden_ch}")
@@ -135,7 +135,7 @@ def train_sweep_convGRU(cfg, filenames, arch, mprops_count, project_name):
     for epoch in range(1, wandb.config.epochs + 1):
         torch.cuda.empty_cache()
         gc.collect()
-        epoch_train_loss, epoch_val_loss = train_one_epoch_convGRU(convGRU_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=wandb.config.epochs, teacher_forcing=cfg.MODEL.CONVGRU.TEACHER_FORCING)
+        epoch_train_loss, epoch_val_loss = train_one_epoch_convRNN(convRNN_model,batched_train_data, batched_val_data, optimizer, device, epoch=epoch, total_epochs=wandb.config.epochs, teacher_forcing=cfg.MODEL.CONVRNN.TEACHER_FORCING)
         wandb.log({
             "train_loss": epoch_train_loss,
             "val_loss": epoch_val_loss
@@ -143,7 +143,7 @@ def train_sweep_convGRU(cfg, filenames, arch, mprops_count, project_name):
 
         if epoch_train_loss < best_loss:
             best_loss = epoch_train_loss
-            save_checkpoint(optimizer, convGRU_model, "000", cfg, arch)
+            save_checkpoint(optimizer, convRNN_model, "000", cfg, arch)
 
 def train_sweep_mgmt(args, cfg):
     # === Prepare file paths ===
@@ -152,7 +152,7 @@ def train_sweep_mgmt(args, cfg):
 
     # === Sweep Train models with specific architecture ===
     sweep_configuration = get_sweep_configuration(args.arch)
-    mprops_count = 4 if args.arch == "ConvGRU" else 3
+    mprops_count = 4 if args.arch == "ConvRNN" else 3
     if args.arch == "DDPM-UNet":
         project_name = "sweep_crowdmod_ddpm"
         sweep_id = wandb.sweep(sweep=sweep_configuration, project=project_name)
@@ -161,10 +161,10 @@ def train_sweep_mgmt(args, cfg):
         project_name = "sweep_crowdmod_fm"
         sweep_id = wandb.sweep(sweep=sweep_configuration, project=project_name)
         wandb.agent(sweep_id, function=functools.partial(train_sweep_fm, cfg, filenames, args.arch, mprops_count, project_name), count=50)
-    elif args.arch == "ConvGRU":
-        project_name = "sweep_crowdmod_ConvGRU"
+    elif args.arch == "ConvRNN":
+        project_name = "sweep_crowdmod_ConvRNN"
         sweep_id = wandb.sweep(sweep=sweep_configuration, project=project_name)
-        wandb.agent(sweep_id, function=functools.partial(train_sweep_convGRU, cfg, filenames, args.arch, mprops_count, project_name), count=50)
+        wandb.agent(sweep_id, function=functools.partial(train_sweep_convRNN, cfg, filenames, args.arch, mprops_count, project_name), count=50)
     else:
         logging.error("Architecture not supported to launch train sweep.")
 
@@ -172,7 +172,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
-    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvGRU')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvRNN')
     args = parser.parse_args()
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
     train_sweep_mgmt(args, cfg)

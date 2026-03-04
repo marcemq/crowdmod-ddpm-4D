@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import logging
 
 from models.diffusion.ddpm import DDPM_model
-from models.convGRU.convGRU import ConvGRU_model
+from models.convRNN.convRNN import ConvRNN_model
 from models.flow_matching.flow_matching import FM_model
 from utils.utils import get_filenames_paths, get_test_dataset, get_model_fullname
 from utils.plot.plot_sampled_mprops import MacropropPlotter
@@ -50,13 +50,14 @@ def generate_samples_fm(cfg, args, batched_test_data, plotType, model_fullname, 
     fm_model = FM_model(cfg, args.arch, mprops_count, output_dir)
     fm_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
-def generate_samples_convGRU(cfg, args, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count):
+def generate_samples_convRNN(cfg, args, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count):
     torch.manual_seed(42)
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}"
+    base_cell_name = cfg.MODEL.CONVRNN.CELL_CLASS[4:]
+    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_{base_cell_name}_modelE{args.model_sample_to_load}"
     macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)
 
-    convGRU_model = ConvGRU_model(cfg, args.arch, mprops_count, output_dir)
-    convGRU_model.sampling( batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
+    convRNN_model = ConvRNN_model(cfg, args.arch, mprops_count, output_dir)
+    convRNN_model.sampling( batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
 def sampling_mgmt(args, cfg):
     """
@@ -67,7 +68,7 @@ def sampling_mgmt(args, cfg):
     model_fullname = get_model_fullname(cfg, args.arch, args.model_sample_to_load)
 
     # === Load test dataset ===
-    mprops_count = 4 if args.arch == "ConvGRU" else 3
+    mprops_count = 4 if args.arch == "ConvRNN" else 3
     batched_test_data = get_test_dataset(cfg, filenames_and_numSamples, mprops_count)
 
     # === Generate samples per architecture ===
@@ -76,8 +77,8 @@ def sampling_mgmt(args, cfg):
         generate_samples_ddpm(cfg, args, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count)
     elif args.arch == "FM-UNet":
         generate_samples_fm(cfg, args, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count)
-    elif args.arch == "ConvGRU":
-        generate_samples_convGRU(cfg, args, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count)
+    elif args.arch == "ConvRNN":
+        generate_samples_convRNN(cfg, args, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count)
     else:
         logging.error("Architecture not supported.")
 
@@ -93,7 +94,7 @@ if __name__ == '__main__':
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
     parser.add_argument('--model-sample-to-load', type=str, default="000", help='Model sample to be used for generate mprops samples. Default value is for best model.')
-    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvGRU')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvRNN')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)

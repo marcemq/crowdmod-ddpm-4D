@@ -6,37 +6,52 @@ import numpy as np
 from tqdm import tqdm
 from torchmetrics import MeanMetric
 
-from models.convGRU.forecaster import Forecaster
+from models.convRNN.forecaster import Forecaster
+from models.convRNN.convGRUCell import ConvGRUCell
+from models.convRNN.convLSTMCell import ConvLSTMCell
 from utils.loss import evaluate_loss
 from utils.utils import create_directory, save_checkpoint
 from utils.plot.plot_sampled_mprops import setup_predictions_plot
 from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
 
-class ConvGRU_model:
+CELL_REGISTRY = {
+    "ConvGRUCell": ConvGRUCell,
+    "ConvLSTMCell": ConvLSTMCell,
+}
+
+class ConvRNN_model:
     def __init__(self, cfg, arch, mprops_count=4, output_dir=None):
         self.cfg  = cfg
         self.arch = arch
         self.mprops_count = mprops_count
         self.output_dir = output_dir
+        self.base_cell_name = self.cfg.MODEL.CONVRNN.CELL_CLASS[4:]
+
+        try:
+            self.cell_class = CELL_REGISTRY[cfg.MODEL.CONVRNN.CELL_CLASS]
+        except KeyError:
+            raise ValueError(f"Unsupported cell class: {cfg.MODEL.CONVRNN.CELL_CLASS}")
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.convGRU = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
+
+        self.convRNN = Forecaster(input_size  = (cfg.MACROPROPS.ROWS, cfg.MACROPROPS.COLS),
                                   input_channels       = mprops_count,
-                                  enc_hidden_channels  = cfg.MODEL.CONVGRU.ENC_HIDDEN_CH,
-                                  forc_hidden_channels = cfg.MODEL.CONVGRU.FORC_HIDDEN_CH,
-                                  enc_kernels          = cfg.MODEL.CONVGRU.ENC_KERNELS,
-                                  forc_kernels         = cfg.MODEL.CONVGRU.FORC_KERNELS,
+                                  enc_hidden_channels  = cfg.MODEL.CONVRNN.ENC_HIDDEN_CH,
+                                  forc_hidden_channels = cfg.MODEL.CONVRNN.FORC_HIDDEN_CH,
+                                  enc_kernels          = cfg.MODEL.CONVRNN.ENC_KERNELS,
+                                  forc_kernels         = cfg.MODEL.CONVRNN.FORC_KERNELS,
                                   device               = self.device,
+                                  cell_class           = self.cell_class,
                                   bias                 = False)
 
-        self.convGRU.to(self.device)
-        self.optimizer = torch.optim.Adam(self.convGRU.parameters(),
-                                          lr = self.cfg.MODEL.CONVGRU.TRAIN.SOLVER.LR,
-                                          betas=cfg.MODEL.CONVGRU.TRAIN.SOLVER.BETAS,
-                                          weight_decay=cfg.MODEL.CONVGRU.TRAIN.SOLVER.WEIGHT_DECAY,
+        self.convRNN.to(self.device)
+        self.optimizer = torch.optim.Adam(self.convRNN.parameters(),
+                                          lr = self.cfg.MODEL.CONVRNN.TRAIN.SOLVER.LR,
+                                          betas=cfg.MODEL.CONVRNN.TRAIN.SOLVER.BETAS,
+                                          weight_decay=cfg.MODEL.CONVRNN.TRAIN.SOLVER.WEIGHT_DECAY,
                                           amsgrad=True)
 
-    def _plot_loss_history(self, train_rloss_history, train_vloss_history, val_rloss_history, val_vloss_history, title="ConvGRU Training History"):
+    def _plot_loss_history(self, train_rloss_history, train_vloss_history, val_rloss_history, val_vloss_history, title):
         import matplotlib.pyplot as plt
         import os
 
@@ -44,18 +59,18 @@ class ConvGRU_model:
         v_epochs = range(1, len(val_rloss_history) + 1)
 
         plt.figure(figsize=(8, 5))
-        if title == "ConvGRU Training History":
+        if title == f"ConvRNN-{self.base_cell_name} Training History":
             plt.plot(t_epochs, train_rloss_history, label="Train rho Loss")
             plt.plot(t_epochs, train_vloss_history, label="Train vel Loss")
             plt.plot(v_epochs, val_rloss_history, label="Val rho Loss")
             plt.plot(v_epochs, val_vloss_history, label="Val vel Loss")
-            figure_name = "convgru_loss_history.png"
+            figure_name = f"convrnn_{self.base_cell_name}_loss_history.png"
         else:
             plt.plot(t_epochs, train_rloss_history, label="Train loss_considering_density")
             plt.plot(t_epochs, train_vloss_history, label="Train loss_not_considering_density")
             plt.plot(v_epochs, val_rloss_history, label="Val loss_considering_density")
             plt.plot(v_epochs, val_vloss_history, label="Val loss_not_considering_density")
-            figure_name = "convgru_loss_history_for_used_masks.png"
+            figure_name = f"convrnn_{self.base_cell_name}_loss_history_for_used_masks.png"
 
         plt.xlabel("Epochs and batches")
         plt.ylabel("Loss")
@@ -73,7 +88,7 @@ class ConvGRU_model:
         print(f"[INFO] Loss history saved to: {save_path}")
 
     def _train_one_epoch(self, train_data_loader, val_data_loader, epoch, alpha=1):
-        self.convGRU.train()
+        self.convRNN.train()
         train_loss_record = MeanMetric()
         val_loss_record = MeanMetric()
         # For debug
@@ -82,8 +97,8 @@ class ConvGRU_model:
         train_dloss_list, train_ndloss_list = [], []
         val_dloss_list, val_ndloss_list = [], []
 
-        total_epochs = self.cfg.MODEL.CONVGRU.TRAIN.EPOCHS
-        teacher_forcing=self.cfg.MODEL.CONVGRU.TEACHER_FORCING
+        total_epochs = self.cfg.MODEL.CONVRNN.TRAIN.EPOCHS
+        teacher_forcing=self.cfg.MODEL.CONVRNN.TEACHER_FORCING
 
         with tqdm(total=len(train_data_loader), dynamic_ncols=True) as tq:
             tq.set_description(f"Train :: Epoch: {epoch}/{total_epochs}")
@@ -95,7 +110,7 @@ class ConvGRU_model:
                 past_train, future_train = past_train.float(), future_train.float()
                 past_train, future_train = past_train.to(device=self.device), future_train.to(device=self.device)
                 # Evaluate train losses
-                train_rloss, train_vloss, train_dloss, train_ndloss = evaluate_loss(self.convGRU, past_train, future_train, teacher_forcing, eps=self.cfg.MACROPROPS.EPS)
+                train_rloss, train_vloss, train_dloss, train_ndloss = evaluate_loss(self.convRNN, past_train, future_train, teacher_forcing, eps=self.cfg.MACROPROPS.EPS)
                 # Total train loss
                 train_loss = train_rloss + (alpha * train_vloss)
                 # Backward pass
@@ -112,10 +127,10 @@ class ConvGRU_model:
                 train_dloss_list.append(train_dloss.detach().item())
                 train_ndloss_list.append(train_ndloss.detach().item())
 
-                tq.set_postfix_str(s=f"ConvGRU Training Loss: {train_loss_value:.4f}")
+                tq.set_postfix_str(s=f"CONVRNN-{self.base_cell_name} Training Loss: {train_loss_value:.4f}")
 
             train_mean_loss = train_loss_record.compute().item()
-            tq.set_postfix_str(s=f"ConvGRU Epoch Loss: {train_mean_loss:.4f}")
+            tq.set_postfix_str(s=f"CONVRNN-{self.base_cell_name} Epoch Loss: {train_mean_loss:.4f}")
 
         with torch.no_grad():
             with tqdm(total=len(val_data_loader), dynamic_ncols=True) as tq:
@@ -128,7 +143,7 @@ class ConvGRU_model:
                     past_val, future_val = past_val.float(), future_val.float()
                     past_val, future_val = past_val.to(device=self.device), future_val.to(device=self.device)
                     # Evaluate validation losses
-                    val_rloss, val_vloss, val_dloss, val_ndloss = evaluate_loss(self.convGRU, past_val, future_val, teacher_forcing=False, eps=self.cfg.MACROPROPS.EPS)
+                    val_rloss, val_vloss, val_dloss, val_ndloss = evaluate_loss(self.convRNN, past_val, future_val, teacher_forcing=False, eps=self.cfg.MACROPROPS.EPS)
                     # Total validation loss
                     val_loss = val_rloss + (alpha * val_vloss)
                     # Record losses
@@ -140,10 +155,10 @@ class ConvGRU_model:
                     val_dloss_list.append(val_dloss.detach().item())
                     val_ndloss_list.append(val_ndloss.detach().item())
 
-                    tq.set_postfix_str(s=f"ConvGRU Val Loss: {val_loss_value:.4f}")
+                    tq.set_postfix_str(s=f"CONVRNN-{self.base_cell_name} Val Loss: {val_loss_value:.4f}")
 
             val_mean_loss = val_loss_record.compute().item()
-            tq.set_postfix_str(s=f"ConvGRU Epoch Loss: {val_mean_loss:.4f}")
+            tq.set_postfix_str(s=f"CONVRNN-{self.base_cell_name} Epoch Loss: {val_mean_loss:.4f}")
 
         return train_mean_loss, val_mean_loss, train_rloss_list, train_vloss_list, val_rloss_list, val_vloss_list, train_dloss_list, train_ndloss_list, val_dloss_list, val_ndloss_list
 
@@ -155,7 +170,7 @@ class ConvGRU_model:
         train_dloss_history, train_ndloss_history = [], []
         val_dloss_history, val_ndloss_history = [], []
 
-        for epoch in range(1, self.cfg.MODEL.CONVGRU.TRAIN.EPOCHS + 1):
+        for epoch in range(1, self.cfg.MODEL.CONVRNN.TRAIN.EPOCHS + 1):
             torch.cuda.empty_cache()
             gc.collect()
             epoch_train_loss, epoch_val_loss, e_train_rloss_list, e_train_vloss_list, e_val_rloss_list, e_val_vloss_list, e_train_dloss_list, e_train_ndloss_list, e_val_dloss_list, e_val_ndloss_list = self._train_one_epoch(batched_train_data, batched_val_data, epoch=epoch)
@@ -186,19 +201,18 @@ class ConvGRU_model:
             # Save best checkpoint from all training
             if epoch_train_loss < best_loss:
                 best_loss = epoch_train_loss
-                save_checkpoint(self.optimizer, self.convGRU, "000", self.cfg, self.arch)
+                save_checkpoint(self.optimizer, self.convRNN, "000", self.cfg, self.arch)
 
         logging.info(f"Trained model {self.arch} saved in {self.output_dir}")
         # Plot once training is finished
-        self._plot_loss_history(train_rloss_history, train_vloss_history, val_rloss_history, val_vloss_history)
+        self._plot_loss_history(train_rloss_history, train_vloss_history, val_rloss_history, val_vloss_history, title=f"ConvRNN-{self.base_cell_name} Training History")
         self._plot_loss_history(train_dloss_history, train_ndloss_history, val_dloss_history, val_ndloss_history, title="Detailed loss using density mask")
 
     @torch.inference_mode()
-    def _generate_convGRU(self, x_test, y_test, teacher_forcing):
+    def _generate_convRNN(self, x_test, y_test, teacher_forcing):
         # Set the model in evaluation mode
-        self.convGRU.eval()
-        predictions = self.convGRU(x_test, y_test, teacher_forcing)
-        #AR: check if exp() is still needed for rho, vx and vy
+        self.convRNN.eval()
+        predictions = self.convRNN(x_test, y_test, teacher_forcing)
         predictions[:,0,:,:,:] = torch.exp(predictions[:,0,:,:,:])
         predictions[:,3,:,:,:] = torch.exp(predictions[:,3,:,:,:])
 
@@ -208,8 +222,8 @@ class ConvGRU_model:
         logging.info(f'model full name:{model_fullname}')
         create_directory(self.output_dir)
 
-        self.convGRU.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
-        self.convGRU.to(self.device)
+        self.convRNN.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
+        self.convRNN.to(self.device)
 
         for batch in batched_test_data:
             past_test, future_test = batch
@@ -223,7 +237,7 @@ class ConvGRU_model:
 
             random_past_samples = past_test[random_past_idx]
             random_future_samples = future_test[random_past_idx]
-            predictions = self._generate_convGRU(random_past_samples, random_future_samples, teacher_forcing=False)
+            predictions = self._generate_convRNN(random_past_samples, random_future_samples, teacher_forcing=False)
             setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
             logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")
             break
@@ -232,10 +246,10 @@ class ConvGRU_model:
         logging.info(f'model full name:{model_fullname}')
         create_directory(self.output_dir)
 
-        self.convGRU.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
-        self.convGRU.to(self.device)
+        self.convRNN.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
+        self.convRNN.to(self.device)
 
-        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_NA', model_fullname)
+        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_(GRUCell|LSTMCell)', model_fullname)
 
         count_batch = 0
         pred_seq_list, gt_seq_list = [], []
@@ -258,7 +272,7 @@ class ConvGRU_model:
                 random_past_idx = expanded_random_past_idx[:samples_per_batch]
                 random_past_samples = past_test[random_past_idx]
                 random_future_samples = future_test[random_past_idx]
-                predictions = self._generate_convGRU(random_past_samples, random_future_samples, teacher_forcing=False)
+                predictions = self._generate_convRNN(random_past_samples, random_future_samples, teacher_forcing=False)
 
                 # mprops setup for metrics compute
                 random_future_samples = random_future_samples[:, :self.cfg.METRICS.MPROPS_COUNT, :, :, :]
@@ -273,6 +287,6 @@ class ConvGRU_model:
                     break
 
         logging.info("===" * 20)
-        logging.info(f'Computing metrics on predicted mprops sequences with ConvGRU model.')
+        logging.info(f'Computing metrics on predicted mprops sequences with ConvRNN-{self.base_cell_name} model.')
         metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
         compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch, self.arch)
