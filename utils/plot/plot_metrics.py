@@ -89,7 +89,7 @@ def createBoxPlotWithOutlierInfo(df, title, columns_to_plot, save_path=None, y_l
 
     plt.close()
 
-def createBoxPlot_bhatt(df1, df2, title, save_path=None):
+def createBoxPlot_bhatt(df1, df2, title, save_path=None, median_label=True):
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     df1_cols = df1.columns.tolist()
     df1[df1_cols].boxplot(ax=axes[0])
@@ -102,6 +102,21 @@ def createBoxPlot_bhatt(df1, df2, title, save_path=None):
     axes[1].set_title("Bhatt-Distance", fontsize=14)
     axes[1].spines[['top', 'right']].set_visible(False)
     axes[1].set_ylabel('Values')
+
+    # ---- Add median values as text ----
+    if median_label:
+        medians_bp1 = df1[df1_cols].median()
+        medians_bp2 = df2[df2_cols].median()
+
+        for i, col in enumerate(df1_cols, start=1):
+            median_val = medians_bp1[col]
+            axes[0].text(i, median_val, f"{median_val:.2f}", ha='center', va='bottom', fontsize=9, color='green', fontweight='bold')
+        
+        for i, col in enumerate(df2_cols, start=1):
+            median_val = medians_bp2[col]
+            axes[1].text(i, median_val, f"{median_val:.2f}", ha='center', va='bottom', fontsize=9, color='green', fontweight='bold')
+
+
     # Add overall title
     plt.suptitle(title, fontsize=16)
     # Adjust layout and show the plot
