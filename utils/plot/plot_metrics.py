@@ -4,10 +4,17 @@ from fractions import Fraction
 from matplotlib import pyplot as plt
 
 def createBoxPlot(df, title, columns_to_plot, save_path=None, ytick_step=5):
-    df[columns_to_plot].boxplot()
+    ax = df[columns_to_plot].boxplot()
     plt.title(title, fontsize=16)
     plt.gca().spines[['top', 'right']].set_visible(False)
     plt.ylabel('Values')
+    # ---- Add median values as text ----
+    medians = df[columns_to_plot].median()
+
+    for i, col in enumerate(columns_to_plot, start=1):
+        median_val = medians[col]
+        ax.text(i, median_val, f"{median_val:.2f}", ha='center', va='bottom', fontsize=10, color='green')
+
     # Set consistent y-axis ticks
     y_min, y_max = df[columns_to_plot].min().min(), df[columns_to_plot].max().max()
     if ytick_step is not None:
