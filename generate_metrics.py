@@ -1,4 +1,4 @@
-import argparse
+import sys, argparse
 import torch
 import logging
 
@@ -7,6 +7,14 @@ from utils.utils import get_filenames_paths, get_test_dataset, get_model_fullnam
 from models.diffusion.ddpm import DDPM_model
 from models.convRNN.convRNN import ConvRNN_model
 from models.flow_matching.flow_matching import FM_model
+
+logging.basicConfig(format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.INFO,
+                    handlers=[
+                        logging.FileHandler("logs/genMetrics.log"),
+                        logging.StreamHandler(sys.stdout)]
+                    )
 
 def generate_metrics_ddpm(cfg, args, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, mprops_count):
     torch.manual_seed(42)
