@@ -25,7 +25,7 @@ def get_filenames_paths_base(cfg):
     filenames = cfg.DATA_LIST
     if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
         filenames = [filename.replace(".csv", ".pkl") for filename in filenames]
-    elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-BN", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
+    elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-BN", "HERMES-CR-90", "HERMES-CR-90-OBST", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
         filenames = [filename.replace(".txt", ".pkl") for filename in filenames]
     else:
         logging.info("Dataset not supported")
@@ -43,7 +43,7 @@ def get_filenames_paths(cfg):
     for filename, raw_samples in data_list:
         if cfg.DATASET.NAME in ["ATC", "ATC4TEST"]:
             filename = filename.replace(".csv", ".pkl")
-        elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-BN", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
+        elif cfg.DATASET.NAME in ["HERMES-BO", "HERMES-BN", "HERMES-CR-90", "HERMES-CR-90-OBST", "HERMES-CR-120", "HERMES-CR-120-OBST"]:
             filename = filename.replace(".txt", ".pkl")
         else:
             logging.info("Dataset not supported")

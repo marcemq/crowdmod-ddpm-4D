@@ -116,7 +116,7 @@ class MacropropPlotter:
 
         # Iterate over each sequence to create a GIF for each
         for i in range(self.samples4plot*2):
-            if self.dataset_name in ["ATC", "ATC4TEST", "HERMES-BO", "HERMES-BN"]:
+            if self.dataset_name in ["ATC", "ATC4TEST", "HERMES-BO", "HERMES-BN", "HERMES-CR-90", "HERMES-CR-90-OBST"]:
                 fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
             elif self.dataset_name in ["HERMES-CR-120", "HERMES-CR-120-OBST"]:
                 fig, ax = plt.subplots(1, 1, figsize=(4, 5), facecolor='white')
