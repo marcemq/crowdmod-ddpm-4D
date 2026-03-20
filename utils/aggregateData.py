@@ -8,12 +8,6 @@ import os
 from tqdm.auto import tqdm
 from myparser import getYamlConfig
 
-logging.basicConfig(filename='logs/Aggregation.log',
-                    filemode='a',
-                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.DEBUG)
-
 def aggregateATCData(colNames, readColNames, inDataDir, outDataDir, filenames):
     """
     This function aggregates time, pos_x, pos_y, vel, motion_angle

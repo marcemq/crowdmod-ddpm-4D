@@ -1,27 +1,27 @@
 DATA_FS:
-  RAW_DATA_DIR: '/datasets/HERMES-BO/rawData/'
-  AGG_DATA_DIR: '/datasets/HERMES-BO/aggData/'
-  PICKLE_DIR: '/datasets/HERMES-BO/processed/'
-  OUTPUT_DIR : "output_hermes_bo"
-  SAVE_DIR: "trained_models/hermes_bo/"
+  RAW_DATA_DIR: '/datasets/HERMES-BN/rawData/'
+  AGG_DATA_DIR: '/datasets/HERMES-BN/aggData/'
+  PICKLE_DIR: '/datasets/HERMES-BN/processed/'
+  OUTPUT_DIR : "output_hermes_bn"
+  SAVE_DIR: "trained_models/hermes_bn/"
   USE_PICKLE: False
 MACROPROPS:
   # Grid size
-  ROWS: 12
-  COLS: 24
+  ROWS: 28
+  COLS: 16
   # Grid resolution
   DX: 0.5
   DY: 0.5
   LU:
-    - -6
-    - 4
+    - -3
+    - 8
   # EPSILON value to avoid division by cero
   EPS: 0.000001
   STRIDE: 10    # Stride to use to use most out provided data.
   THETA: 0
   TIME_RES: 0.25
 DATASET:
-  NAME: "HERMES-BO"
+  NAME: "HERMES-BN"
   PAST_LEN: 5
   FUTURE_LEN: 3
   RAW_SEQ_LEN: 20
@@ -36,7 +36,7 @@ DATASET:
   DATASET_TYPE: 'BySplitRatio'    # Available options: ByFilenames|BySplitRatio|ByFilenames4Test
   VELOCITY_NORM: False
 MODEL:
-  NAME: "{}_HERMESBO_TE{}_PL{}_FL{}_CE{}_{}.pth"
+  NAME: "{}_HERMESBN_TE{}_PL{}_FL{}_CE{}_{}.pth"
   NSAMPLES: 1280      # Define number of predicted samples (64 BS * 20 rep, default values)
   NSAMPLES4PLOTS: 20  # Define number of predicted samples to plot static and dynamic seqs
   DDPM:

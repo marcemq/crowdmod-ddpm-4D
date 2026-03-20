@@ -1,7 +1,7 @@
 import argparse
 import torch
 import matplotlib.pyplot as plt
-import logging
+import sys, logging
 
 from models.diffusion.ddpm import DDPM_model
 from models.convRNN.convRNN import ConvRNN_model
@@ -10,6 +10,14 @@ from utils.utils import get_filenames_paths, get_test_dataset, get_model_fullnam
 from utils.plot.plot_sampled_mprops import MacropropPlotter
 from utils.myparser import getYamlConfig
 from torchvision.utils import make_grid
+
+logging.basicConfig(format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.INFO,
+                    handlers=[
+                        logging.FileHandler("logs/genSamples.log"),
+                        logging.StreamHandler(sys.stdout)]
+                    )
 
 def inverseTransform(y, stats):
     stats = stats[0,:,:]

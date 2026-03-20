@@ -12,6 +12,14 @@ from models.diffusion.ddpm import DDPM_model
 from models.convRNN.convRNN import ConvRNN_model
 from models.flow_matching.flow_matching import FM_model
 
+logging.basicConfig(format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.INFO,
+                    handlers=[
+                        logging.FileHandler("logs/train.log"),
+                        logging.StreamHandler(sys.stdout)]
+                    )
+
 def train_ddpm(cfg, batched_train_data, arch, mprops_count):
     torch.manual_seed(42)
     ddpm_model = DDPM_model(cfg, arch, mprops_count)

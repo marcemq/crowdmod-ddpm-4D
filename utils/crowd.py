@@ -11,14 +11,6 @@ from matplotlib import pyplot as plt
 import imageio
 import wandb
 
-logging.basicConfig(format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.INFO,
-                    handlers=[
-                        logging.FileHandler("logs/CrowdMacroprops.log"),
-                        logging.StreamHandler(sys.stdout)]
-                    )
-
 class Crowd(object):
     def __init__(self, rows=12, cols=36, rho=None, mu_v=None, sigma2_v=None):
         self.rows = rows
