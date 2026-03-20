@@ -22,14 +22,6 @@ from models.diffusion.ddpm import DDPM
 
 import torch.nn as nn
 
-logging.basicConfig(format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.INFO,
-                    handlers=[
-                        logging.FileHandler("logs/CrowdPredictionDDPM.log"),
-                        logging.StreamHandler(sys.stdout)]
-                    )
-
 def inverseTransform(y, stats):
     stats = stats[0,:,:]
     logging.info(f'stats shape:{stats.shape}')

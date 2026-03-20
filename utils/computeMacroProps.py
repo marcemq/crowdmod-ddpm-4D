@@ -12,14 +12,6 @@ from tqdm.auto import tqdm
 from myparser import getYamlConfig
 from data import preProcessData, filterDataByLU, filterDataByTime, getMacroPropertiesAtTimeStamp
 
-logging.basicConfig(format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.INFO,
-                    handlers=[
-                        logging.FileHandler("logs/ComputeMacroProps.log"),
-                        logging.StreamHandler(sys.stdout)]
-                    )
-
 def computeMacroPropsATC(cfg, aggDataDir, pklDataDir, filenames, t_init=None, t_last=None):
     """
     This function computes the macroproperties for previously aggregated
