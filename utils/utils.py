@@ -3,7 +3,7 @@ import torch
 import wandb
 import logging
 import torch.optim as optim
-from utils.dataset import getDataset, getClassicDataset
+from utils.dataset import getDataset, getClassicDataset, getFixedDataset
 
 def create_directory(directory_path):
     """
@@ -69,17 +69,21 @@ def get_training_dataset(cfg, filenames_and_numSamples, mprops_count, batch_size
 
     return batched_train_data, batched_val_data
 
-def get_test_dataset(cfg, filenames_and_numSamples, mprops_count, batch_size=None):
+def get_test_dataset(cfg, filenames_and_numSamples, mprops_count, batch_size=None, from_fixed_past=False):
     """
     Return testing data for specific dataset type.
     """
-    if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-        _, batched_test_data = getClassicDataset(cfg, filenames_and_numSamples, batch_size=batch_size, mprops_count=mprops_count)
-    elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
-        _, _, batched_test_data = getDataset(cfg, filenames_and_numSamples, batch_size=batch_size, test_data_only=True, mprops_count=mprops_count)
+    if from_fixed_past:
+        batched_test_data = getFixedDataset(cfg, mprops_count=mprops_count)
+        logging.info(f"Batched Test dataset loaded from fixed past seqs.")
     else:
-        logging.error(f"Dataset type not supported.")
-    logging.info(f"Batched Test dataset loaded.")
+        if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
+            _, batched_test_data = getClassicDataset(cfg, filenames_and_numSamples, batch_size=batch_size, mprops_count=mprops_count, from_fixed_past=from_fixed_past)
+        elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
+            _, _, batched_test_data = getDataset(cfg, filenames_and_numSamples, batch_size=batch_size, test_data_only=True, mprops_count=mprops_count)
+        else:
+            logging.error(f"Dataset type not supported.")
+        logging.info(f"Batched Test dataset loaded.")
 
     return batched_test_data
 

@@ -77,7 +77,7 @@ def sampling_mgmt(args, cfg):
 
     # === Load test dataset ===
     mprops_count = 4 if args.arch == "ConvRNN" else 3
-    batched_test_data = get_test_dataset(cfg, filenames_and_numSamples, mprops_count)
+    batched_test_data = get_test_dataset(cfg, filenames_and_numSamples, mprops_count, from_fixed_past=args.from_fixed_past)
 
     # === Generate samples per architecture ===
     logging.info(f"=======>>>> Init sampling for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
@@ -103,6 +103,7 @@ if __name__ == '__main__':
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
     parser.add_argument('--model-sample-to-load', type=str, default="000", help='Model sample to be used for generate mprops samples. Default value is for best model.')
     parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvRNN')
+    parser.add_argument('--from-fixed-past', type=bool, default=False, help='Compute sampling from fixed past seqs for comparison.')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)

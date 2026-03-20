@@ -2,7 +2,7 @@ import pickle
 import random
 import numpy as np
 import torch
-import logging
+import logging, os
 from utils.data import preProcessData, filterDataByLU, filterDataByTime, getMacroPropertiesAtTimeStamp
 from torch.utils.data import Dataset, DataLoader, TensorDataset, random_split
 
@@ -229,3 +229,19 @@ def getClassicDataset(cfg, filenames_and_numSamples, batch_size=None, split_rati
     logging.info(f"Train split: {len(train_dataset)}, Test split: {len(test_dataset)}")
 
     return train_loader, test_loader
+
+def getFixedDataset(cfg, mprops_count):
+    inputDir = os.path.join(cfg.DATA_FS.PICKLE_DIR, "4sampling")
+    filename = os.listdir(inputDir)[0]
+    logging.info(f"Loading macro-props fixed data from: {filename}")
+
+    try:
+        with open(filename, "rb") as file:
+            fixed_seq_per_file = pickle.load(file)
+
+    except MemoryError:
+        logging.error("MemoryError: Unable to load pickle data due to memory issues.")
+    except Exception as e:
+        logging.error(f"An error occurred while loading {filename}: {str(e)}")
+
+    return fixed_seq_per_file[:, 0:mprops_count, :, :, :]
