@@ -6,6 +6,15 @@ import matplotlib.animation as animation
 from matplotlib.animation import PillowWriter
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
+FIGSIZE_MAP = {
+    "ATC":                  (7, 4),
+    "ATC4TEST":             (7, 4),
+    "HERMES-BO":            (7, 4),
+    "HERMES-BN":            (4, 7),
+    "HERMES-CR-90":         (5, 4),
+    "HERMES-CR-90-OBST":    (5, 4),
+}
+
 class MacropropPlotter:
     def __init__(self, cfg, output_dir, arch="DDPM-UNet", velScale=0.5, velUncScale=1.0, headwidth=5):
         self.output_dir = output_dir
@@ -116,12 +125,11 @@ class MacropropPlotter:
 
         # Iterate over each sequence to create a GIF for each
         for i in range(self.samples4plot*2):
-            if self.dataset_name in ["ATC", "ATC4TEST", "HERMES-BO", "HERMES-BN", "HERMES-CR-90", "HERMES-CR-90-OBST"]:
-                fig, ax = plt.subplots(1, 1, figsize=(7, 4), facecolor='white')
-            elif self.dataset_name in ["HERMES-CR-120", "HERMES-CR-120-OBST"]:
-                fig, ax = plt.subplots(1, 1, figsize=(4, 5), facecolor='white')
-            else:
-                logging.error("Dynamic plot: Dataset not supported")
+            figsize = FIGSIZE_MAP.get(self.dataset_name)
+            if figsize is None:
+                logging.info("Dataset not supported!!!!")
+                continue
+            fig, ax = plt.subplots(1, 1, figsize=figsize, facecolor='white')
             fig.subplots_adjust(hspace=0.1, wspace=0.1)
 
             # Set up the initial plot and color bar
