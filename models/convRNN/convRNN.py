@@ -241,7 +241,6 @@ class ConvRNN_model:
 
             if self.from_fixed_past:
                 random_past_idx = torch.arange(nsamples)
-                logging.info(f"random_past_idx:{random_past_idx}")
             else:
                 random_past_idx = torch.randperm(past_test.shape[0])[:nsamples]
                 # Predict different sequences for the same past sequence
