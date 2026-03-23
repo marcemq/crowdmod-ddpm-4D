@@ -78,7 +78,7 @@ def get_test_dataset(cfg, filenames_and_numSamples, mprops_count, batch_size=Non
         logging.info(f"Batched Test dataset loaded from fixed past seqs.")
     else:
         if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
-            _, batched_test_data = getClassicDataset(cfg, filenames_and_numSamples, batch_size=batch_size, mprops_count=mprops_count, from_fixed_past=from_fixed_past)
+            _, batched_test_data = getClassicDataset(cfg, filenames_and_numSamples, batch_size=batch_size, mprops_count=mprops_count)
         elif cfg.DATASET.DATASET_TYPE == "ByFilenames":
             _, _, batched_test_data = getDataset(cfg, filenames_and_numSamples, batch_size=batch_size, test_data_only=True, mprops_count=mprops_count)
         else:
