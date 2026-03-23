@@ -247,6 +247,8 @@ class DDPM_model:
         else:
             nsamples = self.cfg.MODEL.NSAMPLES4PLOTS
 
+        logging.info(f"Total samples to predict:{nsamples}")
+
         for batch in batched_test_data:
             past_test, future_test = batch
             past_test, future_test = past_test.float(), future_test.float()
