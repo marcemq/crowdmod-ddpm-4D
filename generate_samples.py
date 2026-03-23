@@ -42,35 +42,48 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
         plt.show()
     return grid_img
 
+def get_output_dir(cfg, args):
+    if args.arch == "DDPM-UNet":
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}"
+    elif args.arch == "FM-UNet":
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FLOW_MATCHING.W_TYPE}_intg{cfg.MODEL.FLOW_MATCHING.INTEGRATOR}"
+    elif args.arch == "ConvRNN":
+        base_cell_name = cfg.MODEL.CONVRNN.CELL_CLASS[4:]
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_{base_cell_name}_modelE{args.model_sample_to_load}"
+    else:
+        raise ValueError(f"Output dir creation: Architecture '{args.arch}' not supported.")
+
+    if args.from_fixed_past:
+        output_dir += "/fixed_past_samples/"
+
+    return output_dir
+
 def generate_samples_ddpm(cfg, args, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count):
-    torch.manual_seed(42)
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}"
+    output_dir = get_output_dir(cfg, args)
     macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)
 
     ddpm_model = DDPM_model(cfg, args.arch, mprops_count, output_dir)
     ddpm_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
 def generate_samples_fm(cfg, args, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count):
-    torch.manual_seed(42)
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FLOW_MATCHING.W_TYPE}_intg{cfg.MODEL.FLOW_MATCHING.INTEGRATOR}"
+    output_dir = get_output_dir(cfg, args)
     macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)
 
     fm_model = FM_model(cfg, args.arch, mprops_count, output_dir)
     fm_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
 def generate_samples_convRNN(cfg, args, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count):
-    torch.manual_seed(42)
-    base_cell_name = cfg.MODEL.CONVRNN.CELL_CLASS[4:]
-    output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_{base_cell_name}_modelE{args.model_sample_to_load}"
+    output_dir = get_output_dir(cfg, args)
     macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)
 
     convRNN_model = ConvRNN_model(cfg, args.arch, mprops_count, output_dir)
-    convRNN_model.sampling( batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
+    convRNN_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
 def sampling_mgmt(args, cfg):
     """
     Sampling management function.
     """
+    torch.manual_seed(42)
     # === Prepare file paths ===
     filenames_and_numSamples = get_filenames_paths(cfg)
     model_fullname = get_model_fullname(cfg, args.arch, args.model_sample_to_load)
