@@ -34,11 +34,12 @@ class DDPM(ForwardSampler):
         return xdenoised, torch.sqrt(beta_t), 1-beta_t
 
 class DDPM_model:
-    def __init__(self, cfg, arch, mprops_count, output_dir=None):
+    def __init__(self, cfg, arch, mprops_count, output_dir=None, from_fixed_past=False):
         self.cfg  = cfg
         self.arch = arch
         self.mprops_count = mprops_count
         self.output_dir = output_dir
+        self.from_fixed_past = from_fixed_past
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.denoiser = self._get_denoiser()
@@ -241,28 +242,40 @@ class DDPM_model:
         backward_sampler = DDPM(timesteps=self.cfg.MODEL.DDPM.TIMESTEPS, scale=self.cfg.MODEL.DDPM.SCALE)
         backward_sampler.to(self.device)
 
+        if self.from_fixed_past:
+            nsamples = batched_test_data.batch_size
+            macropropPlotter.samples4plot = nsamples
+        else:
+            nsamples = self.cfg.MODEL.NSAMPLES4PLOTS
+
+        logging.info(f"Total samples to predict:{nsamples}")
+
         for batch in batched_test_data:
             past_test, future_test = batch
             past_test, future_test = past_test.float(), future_test.float()
             past_test, future_test = past_test.to(device=self.device), future_test.to(device=self.device)
-            random_past_idx = torch.randperm(past_test.shape[0])[:self.cfg.MODEL.NSAMPLES4PLOTS]
-            # Predict different sequences for the same past sequence
-            if samePastSeq:
-                fixed_past_idx = random_past_idx[0]
-                random_past_idx.fill_(fixed_past_idx)
+
+            if self.from_fixed_past:
+                random_past_idx = torch.arange(nsamples)
+            else:
+                random_past_idx = torch.randperm(past_test.shape[0])[:nsamples]
+                # Predict different sequences for the same past sequence
+                if samePastSeq:
+                    fixed_past_idx = random_past_idx[0]
+                    random_past_idx.fill_(fixed_past_idx)
 
             random_past_samples = past_test[random_past_idx]
             random_future_samples = future_test[random_past_idx]
 
             if self.cfg.MODEL.DDPM.SAMPLER == "DDPM":
-                predictions, _  = self._generate_ddpm(random_past_samples, backward_sampler, self.cfg.MODEL.NSAMPLES4PLOTS) # AR review .cpu() call here
+                predictions, _  = self._generate_ddpm(random_past_samples, backward_sampler, nsamples) # AR review .cpu() call here
                 if self.cfg.MODEL.DDPM.GUIDANCE == "sparsity" or self.cfg.MODEL.DDPM.GUIDANCE == "None":
                     l1 = torch.mean(torch.abs(predictions[:,0,:,:,:])).cpu().detach().numpy()
                     logging.info('L1 norm {:.2f}'.format(l1))
             elif self.cfg.MODEL.DDPM.SAMPLER == "DDIM":
                 taus = np.arange(0, timesteps, self.cfg.MODEL.DDPM.DDIM_DIVIDER)
                 logging.info(f'Shape of subset taus:{taus.shape}')
-                predictions, _ = self._generate_ddim(random_past_samples, taus, backward_sampler, self.cfg.MODEL.NSAMPLES4PLOTS) # AR review .cpu() call here
+                predictions, _ = self._generate_ddim(random_past_samples, taus, backward_sampler, nsamples) # AR review .cpu() call here
             else:
                 logging.info(f"{self.cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 

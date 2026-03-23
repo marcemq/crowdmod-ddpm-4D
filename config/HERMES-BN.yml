@@ -17,14 +17,14 @@ MACROPROPS:
     - 8
   # EPSILON value to avoid division by cero
   EPS: 0.000001
-  STRIDE: 10    # Stride to use to use most out provided data.
+  STRIDE: 8    # Stride to use to use most out provided data.
   THETA: 0
   TIME_RES: 0.25
 DATASET:
   NAME: "HERMES-BN"
   PAST_LEN: 5
   FUTURE_LEN: 3
-  RAW_SEQ_LEN: 20
+  RAW_SEQ_LEN: 16
   TRAIN_FILE_COUNT: "NA"
   VAL_FILE_COUNT: "NA"
   TEST_FILE_COUNT: "NA"

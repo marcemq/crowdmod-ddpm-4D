@@ -20,11 +20,12 @@ CELL_REGISTRY = {
 }
 
 class ConvRNN_model:
-    def __init__(self, cfg, arch, mprops_count=4, output_dir=None):
+    def __init__(self, cfg, arch, mprops_count=4, output_dir=None, from_fixed_past=False):
         self.cfg  = cfg
         self.arch = arch
         self.mprops_count = mprops_count
         self.output_dir = output_dir
+        self.from_fixed_past = from_fixed_past
         self.base_cell_name = self.cfg.MODEL.CONVRNN.CELL_CLASS[4:]
 
         try:
@@ -225,15 +226,27 @@ class ConvRNN_model:
         self.convRNN.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
         self.convRNN.to(self.device)
 
+        if self.from_fixed_past:
+            nsamples = batched_test_data.batch_size
+            macropropPlotter.samples4plot = nsamples
+        else:
+            nsamples = self.cfg.MODEL.NSAMPLES4PLOTS
+
+        logging.info(f"Total samples to predict:{nsamples}")
+
         for batch in batched_test_data:
             past_test, future_test = batch
             past_test, future_test = past_test.float(), future_test.float()
             past_test, future_test = past_test.to(device=self.device), future_test.to(device=self.device)
-            random_past_idx = torch.randperm(past_test.shape[0])[:self.cfg.MODEL.NSAMPLES4PLOTS]
-            # Predict different sequences for the same past sequence
-            if samePastSeq:
-                fixed_past_idx = random_past_idx[0]
-                random_past_idx.fill_(fixed_past_idx)
+
+            if self.from_fixed_past:
+                random_past_idx = torch.arange(nsamples)
+            else:
+                random_past_idx = torch.randperm(past_test.shape[0])[:nsamples]
+                # Predict different sequences for the same past sequence
+                if samePastSeq:
+                    fixed_past_idx = random_past_idx[0]
+                    random_past_idx.fill_(fixed_past_idx)
 
             random_past_samples = past_test[random_past_idx]
             random_future_samples = future_test[random_past_idx]
