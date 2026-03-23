@@ -231,6 +231,7 @@ class FM_model:
 
         if self.from_fixed_past:
             nsamples = batched_test_data.batch_size
+            macropropPlotter.samples4plot = nsamples
         else:
             nsamples = self.cfg.MODEL.NSAMPLES4PLOTS
 
