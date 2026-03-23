@@ -231,12 +231,13 @@ def getClassicDataset(cfg, filenames_and_numSamples, batch_size=None, split_rati
     return train_loader, test_loader
 
 def getFixedDataset(cfg, mprops_count):
-    inputDir = os.path.join(cfg.DATA_FS.PICKLE_DIR, "4sampling")
+    inputDir = os.path.join(cfg.DATA_FS.PICKLE_DIR, "4sampling/")
     filename = os.listdir(inputDir)[0]
-    logging.info(f"Loading macro-props fixed data from: {filename}")
+    full_path = os.path.join(inputDir, filename)
+    logging.info(f"Loading macro-props fixed data from: {full_path}")
 
     try:
-        with open(filename, "rb") as file:
+        with open(full_path, "rb") as file:
             fixed_seq_per_file = pickle.load(file)
 
     except MemoryError:
