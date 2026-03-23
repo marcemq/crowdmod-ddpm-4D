@@ -105,6 +105,10 @@ MODEL:
         BETAS:
           - 0.9
           - 0.999
+        SCHEDULER:
+          FACTOR: 0.5       # halve LR on plateau
+          PATIENCE: 15      # wait 15 epochs of no improvement before reducing
+          MIN_LR: 0.000001  # floor so LR never dies completely
 METRICS:
   PRED_MPROPS_FACTOR: [1, 1, 1]
   MPROPS_COUNT: 3    # Metrics consider rho, vx, vy predictions only
