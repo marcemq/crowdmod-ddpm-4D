@@ -230,7 +230,7 @@ def getClassicDataset(cfg, filenames_and_numSamples, batch_size=None, split_rati
 
     return train_loader, test_loader
 
-def getFixedDataset(cfg, batch_size, mprops_count):
+def getFixedDataset(cfg, mprops_count):
     inputDir = os.path.join(cfg.DATA_FS.PICKLE_DIR, "4sampling/")
     filename = os.listdir(inputDir)[0]
     full_path = os.path.join(inputDir, filename)
@@ -239,12 +239,12 @@ def getFixedDataset(cfg, batch_size, mprops_count):
     try:
         with open(full_path, "rb") as file:
             fixed_seq_per_file = pickle.load(file)
-
     except MemoryError:
         logging.error("MemoryError: Unable to load pickle data due to memory issues.")
     except Exception as e:
         logging.error(f"An error occurred while loading {filename}: {str(e)}")
 
+    fixed_seq_per_file = fixed_seq_per_file[:, 0:mprops_count, :, :, :]
     fixed_dataset = MacropropsDataset(fixed_seq_per_file, cfg, mprops_count, stride=cfg.MACROPROPS.STRIDE)
     logging.info(f"Total number of sequences in dataset: {len(fixed_dataset)}")
 
