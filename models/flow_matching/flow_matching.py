@@ -243,7 +243,7 @@ class FM_model:
             past_test, future_test = past_test.to(device=self.device), future_test.to(device=self.device)
 
             if self.from_fixed_past:
-                random_past_idx = torch.arange(batched_test_data.batch_size)
+                random_past_idx = torch.arange(nsamples)
             else:
                 random_past_idx = torch.randperm(past_test.shape[0])[:nsamples]
                 # Predict different sequences for the same past sequence
