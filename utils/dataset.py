@@ -248,5 +248,5 @@ def getFixedDataset(cfg, batch_size, mprops_count):
     fixed_dataset = MacropropsDataset(fixed_seq_per_file, cfg, mprops_count, stride=cfg.MACROPROPS.STRIDE)
     logging.info(f"Total number of sequences in dataset: {len(fixed_dataset)}")
 
-    fixed_loader = DataLoader(fixed_dataset, batch_size=batch_size, **cfg.DATASET.params)
+    fixed_loader = DataLoader(fixed_dataset, batch_size=len(fixed_dataset), **cfg.DATASET.params)
     return fixed_loader
