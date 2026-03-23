@@ -11,11 +11,12 @@ from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
 from models.backbones.unet import UNet
 
 class FM_model:
-    def __init__(self, cfg, arch, mprops_count, output_dir=None):
+    def __init__(self, cfg, arch, mprops_count, output_dir=None, from_fixed_past=False):
         self.cfg  = cfg
         self.arch = arch
         self.mprops_count = mprops_count
         self.output_dir = output_dir
+        self.from_fixed_past = from_fixed_past
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.u_predictor = self._get_u_predictor()
@@ -228,20 +229,29 @@ class FM_model:
             raise ValueError(f"Unsupported INTEGRATOR '{intg_type}'. "
                              f"Available: {list(self.integrators.keys())}")
 
+        if self.from_fixed_past:
+            nsamples = batched_test_data.batch_size
+        else:
+            nsamples = self.cfg.MODEL.NSAMPLES4PLOTS
+
         for batch in batched_test_data:
             past_test, future_test = batch
             past_test, future_test = past_test.float(), future_test.float()
             past_test, future_test = past_test.to(device=self.device), future_test.to(device=self.device)
-            random_past_idx = torch.randperm(past_test.shape[0])[:self.cfg.MODEL.NSAMPLES4PLOTS]
-            # Predict different sequences for the same past sequence
-            if samePastSeq:
-                fixed_past_idx = random_past_idx[0]
-                random_past_idx.fill_(fixed_past_idx)
+
+            if self.from_fixed_past:
+                random_past_idx = torch.arange(batched_test_data.batch_size)
+            else:
+                random_past_idx = torch.randperm(past_test.shape[0])[:nsamples]
+                # Predict different sequences for the same past sequence
+                if samePastSeq:
+                    fixed_past_idx = random_past_idx[0]
+                    random_past_idx.fill_(fixed_past_idx)
 
             random_past_samples = past_test[random_past_idx]
             random_future_samples = future_test[random_past_idx]
 
-            predictions = integrator(random_past_samples, self.cfg.MODEL.NSAMPLES4PLOTS)
+            predictions = integrator(random_past_samples, nsamples)
 
             setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
             logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")

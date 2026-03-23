@@ -62,21 +62,21 @@ def generate_samples_ddpm(cfg, args, batched_test_data, plotType, model_fullname
     output_dir = get_output_dir(cfg, args)
     macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)
 
-    ddpm_model = DDPM_model(cfg, args.arch, mprops_count, output_dir)
+    ddpm_model = DDPM_model(cfg, args.arch, mprops_count, output_dir, args.from_fixed_past)
     ddpm_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
 def generate_samples_fm(cfg, args, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count):
     output_dir = get_output_dir(cfg, args)
     macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)
 
-    fm_model = FM_model(cfg, args.arch, mprops_count, output_dir)
+    fm_model = FM_model(cfg, args.arch, mprops_count, output_dir, args.from_fixed_past)
     fm_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
 def generate_samples_convRNN(cfg, args, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count):
     output_dir = get_output_dir(cfg, args)
     macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)
 
-    convRNN_model = ConvRNN_model(cfg, args.arch, mprops_count, output_dir)
+    convRNN_model = ConvRNN_model(cfg, args.arch, mprops_count, output_dir, args.from_fixed_past)
     convRNN_model.sampling(batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter)
 
 def sampling_mgmt(args, cfg):
