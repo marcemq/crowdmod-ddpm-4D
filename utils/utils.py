@@ -74,7 +74,7 @@ def get_test_dataset(cfg, filenames_and_numSamples, mprops_count, batch_size=Non
     Return testing data for specific dataset type.
     """
     if from_fixed_past:
-        batched_test_data = getFixedDataset(cfg, mprops_count=mprops_count)
+        batched_test_data = getFixedDataset(cfg, batch_size=batch_size, mprops_count=mprops_count)
         logging.info(f"Batched Test dataset loaded from fixed past seqs.")
     else:
         if cfg.DATASET.DATASET_TYPE == "BySplitRatio":
