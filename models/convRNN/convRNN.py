@@ -52,6 +52,13 @@ class ConvRNN_model:
                                           weight_decay=cfg.MODEL.CONVRNN.TRAIN.SOLVER.WEIGHT_DECAY,
                                           amsgrad=True)
 
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                                        self.optimizer,
+                                        mode='min',
+                                        factor=cfg.MODEL.CONVRNN.TRAIN.SOLVER.SCHEDULER.FACTOR,
+                                        patience=cfg.MODEL.CONVRNN.TRAIN.SOLVER.SCHEDULER.PATIENCE,
+                                        min_lr=cfg.MODEL.CONVRNN.TRAIN.SOLVER.SCHEDULER.MIN_LR)
+
     def _plot_loss_history(self, train_rloss_history, train_vloss_history, val_rloss_history, val_vloss_history, title):
         import matplotlib.pyplot as plt
         import os
@@ -189,6 +196,7 @@ class ConvRNN_model:
                 "train_loss": min(epoch_train_loss, 20),
                 "val_loss": min(epoch_val_loss, 20)
             }, step=epoch)
+            self.scheduler.step(epoch_train_loss)
             # NaN handling / early stopping
             if np.isnan(epoch_train_loss):
                 consecutive_nan_count += 1

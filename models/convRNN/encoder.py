@@ -26,7 +26,7 @@ class Encoder(nn.Module):
         self.bias = bias
         self.device = device
         self.cell_class = cell_class
-        self.leakyReLU = nn.LeakyReLU(0.02)
+        self.leakyReLU = nn.LeakyReLU(0.2)
 
         encoder_cell_list = []
         two_stride = 2
