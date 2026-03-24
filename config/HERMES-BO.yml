@@ -74,7 +74,7 @@ MODEL:
         EULER: 1000
         HEUN: 500
     TRAIN:
-      EPOCHS: 200
+      EPOCHS: 400
       SOLVER:
         LR: 0.00001
         WEIGHT_DECAY: 0.001
