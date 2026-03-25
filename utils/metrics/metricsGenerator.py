@@ -25,7 +25,7 @@ class MetricsGenerator:
         "PSNR_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
         "SSIM_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
         "MAX_PSNR_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
-        "MIN_SSIM_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "MAX_SSIM_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
     }
     def __init__(self, pred_seq_list, gt_seq_list, metrics_params, output_dir=None):
         self.pred_seq_list = pred_seq_list
@@ -110,7 +110,7 @@ class MetricsGenerator:
 
         # psnr per each predicted frame in sequence
         nsamples_psnr_over_time = np.zeros((nsamples, self.params.MPROPS_COUNT*pred_len))
-        max_psnr_over_time = np.zeros((nsamples//chunkRepdPastSeq, self.params.MPROPS_COUNT * pred_len))
+        max_psnr_over_time = np.zeros((nsamples//chunkRepdPastSeq, self.params.MPROPS_COUNT*pred_len))
 
         rho_range, vx_range, vy_range = self._get_mprops_ranges(mprops_factor, self.params.MPROPS_COUNT)
         logging.info(f'Range of macroprops \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
@@ -143,6 +143,7 @@ class MetricsGenerator:
         # Compute the MAX PSNR by repeteaded seqs on each macroprops
         for i in range(0, nsamples, chunkRepdPastSeq):
             chunk_idx = i // chunkRepdPastSeq
+
             # MAX over averaged PSNR
             psnr_chunk = nsamples_psnr[i:i+chunkRepdPastSeq]
             max_psnr[chunk_idx] = psnr_chunk.max(axis=0)
@@ -166,35 +167,53 @@ class MetricsGenerator:
         nsamples_ssim = np.zeros((nsamples, self.params.MPROPS_COUNT))
         max_ssim = np.zeros((nsamples//chunkRepdPastSeq, self.params.MPROPS_COUNT))
 
+        # ssim per each predicted frame in sequence
+        nsamples_ssim_over_time = np.zeros((nsamples, self.params.MPROPS_COUNT*pred_len))
+        max_ssim_over_time = np.zeros((nsamples//chunkRepdPastSeq, self.params.MPROPS_COUNT*pred_len))
+
         rho_range, vx_range, vy_range = self._get_mprops_ranges(mprops_factor, self.params.MPROPS_COUNT)
 
         for i in range(nsamples):
             one_pred_seq = self.pred_seq_list[i].cpu().numpy()
             one_gt_seq = self.gt_seq_list[i].cpu().numpy()
 
-            mprops_factor = np.array(mprops_factor)
             one_pred_seq = one_pred_seq * mprops_factor
             one_gt_seq = one_gt_seq * mprops_factor
 
             ssim_rho, ssim_vx, ssim_vy = 0, 0, 0
             for j in range(pred_len):
-                ssim_rho += ssim(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
-                ssim_vx  += ssim(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range)
-                ssim_vy  += ssim(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range)
+                frame_rho = ssim(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
+                frame_vx  = ssim(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range)
+                frame_vy  = ssim(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range)
 
-            # Average SSIM across frames, except for unc channel
+                ssim_rho += frame_rho
+                ssim_vx  += frame_vx
+                ssim_vy  += frame_vy
+
+                # Store per-frame SSIM: columns ordered as rho_f0, vx_f0, vy_f0, rho_f1, ...
+                nsamples_ssim_over_time[i, j * self.params.MPROPS_COUNT + 0] = frame_rho
+                nsamples_ssim_over_time[i, j * self.params.MPROPS_COUNT + 1] = frame_vx
+                nsamples_ssim_over_time[i, j * self.params.MPROPS_COUNT + 2] = frame_vy
+
+            # Average SSIM across frames
             nsamples_ssim[i] = (ssim_rho/pred_len, ssim_vx/pred_len, ssim_vy/pred_len)
 
         # Compute the MAX SSIM by repeteaded seqs on each macroprops
         for i in range(0, nsamples, chunkRepdPastSeq):
+            chunk_idx = i // chunkRepdPastSeq
+
+            # MAX over averaged SSIM
             ssim_chunk = nsamples_ssim[i:i+chunkRepdPastSeq]
-            max_rho = ssim_chunk[:, 0].max()
-            max_vx  = ssim_chunk[:, 1].max()
-            max_vy  = ssim_chunk[:, 2].max()
-            max_ssim[i // chunkRepdPastSeq] = (max_rho, max_vx, max_vy)
+            max_ssim[chunk_idx] = ssim_chunk.max(axis=0)
+
+            # MAX SSIM over time
+            ssim_time_chunk = nsamples_ssim_over_time[i:i+chunkRepdPastSeq]
+            max_ssim_over_time[chunk_idx] = ssim_time_chunk.max(axis=0)
 
         self.data_dict['SSIM']= nsamples_ssim
-        self.data_dict['MAX-SSIM'] = max_ssim
+        self.data_dict['MAX_SSIM'] = max_ssim
+        self.data_dict["SSIM_OVER_TIME"] = nsamples_ssim_over_time
+        self.data_dict["MAX_SSIM_OVER_TIME"] = max_ssim_over_time
 
     def compute_motion_feature_metrics(self, mse_metric=False, bhatt_metrics=False):
         """
