@@ -172,7 +172,7 @@ class FM_model:
                 logging.info(f"Epoch {epoch}: in checkpoints_to_keep set, saving model.")
                 save_checkpoint(self.optimizer, self.u_predictor, epoch, self.cfg, self.arch)
 
-        logging.info(f"Trained model {self.arch} saved in {self.output_dir}")
+        logging.info(f"Trained model {self.arch} saved in {self.cfg.DATA_FS.SAVE_DIR}")
 
     @torch.inference_mode()
     def sampling_with_euler(self, past:torch.Tensor, nsamples):

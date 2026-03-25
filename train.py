@@ -22,7 +22,7 @@ logging.basicConfig(format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(messa
 
 def train_ddpm(cfg, batched_train_data, arch, mprops_count):
     torch.manual_seed(42)
-    ddpm_model = DDPM_model(cfg, arch, mprops_count, output_dir=cfg.DATA_FS.OUTPUT_DIR)
+    ddpm_model = DDPM_model(cfg, arch, mprops_count)
     trainable_params = count_trainable_params(ddpm_model.denoiser)
     logging.info(f"Total trainable parameters at denoiser:{trainable_params}")
 
@@ -30,7 +30,7 @@ def train_ddpm(cfg, batched_train_data, arch, mprops_count):
 
 def train_fm(cfg, batched_train_data, arch, mprops_count):
     torch.manual_seed(42)
-    fm_model = FM_model(cfg, arch, mprops_count, output_dir=cfg.DATA_FS.OUTPUT_DIR)
+    fm_model = FM_model(cfg, arch, mprops_count)
     trainable_params = count_trainable_params(fm_model.u_predictor)
     logging.info(f"Total trainable parameters at u_predictor:{trainable_params}")
 

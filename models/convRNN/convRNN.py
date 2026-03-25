@@ -212,7 +212,7 @@ class ConvRNN_model:
                 best_loss = epoch_train_loss
                 save_checkpoint(self.optimizer, self.convRNN, "000", self.cfg, self.arch)
 
-        logging.info(f"Trained model {self.arch} saved in {self.output_dir}")
+        logging.info(f"Trained model {self.arch} saved in {self.cfg.DATA_FS.SAVE_DIR}")
         # Plot once training is finished
         self._plot_loss_history(train_rloss_history, train_vloss_history, val_rloss_history, val_vloss_history, title=f"ConvRNN-{self.base_cell_name} Training History")
         self._plot_loss_history(train_dloss_history, train_ndloss_history, val_dloss_history, val_ndloss_history, title="Detailed loss using density mask")

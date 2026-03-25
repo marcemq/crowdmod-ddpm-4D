@@ -155,7 +155,7 @@ class DDPM_model:
                 logging.info(f"Epoch {epoch}: in checkpoints_to_keep set, saving model.")
                 save_checkpoint(self.optimizer, self.denoiser, epoch, self.cfg, self.arch)
 
-        logging.info(f"Trained model {self.arch} saved in {self.output_dir}")
+        logging.info(f"Trained model {self.arch} saved in {self.cfg.DATA_FS.SAVE_DIR}")
 
     @torch.inference_mode()
     def _generate_ddpm(self, past:torch.Tensor, backward_sampler:DDPM, nsamples, history=False):
