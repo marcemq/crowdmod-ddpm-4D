@@ -27,6 +27,13 @@ class FM_model:
                                           betas=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.BETAS,
                                           weight_decay=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.WEIGHT_DECAY)
 
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                                        self.optimizer,
+                                        mode='min',
+                                        factor=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.SCHEDULER.FACTOR,
+                                        patience=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.SCHEDULER.PATIENCE,
+                                        min_lr=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.SCHEDULER.MIN_LR)
+
         self.w_type_fns = {
             "Linear": self.w_linear,
             "Conic": self.w_conic,
@@ -143,6 +150,10 @@ class FM_model:
             # One epoch of training
             epoch_loss = self._train_one_epoch_fm(batched_train_data, epoch=epoch)
             wandb.log({"train_loss": epoch_loss})
+
+            # Scheduler step
+            self.scheduler.step(epoch_loss)
+
             # NaN handling / early stopping
             if np.isnan(epoch_loss):
                 consecutive_nan_count += 1
@@ -164,7 +175,7 @@ class FM_model:
                 logging.info(f"Epoch {epoch}: in checkpoints_to_keep set, saving model.")
                 save_checkpoint(self.optimizer, self.u_predictor, epoch, self.cfg, self.arch)
 
-        logging.info(f"Trained model {self.arch} saved in {self.output_dir}")
+        logging.info(f"Trained model {self.arch} saved in {self.cfg.DATA_FS.SAVE_DIR}")
 
     @torch.inference_mode()
     def sampling_with_euler(self, past:torch.Tensor, nsamples):

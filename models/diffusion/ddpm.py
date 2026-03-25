@@ -50,6 +50,14 @@ class DDPM_model:
                                           betas=cfg.MODEL.DDPM.TRAIN.SOLVER.BETAS,
                                           weight_decay=cfg.MODEL.DDPM.TRAIN.SOLVER.WEIGHT_DECAY)
 
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                                        self.optimizer,
+                                        mode='min',
+                                        factor=cfg.MODEL.DDPM.TRAIN.SOLVER.SCHEDULER.FACTOR,
+                                        patience=cfg.MODEL.DDPM.TRAIN.SOLVER.SCHEDULER.PATIENCE,
+                                        min_lr=cfg.MODEL.DDPM.TRAIN.SOLVER.SCHEDULER.MIN_LR)
+
+
     def _get_denoiser(self):
         denoiser = None
         if self.arch == "DDPM-UNet":
@@ -134,6 +142,10 @@ class DDPM_model:
             # One epoch of training
             epoch_loss = self._train_one_epoch(forward_sampler, batched_train_data, epoch)
             wandb.log({"train_loss": epoch_loss})
+
+            # Scheduler step
+            self.scheduler.step(epoch_loss)
+
             # NaN handling / early stopping
             if np.isnan(epoch_loss):
                 consecutive_nan_count += 1
@@ -155,7 +167,7 @@ class DDPM_model:
                 logging.info(f"Epoch {epoch}: in checkpoints_to_keep set, saving model.")
                 save_checkpoint(self.optimizer, self.denoiser, epoch, self.cfg, self.arch)
 
-        logging.info(f"Trained model {self.arch} saved in {self.output_dir}")
+        logging.info(f"Trained model {self.arch} saved in {self.cfg.DATA_FS.SAVE_DIR}")
 
     @torch.inference_mode()
     def _generate_ddpm(self, past:torch.Tensor, backward_sampler:DDPM, nsamples, history=False):
