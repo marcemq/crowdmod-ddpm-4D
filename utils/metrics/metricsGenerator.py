@@ -321,10 +321,10 @@ class MetricsGenerator:
         """
         # Convert the dictionary of arrays into a dictionary of DataFrames
         metrics_df_dict = {key: pd.DataFrame(value, columns=self.HEADERS[key].split(",")) for key, value in self.data_dict.items()}
-        if len(metrics_df_dict['MAX-PSNR']) != 0:
-            merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-PSNR'], df=metrics_df_dict['PSNR'], title=f"PSNR and MAX-PSNR of {title}", save_path=f"{self.output_dir}/BP_PSNR.png", ytick_step=5)
-        if len(metrics_df_dict['MAX-SSIM']) != 0:
-            merge_and_plot_boxplot(df_max=metrics_df_dict['MAX-SSIM'], df=metrics_df_dict['SSIM'], title=f"SSIM and MAX-SSIM of {title}", save_path=f"{self.output_dir}/BP_SSIM.png", ytick_step=0.2)
+        if len(metrics_df_dict['MAX_PSNR']) != 0:
+            merge_and_plot_boxplot(df_max=metrics_df_dict['MAX_PSNR'], df=metrics_df_dict['PSNR'], title=f"PSNR and MAX_PSNR of {title}", save_path=f"{self.output_dir}/BP_PSNR.png", ytick_step=5)
+        if len(metrics_df_dict['MAX_SSIM']) != 0:
+            merge_and_plot_boxplot(df_max=metrics_df_dict['MAX_SSIM'], df=metrics_df_dict['SSIM'], title=f"SSIM and MAX_SSIM of {title}", save_path=f"{self.output_dir}/BP_SSIM.png", ytick_step=0.2)
         if len(metrics_df_dict['MF_MSE']) != 0:
             createBoxPlot(metrics_df_dict['MF_MSE'], title=f"MSE of Motion feature of {title}", columns_to_plot=self.HEADERS["MF_MSE"].split(","), save_path=f"{self.output_dir}/BP_MF_MSE.png", ytick_step=0.0002)
         if len(metrics_df_dict['MF_BHATT_COEF']) != 0:
