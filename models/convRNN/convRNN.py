@@ -196,7 +196,10 @@ class ConvRNN_model:
                 "train_loss": min(epoch_train_loss, 20),
                 "val_loss": min(epoch_val_loss, 20)
             }, step=epoch)
+
+            # Scheduler step
             self.scheduler.step(epoch_train_loss)
+
             # NaN handling / early stopping
             if np.isnan(epoch_train_loss):
                 consecutive_nan_count += 1

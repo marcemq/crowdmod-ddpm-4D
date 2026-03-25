@@ -142,6 +142,10 @@ class DDPM_model:
             # One epoch of training
             epoch_loss = self._train_one_epoch(forward_sampler, batched_train_data, epoch)
             wandb.log({"train_loss": epoch_loss})
+
+            # Scheduler step
+            self.scheduler.step(epoch_loss)
+
             # NaN handling / early stopping
             if np.isnan(epoch_loss):
                 consecutive_nan_count += 1
