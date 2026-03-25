@@ -278,7 +278,7 @@ class FM_model:
         self.u_predictor.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
         self.u_predictor.to(self.device)
 
-        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_[LC]', model_fullname)
+        match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_(Linear|Conic)', model_fullname)
 
         intg_type = self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR
         try:
