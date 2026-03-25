@@ -47,13 +47,17 @@ MODEL:
     GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
     CHECKPOINTS_TO_KEEP: 7
     TRAIN:
-      EPOCHS: 200
+      EPOCHS: 400
       SOLVER:
         LR: 0.00005
         WEIGHT_DECAY: 0.003
         BETAS:
           - 0.5
           - 0.999
+        SCHEDULER:
+          FACTOR: 0.5       # halve LR on plateau
+          PATIENCE: 10      # wait 10 epochs of no improvement before reducing
+          MIN_LR: 0.000001  # floor so LR never dies completely
     UNET:
       CONDITION: "Past"
       CONDITION_HANDLING: "embed"

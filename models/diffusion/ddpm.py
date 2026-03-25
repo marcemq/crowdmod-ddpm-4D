@@ -50,6 +50,14 @@ class DDPM_model:
                                           betas=cfg.MODEL.DDPM.TRAIN.SOLVER.BETAS,
                                           weight_decay=cfg.MODEL.DDPM.TRAIN.SOLVER.WEIGHT_DECAY)
 
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                                        self.optimizer,
+                                        mode='min',
+                                        factor=cfg.MODEL.DDPM.TRAIN.SOLVER.SCHEDULER.FACTOR,
+                                        patience=cfg.MODEL.DDPM.TRAIN.SOLVER.SCHEDULER.PATIENCE,
+                                        min_lr=cfg.MODEL.DDPM.TRAIN.SOLVER.SCHEDULER.MIN_LR)
+
+
     def _get_denoiser(self):
         denoiser = None
         if self.arch == "DDPM-UNet":
