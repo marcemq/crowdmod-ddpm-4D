@@ -109,8 +109,8 @@ MODEL:
     TRAIN:
       EPOCHS: 200
       SOLVER:
-        LR: 0.0005
-        WEIGHT_DECAY: 0.0003
+        LR: 0.001
+        WEIGHT_DECAY: 0.0001
         BETAS:
           - 0.9
           - 0.999
