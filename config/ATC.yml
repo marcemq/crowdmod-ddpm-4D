@@ -109,14 +109,14 @@ MODEL:
     TRAIN:
       EPOCHS: 200
       SOLVER:
-        LR: 0.001
+        LR: 0.003
         WEIGHT_DECAY: 0.0001
         BETAS:
           - 0.9
           - 0.999
         SCHEDULER:
           FACTOR: 0.5       # halve LR on plateau
-          PATIENCE: 10      # wait 10 epochs of no improvement before reducing
+          PATIENCE: 5      # wait 10 epochs of no improvement before reducing
           MIN_LR: 0.000001  # floor so LR never dies completely
 METRICS:
   PRED_MPROPS_FACTOR: [1, 1, 1] # AR test if this factor works fine for ATC
