@@ -18,14 +18,14 @@ MACROPROPS:
     - -15.8076
   # EPSILON value to avoid division by cero
   EPS: 0.000001
-  STRIDE: 10    # Stride to use to use most out provided data.
+  STRIDE: 8    # Stride to use to use most out provided data.
   THETA: 2.5647
   TIME_RES: 0.5
 DATASET:
   NAME: "ATC"
   PAST_LEN: 5
   FUTURE_LEN: 3
-  RAW_SEQ_LEN: 70
+  RAW_SEQ_LEN: 16
   TRAIN_FILE_COUNT: 33
   VAL_FILE_COUNT: 3
   TEST_FILE_COUNT: 3
@@ -45,8 +45,8 @@ MODEL:
     TIMESTEPS: 1000     # Define canonical number of diffusion timesteps
     SCALE: 0.5          # Define scale for betas in model
     DDIM_DIVIDER: 2     # Define number of timesteps for taus subset
-    GUIDANCE: 'sparsity' # Possible values: None, sparsity, mass_preservation
-    MODEL_SAMPLES: 7
+    GUIDANCE: 'None'    # Possible values: None, sparsity, mass_preservation
+    CHECKPOINTS_TO_KEEP: 7
     TRAIN:
       EPOCHS: 200
       SOLVER:
@@ -55,6 +55,10 @@ MODEL:
         BETAS:
           - 0.5
           - 0.999
+        SCHEDULER:
+          FACTOR: 0.5       # halve LR on plateau
+          PATIENCE: 10      # wait 10 epochs of no improvement before reducing
+          MIN_LR: 0.000001  # floor so LR never dies completely
     UNET:
       CONDITION: "Past"
       CONDITION_HANDLING: "embed"
@@ -77,11 +81,15 @@ MODEL:
     TRAIN:
       EPOCHS: 200
       SOLVER:
-        LR: 0.00001
+        LR: 0.0001
         WEIGHT_DECAY: 0.001
         BETAS:
           - 0.5
           - 0.999
+        SCHEDULER:
+          FACTOR: 0.5       # halve LR on plateau
+          PATIENCE: 10      # wait 10 epochs of no improvement before reducing
+          MIN_LR: 0.000001  # floor so LR never dies completely
     UNET:
       CONDITION: "Past"
       CONDITION_HANDLING: "embed"
@@ -99,13 +107,17 @@ MODEL:
     ENC_KERNELS: [3, 3, 3, 3, 3, 3]
     FORC_KERNELS: [3, 4, 3, 4, 3, 3, 3]
     TRAIN:
-      EPOCHS: 100
+      EPOCHS: 600
       SOLVER:
-        LR: 0.001
-        WEIGHT_DECAY: 0.0003
+        LR: 0.003
+        WEIGHT_DECAY: 0.0001
         BETAS:
           - 0.9
           - 0.999
+        SCHEDULER:
+          FACTOR: 0.5       # halve LR on plateau
+          PATIENCE: 10      # wait 10 epochs of no improvement before reducing
+          MIN_LR: 0.000001  # floor so LR never dies completely
 METRICS:
   PRED_MPROPS_FACTOR: [1, 1, 1] # AR test if this factor works fine for ATC
   MPROPS_COUNT: 3    # Metrics consider rho, vx, vy predictions only
