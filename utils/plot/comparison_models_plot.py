@@ -130,10 +130,10 @@ def metrics_comparison_models(title, files_dict, figure_name, ylim):
                 label=short_model_names[model],
             )
 
-        ax.set_title(var_label, fontsize=13, fontweight='medium', pad=8)
+        ax.set_title(var_label, fontsize=12, fontweight='medium', pad=8)
         ax.set_xticks(x)
-        ax.set_xticklabels(frame_labels, fontsize=10)
-        ax.set_xlabel('Predicted frame', fontsize=10, color='#888888')
+        ax.set_xticklabels(frame_labels, fontsize=9)
+        ax.set_xlabel('Predicted frame', fontsize=9, color='#888888')
         ax.set_xlim(-0.4, len(frame_labels) - 0.6)
         ax.set_ylim(ylim)
         ax.tick_params(axis='y', labelsize=9, colors='#888888')
@@ -158,14 +158,14 @@ def metrics_comparison_models(title, files_dict, figure_name, ylim):
         )
         legend_handles.append(handle)
 
-    fig.suptitle(title, fontsize=15, fontweight='medium', y=1.02)
+    fig.suptitle(title, fontsize=13, fontweight='medium', y=0.95)
     fig.legend(
         handles=legend_handles,
         loc='lower center',
         ncol=4,
         fontsize=9,
         frameon=False,
-        bbox_to_anchor=(0.5, -0.06),
+        bbox_to_anchor=(0.5, -0.15),
     )
 
     plt.tight_layout()
