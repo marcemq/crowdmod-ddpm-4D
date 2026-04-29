@@ -14,16 +14,18 @@ frame_labels = ['f+1', 'f+2', 'f+3']
 x = np.arange(len(frame_labels))
 
 colors = {
-    'DDPM-UNet_sampDDPM':       '#3266ad',
+    'DDPM-UNet_sampDDPM_gNone':       '#3266ad',
+    'DDPM-UNet_sampDDPM_gSparsity':   "#14BABA",
     'FM-UNet_Linear_intgEuler': '#3a9e75',
     'ConvRNN_GRUCell':  '#c45c3a',
     'ConvRNN_LSTMCell': '#8b5db8',
 }
 
 short_model_names = {
-    'DDPM-UNet_sampDDPM':       'DIF-UNet_sDDPM',
+    'DDPM-UNet_sampDDPM_gNone':       'DIF-UNet_sDDPM_gN',
+    'DDPM-UNet_sampDDPM_gSparsity':   'DIF-UNet_sDDPM_gS',
     'FM-UNet_Linear_intgEuler': 'FM-UNet_LpEi',
-    'ConvRNN_GRUCell':  'ConvRNN',
+    'ConvRNN_GRUCell':  'ConvGRU',
     'ConvRNN_LSTMCell': 'ConvLSTM',
 }
 
