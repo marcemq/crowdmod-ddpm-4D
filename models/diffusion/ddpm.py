@@ -185,7 +185,7 @@ class DDPM_model:
             eps_pred = self.denoiser(xnoisy, t_tensor, past)
             # Denoise with the sampler and the estimation of the noise
             xnoisy, sigma, alpha_t = backward_sampler.step(eps_pred, xnoisy, t)
-            if self.cfg.MODEL.DDPM.GUIDANCE == "sparsity":
+            if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity":
                 # Update the noisy image with the sparsity guidance
                 sparsity_grad = sparsityGradient(xnoisy, self.cfg, self.device)
                 xnoisy-= 0.004*sigma*sparsity_grad # 0.004*sqrt(1-alpha_t)
@@ -226,7 +226,7 @@ class DDPM_model:
             # AR: Generating images for t-1 (deterministic way). Review this step, can we do it no deterministic?
             # AR: redo eq 65, 67 that depends on sigma and test, with sigma=0, and sigma=1
             xnoisy = sqrt_alpha_bar_t_prev * predicted_x0 + sqrt_one_minus_alpha_bar_t_prev * predicted_noise
-            if self.cfg.MODEL.DDPM.GUIDANCE == "sparsity":
+            if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity":
                 # Update the noisy image with the sparsity guidance
                 sparsity_grad = sparsityGradient(xnoisy, self.cfg, self.device)
                 sigma = torch.sqrt(beta_t)
@@ -281,7 +281,7 @@ class DDPM_model:
 
             if self.cfg.MODEL.DDPM.SAMPLER == "DDPM":
                 predictions, _  = self._generate_ddpm(random_past_samples, backward_sampler, nsamples) # AR review .cpu() call here
-                if self.cfg.MODEL.DDPM.GUIDANCE == "sparsity" or self.cfg.MODEL.DDPM.GUIDANCE == "None":
+                if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity" or self.cfg.MODEL.DDPM.GUIDANCE == "None":
                     l1 = torch.mean(torch.abs(predictions[:,0,:,:,:])).cpu().detach().numpy()
                     logging.info('L1 norm {:.2f}'.format(l1))
             elif self.cfg.MODEL.DDPM.SAMPLER == "DDIM":
@@ -329,7 +329,7 @@ class DDPM_model:
 
             if self.cfg.MODEL.DDPM.SAMPLER == "DDPM":
                 x, _  = self._generate_ddpm(random_past_samples, backward_sampler, samples_per_batch) # AR review .cpu() call here
-                if self.cfg.MODEL.DDPM.GUIDANCE == "sparsity" or self.cfg.MODEL.DDPM.GUIDANCE=="mass_preservation" or self.cfg.MODEL.DDPM.GUIDANCE == "None":
+                if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity" or self.cfg.MODEL.DDPM.GUIDANCE=="mass_preservation" or self.cfg.MODEL.DDPM.GUIDANCE == "None":
                     l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
                     logging.info(f'L1 norm {l1:.2f} using {self.cfg.MODEL.DDPM.GUIDANCE} guidance')
             elif self.cfg.MODEL.DDPM.SAMPLER == "DDIM":

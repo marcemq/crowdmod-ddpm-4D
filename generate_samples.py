@@ -44,7 +44,7 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
 
 def get_output_dir(cfg, args):
     if args.arch == "DDPM-UNet":
-        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}"
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}_g{cfg.MODEL.DDPM.GUIDANCE}"
     elif args.arch == "FM-UNet":
         output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FLOW_MATCHING.W_TYPE}_intg{cfg.MODEL.FLOW_MATCHING.INTEGRATOR}"
     elif args.arch == "ConvRNN":
