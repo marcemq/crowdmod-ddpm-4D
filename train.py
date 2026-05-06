@@ -61,9 +61,9 @@ def training_mgmt(args, cfg):
 
     # === Train models with specific architecture ===
     logging.info(f"=======>>>> Init training for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
-    if args.arch == "DDPM-UNet":
+    if args.arch in ["DDPM-UNet", "DDPM-DiT"]:
         train_ddpm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
-    elif args.arch == "FM-UNet":
+    elif args.arch in ["FM-UNet", "FM-DiT"]:
         train_fm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
     elif args.arch == "ConvRNN":
         train_convRNN(cfg, batched_train_data, batched_val_data, arch=args.arch, mprops_count=mprops_count)
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to train a diffusion model for crowd macroproperties.")
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
-    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvRNN')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|DDPM-DiT|FM-UNet|FM-DiT|ConvRNN')
     args = parser.parse_args()
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
     training_mgmt(args, cfg)

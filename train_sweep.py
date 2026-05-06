@@ -74,13 +74,13 @@ def train_sweep_fm(cfg, filenames, arch, mprops_count, project_name):
     # Instanciate the UNet for the reverse diffusion
     unet_model = UNet(input_channels = mprops_count,
                                   output_channels = mprops_count,
-                                  num_res_blocks = cfg.MODEL.FLOW_MATCHING.UNET.NUM_RES_BLOCKS,
-                                  base_channels           = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH,
-                                  base_channels_multiples = cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH_MULT,
-                                  apply_attention         = cfg.MODEL.FLOW_MATCHING.UNET.APPLY_ATTENTION,
+                                  num_res_blocks = cfg.MODEL.FM.UNET.NUM_RES_BLOCKS,
+                                  base_channels           = cfg.MODEL.FM.UNET.BASE_CH,
+                                  base_channels_multiples = cfg.MODEL.FM.UNET.BASE_CH_MULT,
+                                  apply_attention         = cfg.MODEL.FM.UNET.APPLY_ATTENTION,
                                   dropout_rate            = wandb.config.dropout_rate,
-                                  time_multiple           = cfg.MODEL.FLOW_MATCHING.UNET.TIME_EMB_MULT,
-                                  condition               = cfg.MODEL.FLOW_MATCHING.UNET.CONDITION)
+                                  time_multiple           = cfg.MODEL.FM.UNET.TIME_EMB_MULT,
+                                  condition               = cfg.MODEL.FM.UNET.CONDITION)
     unet_model.to(device)
     optimizer = get_optimizer(unet_model)
     logging.info(f"Selected optimizer: {wandb.config.optimizer}")

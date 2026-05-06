@@ -65,7 +65,7 @@ MODEL:
       TIME_EMB_MULT: 4 # 128
     VIT:
       TMP_VAR: "Placeholder"
-  FLOW_MATCHING:
+  FM:
     TIME_MAX_POS: 1000
     CHECKPOINTS_TO_KEEP: 7
     W_TYPE: "Linear"     # Available options: Linear|Conic

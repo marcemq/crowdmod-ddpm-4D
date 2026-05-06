@@ -68,9 +68,9 @@ MODEL:
       APPLY_ATTENTION: [False, False, True, False]
       DROPOUT_RATE: 0.1
       TIME_EMB_MULT: 4 # 128
-    VIT:
+    DIT:
       TMP_VAR: "Placeholder"
-  FLOW_MATCHING:
+  FM:
     TIME_MAX_POS: 1000
     CHECKPOINTS_TO_KEEP: 7
     W_TYPE: "Linear"     # Available options: Linear|Conic

@@ -87,14 +87,30 @@ def get_test_dataset(cfg, filenames_and_numSamples, mprops_count, batch_size=Non
 
     return batched_test_data
 
+def get_output_dir(cfg, args):
+    if args.arch in ["DDPM-UNet", "DDPM-DiT"]:
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}_g{cfg.MODEL.DDPM.GUIDANCE}"
+    elif args.arch in ["FM-UNet", "FM-DiT"]:
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FM.W_TYPE}_intg{cfg.MODEL.FM.INTEGRATOR}"
+    elif args.arch == "ConvRNN":
+        base_cell_name = cfg.MODEL.CONVRNN.CELL_CLASS[4:]
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_{base_cell_name}_modelE{args.model_sample_to_load}"
+    else:
+        raise ValueError(f"Output dir creation: Architecture '{args.arch}' not supported.")
+
+    if args.from_fixed_past:
+        output_dir += "/fixed_past_samples/"
+
+    return output_dir
+
 def get_checkpoint_save_path(cfg, arch, epoch):
     """
     Return checkpoint save complete path based on arch.
     """
-    if arch == "DDPM-UNet":
+    if arch in ["DDPM-UNet", "DDPM-DiT"]:
         save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
-    elif arch == "FM-UNet":
-        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FLOW_MATCHING.W_TYPE))
+    elif arch in ["FM-UNet", "FM-DiT"]:
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FM.W_TYPE))
     elif arch == "ConvRNN":
         cell_class_name = cfg.MODEL.CONVRNN.CELL_CLASS
         base_cell = cell_class_name[4:]
@@ -117,10 +133,10 @@ def get_model_fullname(cfg, arch, epoch):
     """
     Return model fullname based on arch.
     """
-    if arch == "DDPM-UNet":
+    if arch in ["DDPM-UNet", "DDPM-DiT"]:
         model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
-    elif arch == "FM-UNet":
-        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FLOW_MATCHING.W_TYPE))
+    elif arch in ["FM-UNet", "FM-DiT"]:
+        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FM.W_TYPE))
     elif arch == "ConvRNN":
         cell_class_name = cfg.MODEL.CONVRNN.CELL_CLASS
         base_cell = cell_class_name[4:]
@@ -155,13 +171,13 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
             config={
                 "architecture": arch,
                 "dataset": cfg.DATASET.NAME,
-                "learning_rate": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.LR,
-                "epochs": cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS,
+                "learning_rate": cfg.MODEL.FM.TRAIN.SOLVER.LR,
+                "epochs": cfg.MODEL.FM.TRAIN.EPOCHS,
                 "batch_size": cfg.DATASET.BATCH_SIZE,
                 "past_len": cfg.DATASET.PAST_LEN,
                 "future_len": cfg.DATASET.FUTURE_LEN,
-                "weight_decay": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.WEIGHT_DECAY,
-                "solver_betas": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.BETAS,
+                "weight_decay": cfg.MODEL.FM.TRAIN.SOLVER.WEIGHT_DECAY,
+                "solver_betas": cfg.MODEL.FM.TRAIN.SOLVER.BETAS,
             }
         )
     elif arch == "ConvRNN":
