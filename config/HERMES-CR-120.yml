@@ -46,14 +46,6 @@ MODEL:
     DDIM_DIVIDER: 2     # Define number of timesteps for taus subset
     GUIDANCE: 'None'    # Possible values: None, Sparsity, mass_preservation
     MODEL_SAMPLES: 7
-    TRAIN:
-      EPOCHS: 200
-      SOLVER:
-        LR: 0.00005
-        WEIGHT_DECAY: 0.003
-        BETAS:
-          - 0.5
-          - 0.999
     UNET:
       CONDITION: "Past"
       CONDITION_HANDLING: "embed"
@@ -63,8 +55,38 @@ MODEL:
       APPLY_ATTENTION: [False, False, True, False]
       DROPOUT_RATE: 0.1
       TIME_EMB_MULT: 4 # 128
-    VIT:
-      TMP_VAR: "Placeholder"
+      TRAIN:
+        EPOCHS: 200
+        SOLVER:
+          LR: 0.00005
+          WEIGHT_DECAY: 0.003
+          BETAS:
+            - 0.5
+            - 0.999
+          SCHEDULER:
+            FACTOR: 0.5       # halve LR on plateau
+            PATIENCE: 10      # wait 10 epochs of no improvement before reducing
+            MIN_LR: 0.000001  # floor so LR never dies completely
+    DIT:
+      PATCH_SIZE: 4      # With ROWS=28, COLS=24 and PATCH_SIZE=4 → 7×6 = 42 mprops seq tokens.
+      HIDDEN_SIZE: 256   # model width; try 512 for more capacity
+      DEPTH:       6     # number of DiT blocks
+      NUM_HEADS:   4     # HIDDEN_SIZE % NUM_HEADS must == 0
+      MLP_RATIO:   4.0
+      DROPOUT_RATE: 0.1
+      TIME_EMB_MULT: 4    # time_emb_dims_exp = HIDDEN_SIZE * TIME_MULTIPLE
+      TRAIN:
+        EPOCHS: 200
+        SOLVER:
+          LR: 0.00005
+          WEIGHT_DECAY: 0.003
+          BETAS:
+            - 0.5
+            - 0.999
+          SCHEDULER:
+            FACTOR: 0.5       # halve LR on plateau
+            PATIENCE: 10      # wait 10 epochs of no improvement before reducing
+            MIN_LR: 0.000001  # floor so LR never dies completely
   FM:
     TIME_MAX_POS: 1000
     CHECKPOINTS_TO_KEEP: 7
@@ -73,14 +95,6 @@ MODEL:
     INTEGRATOR_STEPS:
         EULER: 1000
         HEUN: 500
-    TRAIN:
-      EPOCHS: 200
-      SOLVER:
-        LR: 0.00001
-        WEIGHT_DECAY: 0.001
-        BETAS:
-          - 0.5
-          - 0.999
     UNET:
       CONDITION: "Past"
       CONDITION_HANDLING: "embed"
@@ -90,6 +104,38 @@ MODEL:
       APPLY_ATTENTION: [False, False, True, False]
       DROPOUT_RATE: 0.05
       TIME_EMB_MULT: 4 # 128
+      TRAIN:
+        EPOCHS: 200
+        SOLVER:
+          LR: 0.00001
+          WEIGHT_DECAY: 0.001
+          BETAS:
+            - 0.5
+            - 0.999
+          SCHEDULER:
+            FACTOR: 0.5       # halve LR on plateau
+            PATIENCE: 10      # wait 10 epochs of no improvement before reducing
+            MIN_LR: 0.000001  # floor so LR never dies completely
+    DIT:
+      PATCH_SIZE: 4      # With ROWS=28, COLS=24 and PATCH_SIZE=4 → 7×6 = 42 mprops seq tokens.
+      HIDDEN_SIZE: 256   # model width; try 512 for more capacity
+      DEPTH:       6     # number of DiT blocks
+      NUM_HEADS:   4     # HIDDEN_SIZE % NUM_HEADS must == 0
+      MLP_RATIO:   4.0
+      DROPOUT_RATE: 0.1
+      TIME_EMB_MULT: 4    # time_emb_dims_exp = HIDDEN_SIZE * TIME_MULTIPLE
+      TRAIN:
+        EPOCHS: 400
+        SOLVER:
+          LR: 0.00001
+          WEIGHT_DECAY: 0.001
+          BETAS:
+            - 0.5
+            - 0.999
+          SCHEDULER:
+            FACTOR: 0.5       # halve LR on plateau
+            PATIENCE: 10      # wait 10 epochs of no improvement before reducing
+            MIN_LR: 0.000001  # floor so LR never dies completely
   CONVRNN:
     CELL_CLASS: "ConvGRUCell"    # Options: ConvLSTMCell
     TEACHER_FORCING: True
