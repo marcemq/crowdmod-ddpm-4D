@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from models.embeddings import SinusoidalPositionEmbeddings
+from .embeddings import SinusoidalPositionEmbeddings
 
 
 class PatchEmbed(nn.Module):
