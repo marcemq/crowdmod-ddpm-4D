@@ -120,7 +120,7 @@ class DDPM_model:
         self.denoiser.train()
 
         with tqdm(total=len(loader), dynamic_ncols=True) as tq:
-            tq.set_description(f"DDPM Train :: Epoch: {epoch}/{total_epochs}")
+            tq.set_description(f"{self.arch} Train :: Epoch: {epoch}/{total_epochs}")
             # Scan the batches
             for batched_train_data in loader:
                 tq.update(1)
@@ -371,6 +371,6 @@ class DDPM_model:
                 break
 
         logging.info("===" * 20)
-        logging.info(f'Computing metrics on predicted mprops sequences with DDPM model.')
+        logging.info(f'Computing metrics on predicted mprops sequences with {self.arch} model.')
         metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
         compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch, self.arch)
