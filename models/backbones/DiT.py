@@ -57,7 +57,7 @@ class PatchUnEmbed(nn.Module):
         """
         Args:
             x: (B, T*N, C*p*p)
-            T: number of time frames
+            T: Total mprops sequence lenght, P+F=T
         Returns:
             (B, C, H, W, T)
         """
@@ -231,7 +231,7 @@ class DiT(nn.Module):
 
         Args:
             tokens : (B, T, N, D)   — patch tokens, still split by frame
-            T      : actual number of frames in this forward pass
+            T      : total mprops sequence lenght, P+F=T
 
         The two embeddings answer orthogonal questions:
             spatial_pos_embed  (1,  1, N, D)  → where in the grid?
@@ -270,7 +270,7 @@ class DiT(nn.Module):
             past_len = past.shape[4]
             x = future
 
-        T_total = x.shape[4]
+        mprops_seq_len = x.shape[4]
 
         # Diffusion timestep conditioning → (B, D)
         c = self.time_proj(self.time_embeddings(t))         # (B, hidden_size)
@@ -279,7 +279,7 @@ class DiT(nn.Module):
         tokens = self.patch_embed(x)    # (B, T, N, D)
 
         # Add spatial + temporal positional encodings
-        tokens = self._add_positional_embeddings(tokens, T_total) # (B, T, N, D)
+        tokens = self._add_positional_embeddings(tokens, mprops_seq_len) # (B, T, N, D)
 
         # Flatten T and N into one sequence for the transformer
         B, T, N, D = tokens.shape
@@ -291,7 +291,7 @@ class DiT(nn.Module):
 
         # Project back to bin space
         tokens = self.final_layer(tokens, c)    # (B, T*N, C*p*p)
-        out    = self.unpatch(tokens, T_total)  # (B, C, H, W, T)
+        out    = self.unpatch(tokens, mprops_seq_len)  # (B, C, H, W, T)
 
         # Return only future frames (mirrors UNet's final slice)
         return out[:, :, :, :, past_len:]
