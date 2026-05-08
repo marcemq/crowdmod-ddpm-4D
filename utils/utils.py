@@ -150,34 +150,24 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
     """
     Initialize W&B based on arch
     """
-    if arch in ["DDPM-UNet", "DDPM-DiT"]:
+    if arch in ["DDPM-UNet", "DDPM-DiT", "FM-UNet", "FM-DiT"]:
+
+        gen_model_key, backbone_key = arch.upper().split('-')
+        gen_cfg = getattr(cfg.MODEL, gen_model_key)       # FM | DDPM node
+        backbone_cfg =  getattr(gen_cfg, backbone_key)    # UNet | DiT
+
         wandb.init(
             project=project_name,
             config={
-                "architecture": arch,
-                "dataset": cfg.DATASET.NAME,
-                "learning_rate": cfg.MODEL.DDPM.TRAIN.SOLVER.LR,
-                "epochs": cfg.MODEL.DDPM.TRAIN.EPOCHS,
-                "batch_size": cfg.DATASET.BATCH_SIZE,
-                "past_len": cfg.DATASET.PAST_LEN,
-                "future_len": cfg.DATASET.FUTURE_LEN,
-                "weight_decay": cfg.MODEL.DDPM.TRAIN.SOLVER.WEIGHT_DECAY,
-                "solver_betas": cfg.MODEL.DDPM.TRAIN.SOLVER.BETAS,
-            }
-        )
-    elif arch in ["FM-UNet", "FM-DiT"]:
-        wandb.init(
-            project=project_name,
-            config={
-                "architecture": arch,
-                "dataset": cfg.DATASET.NAME,
-                "learning_rate": cfg.MODEL.FM.TRAIN.SOLVER.LR,
-                "epochs": cfg.MODEL.FM.TRAIN.EPOCHS,
-                "batch_size": cfg.DATASET.BATCH_SIZE,
-                "past_len": cfg.DATASET.PAST_LEN,
-                "future_len": cfg.DATASET.FUTURE_LEN,
-                "weight_decay": cfg.MODEL.FM.TRAIN.SOLVER.WEIGHT_DECAY,
-                "solver_betas": cfg.MODEL.FM.TRAIN.SOLVER.BETAS,
+                "architecture" : arch,
+                "dataset"      : cfg.DATASET.NAME,
+                "batch_size"   : cfg.DATASET.BATCH_SIZE,
+                "past_len"     : cfg.DATASET.PAST_LEN,
+                "future_len"   : cfg.DATASET.FUTURE_LEN,
+                "learning_rate": backbone_cfg.TRAIN.SOLVER.LR,
+                "epochs"       : backbone_cfg.TRAIN.EPOCHS,
+                "weight_decay" : backbone_cfg.TRAIN.SOLVER.WEIGHT_DECAY,
+                "solver_betas" : backbone_cfg.TRAIN.SOLVER.BETAS,
             }
         )
     elif arch == "ConvRNN":
