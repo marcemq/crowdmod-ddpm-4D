@@ -103,14 +103,26 @@ def get_output_dir(cfg, args):
 
     return output_dir
 
+def get_backbone_cfg(cfg, arch):
+    """
+    Navigate the nested config to the right backbone node.
+    e.g. cfg.GEN_MODEL.FM.UNET  or  cfg.GEN_MODEL.FM.DIT
+    """
+    gen_model_key, backbone_key = arch.upper().split('-')
+    gen_cfg = getattr(cfg.MODEL, gen_model_key)       # FM | DDPM node
+    return getattr(gen_cfg, backbone_key)                  # UNET | DIT node
+
 def get_checkpoint_save_path(cfg, arch, epoch):
     """
     Return checkpoint save complete path based on arch.
     """
+    backbone_cfg = get_backbone_cfg(cfg, arch)
+    total_epochs = backbone_cfg.TRAIN.EPOCHS
+
     if arch in ["DDPM-UNet", "DDPM-DiT"]:
-        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, total_epochs, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
     elif arch in ["FM-UNet", "FM-DiT"]:
-        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FM.W_TYPE))
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, total_epochs, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FM.W_TYPE))
     elif arch == "ConvRNN":
         cell_class_name = cfg.MODEL.CONVRNN.CELL_CLASS
         base_cell = cell_class_name[4:]
@@ -133,10 +145,13 @@ def get_model_fullname(cfg, arch, epoch):
     """
     Return model fullname based on arch.
     """
+    backbone_cfg = get_backbone_cfg(cfg, arch)
+    total_epochs = backbone_cfg.TRAIN.EPOCHS
+
     if arch in ["DDPM-UNet", "DDPM-DiT"]:
-        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
+        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, total_epochs, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
     elif arch in ["FM-UNet", "FM-DiT"]:
-        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FM.W_TYPE))
+        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, total_epochs, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FM.W_TYPE))
     elif arch == "ConvRNN":
         cell_class_name = cfg.MODEL.CONVRNN.CELL_CLASS
         base_cell = cell_class_name[4:]
@@ -151,10 +166,7 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
     Initialize W&B based on arch
     """
     if arch in ["DDPM-UNet", "DDPM-DiT", "FM-UNet", "FM-DiT"]:
-
-        gen_model_key, backbone_key = arch.upper().split('-')
-        gen_cfg = getattr(cfg.MODEL, gen_model_key)       # FM | DDPM node
-        backbone_cfg =  getattr(gen_cfg, backbone_key)    # UNet | DiT
+        backbone_cfg =  get_backbone_cfg(cfg, arch)
 
         wandb.init(
             project=project_name,
