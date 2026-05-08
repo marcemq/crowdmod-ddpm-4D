@@ -98,7 +98,7 @@ def get_output_dir(cfg, args):
     else:
         raise ValueError(f"Output dir creation: Architecture '{args.arch}' not supported.")
 
-    if args.from_fixed_past:
+    if getattr(args, "from_fixed_past", False):
         output_dir += "/fixed_past_samples/"
 
     return output_dir
