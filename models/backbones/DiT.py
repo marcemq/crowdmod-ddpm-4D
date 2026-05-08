@@ -162,7 +162,6 @@ class DiT(nn.Module):
         dropout_rate:      float = 0.1,
         time_multiple:     int   = 4,        # same name as UNet
         total_time_steps:  int   = 1000,     # same name as UNet
-        time_emb_max_frec: float = 10000.0,  # same name as UNet
         condition:         str   = "Past",
         t_max:             int   = 32,       # max total frames (past+future) supported
     ):
@@ -181,7 +180,6 @@ class DiT(nn.Module):
             total_time_steps  = total_time_steps,
             time_emb_dims     = hidden_size,
             time_emb_dims_exp = time_emb_dims_exp,
-            time_emb_max_frec = time_emb_max_frec,
         )
         # Project from time_emb_dims_exp → hidden_size for AdaLN conditioning
         self.time_proj = nn.Sequential(
