@@ -150,7 +150,7 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
     """
     Initialize W&B based on arch
     """
-    if arch == "DDPM-UNet":
+    if arch in ["DDPM-UNet", "DDPM-DiT"]:
         wandb.init(
             project=project_name,
             config={
@@ -165,7 +165,7 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
                 "solver_betas": cfg.MODEL.DDPM.TRAIN.SOLVER.BETAS,
             }
         )
-    elif arch == "FM-UNet":
+    elif arch in ["FM-UNet", "FM-DiT"]:
         wandb.init(
             project=project_name,
             config={
@@ -199,7 +199,7 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
         logging.error("Architecture not supported.")
 
 def get_sweep_configuration(arch):
-    if arch == "DDPM-UNet":
+    if arch in ["DDPM-UNet", "DDPM-DiT"]:
         sweep_configuration = {
             "name": "sweep_crowdmod_ddpm",
             "method": "random",
@@ -215,7 +215,7 @@ def get_sweep_configuration(arch):
                 "timesteps": {"values": [500, 1000, 1500]},
             },
         }
-    elif arch == "FM-UNet":
+    elif arch in ["FM-UNet", "FM-DiT"]:
         sweep_configuration = {
             "name": "sweep_crowdmod_fm",
             "method": "random",
