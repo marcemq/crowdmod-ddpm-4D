@@ -42,10 +42,10 @@ class DDPM_model:
         self.output_dir   = output_dir
         self.from_fixed_past = from_fixed_past
 
-        self.device   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.denoiser = self._get_denoiser()
-        self.denoiser.to(self.device)
+        self.device       = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.denoiser_cfg = self._get_denoiser_cfg()
+        self.denoiser     = self._get_denoiser()
+        self.denoiser.to(self.device)
 
         self.optimizer = torch.optim.Adam(self.denoiser.parameters(),
                                           lr = self.denoiser_cfg.TRAIN.SOLVER.LR,

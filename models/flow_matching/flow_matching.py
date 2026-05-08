@@ -19,10 +19,10 @@ class FM_model:
         self.output_dir = output_dir
         self.from_fixed_past = from_fixed_past
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.u_predictor = self._get_u_predictor()
-        self.u_predictor.to(self.device)
+        self.device          = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.u_predictor_cfg = self._get_u_predictor_cfg()
+        self.u_predictor     = self._get_u_predictor()
+        self.u_predictor.to(self.device)
 
         self.optimizer = torch.optim.Adam(self.u_predictor.parameters(),
                                           lr = self.u_predictor_cfg.TRAIN.SOLVER.LR,
