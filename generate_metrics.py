@@ -59,9 +59,9 @@ def metrics_mgmt(args, cfg):
 
     # === Generate metrics per architecture ===
     logging.info(f"=======>>>> Init metrics compute for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
-    if args.arch == "DDPM-UNet":
+    if args.arch in ["DDPM-UNet", "DDPM-DiT"]:
         generate_metrics_ddpm(cfg, args, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, mprops_count=mprops_count)
-    elif args.arch == "FM-UNet":
+    elif args.arch in ["FM-UNet", "FM-DiT"]:
         generate_metrics_fm(cfg, args, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, mprops_count=mprops_count)
     elif args.arch == "ConvRNN":
         generate_metrics_convRNN(cfg, args, batched_test_data, chunkRepdPastSeq, args.metric, args.batches_to_use, samples_per_batch, model_fullname, mprops_count=mprops_count)
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
     parser.add_argument('--model-sample-to-load', type=str, default="000", help='Model sample to be used for generate mprops samples.')
-    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvRNN')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|DDPM-DiT|FM-UNet|FM-DiT|ConvRNN')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)

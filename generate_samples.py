@@ -94,9 +94,9 @@ def sampling_mgmt(args, cfg):
 
     # === Generate samples per architecture ===
     logging.info(f"=======>>>> Init sampling for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
-    if args.arch == "DDPM-UNet":
+    if args.arch in ["DDPM-UNet", "DDPM-DiT"]:
         generate_samples_ddpm(cfg, args, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count)
-    elif args.arch == "FM-UNet":
+    elif args.arch in ["FM-UNet", "FM-DiT"]:
         generate_samples_fm(cfg, args, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count)
     elif args.arch == "ConvRNN":
         generate_samples_convRNN(cfg, args, batched_test_data, args.plot_type, model_fullname, args.plot_mprop, args.plot_past, args.same_past_seq, mprops_count)
@@ -115,7 +115,7 @@ if __name__ == '__main__':
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
     parser.add_argument('--model-sample-to-load', type=str, default="000", help='Model sample to be used for generate mprops samples. Default value is for best model.')
-    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|FM-UNet|ConvRNN')
+    parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|DDPM-DiT|FM-UNet|FM-DiT|ConvRNN')
     parser.add_argument('--from-fixed-past', type=bool, default=False, help='Compute sampling from fixed past seqs for comparison.')
     args = parser.parse_args()
 
