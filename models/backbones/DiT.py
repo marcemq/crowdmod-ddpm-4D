@@ -163,7 +163,7 @@ class DiT(nn.Module):
         time_multiple:     int   = 4,        # same name as UNet
         total_time_steps:  int   = 1000,     # same name as UNet
         condition:         str   = "Past",
-        t_max:             int   = 32,       # max total frames (past+future) supported
+        t_max:             int   = 8,        # max total frames (past+future) supported
     ):
         super().__init__()
         assert hidden_size % num_heads == 0
