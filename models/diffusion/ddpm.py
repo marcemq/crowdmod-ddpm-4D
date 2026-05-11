@@ -11,6 +11,7 @@ from torchmetrics import MeanMetric
 from models.diffusion.forward import ForwardSampler
 from models.backbones.unet import UNet
 from models.backbones.DiT import DiT
+from models.backbones.DiT4D import DiT4D
 from models.diffusion.forward import get_from_idx
 from models.guidance import sparsityGradient, preservationMassNumericalGradientOptimal
 from utils.utils import save_checkpoint, init_wandb, create_directory
@@ -83,17 +84,20 @@ class DDPM_model:
                         )
 
         elif self.arch == "DDPM-DiT":
-            denoiser = DiT(input_channels    = self.mprops_count,
-                           output_channels   = self.mprops_count,
-                           grid_rows         = self.cfg.MACROPROPS.ROWS,
-                           grid_cols         = self.cfg.MACROPROPS.COLS,
-                           patch_size        = self.denoiser_cfg.PATCH_SIZE,
-                           hidden_size       = self.denoiser_cfg.HIDDEN_SIZE,
-                           depth             = self.denoiser_cfg.DEPTH,
-                           num_heads         = self.denoiser_cfg.NUM_HEADS,
-                           mlp_ratio         = self.denoiser_cfg.MLP_RATIO,
-                           dropout_rate      = self.denoiser_cfg.DROPOUT_RATE,
-                           time_multiple     = self.denoiser_cfg.TIME_EMB_MULT,
+            denoiser = DiT4D(input_channels    = self.mprops_count,
+                             output_channels   = self.mprops_count,
+                             grid_rows         = self.cfg.MACROPROPS.ROWS,
+                             grid_cols         = self.cfg.MACROPROPS.COLS,
+                             past_len          = self.cfg.DATASET.PAST_LEN,
+                             future_len        = self.cfg.DATASET.FUTURE_LEN,
+                             patch_size        = self.denoiser_cfg.PATCH_SIZE,
+                             hidden_size       = self.denoiser_cfg.HIDDEN_SIZE,
+                             depth             = self.denoiser_cfg.DEPTH,
+                             num_heads         = self.denoiser_cfg.NUM_HEADS,
+                             mlp_ratio         = self.denoiser_cfg.MLP_RATIO,
+                             dropout_rate      = self.denoiser_cfg.DROPOUT_RATE,
+                             time_multiple     = self.denoiser_cfg.TIME_EMB_MULT,
+                             condition         = self.denoiser_cfg.CONDITION,
                         )
         else:
             raise ValueError(f"Unknown Architecture {self.arch}")
