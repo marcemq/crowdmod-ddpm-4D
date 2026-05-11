@@ -72,7 +72,7 @@ MODEL:
       PATCH_SIZE: 4      # With ROWS=28, COLS=16 and PATCH_SIZE=4 → 7×4 = 28 mprops seq tokens.
       HIDDEN_SIZE: 256   # model width; try 512 for more capacity
       DEPTH:       6     # number of DiT blocks
-      NUM_HEADS:   4     # HIDDEN_SIZE % NUM_HEADS must == 0
+      NUM_HEADS:   8     # HIDDEN_SIZE % NUM_HEADS must == 0
       MLP_RATIO:   4.0
       DROPOUT_RATE: 0.1
       TIME_EMB_MULT: 4    # time_emb_dims_exp = HIDDEN_SIZE * TIME_MULTIPLE
