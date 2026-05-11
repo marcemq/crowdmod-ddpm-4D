@@ -66,7 +66,7 @@ class PatchUnEmbed4D(nn.Module):
         self.out_channels = out_channels
         self.future_len   = future_len
 
-    def forward(self, x: torch.Tensor, T: int) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Args:
             x: (B, N, F*C*p*p)
