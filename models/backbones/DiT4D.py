@@ -222,7 +222,7 @@ class DiT4D(nn.Module):
         Args:
             future : (B, C, H, W, F)  noisy future frames to be predicted
             t : (B,)  long            diffusion timestep in [0, total_time_steps)
-            past: (B, C, H, W, P)     noisy past frames (conditioning)
+            past: (B, C, H, W, P)     clean past frames (conditioning)
         Returns:
             (B, C, H, W, F)  predicted noise (DDPM) or velocity field (FM)
         """
@@ -231,8 +231,6 @@ class DiT4D(nn.Module):
             x = torch.cat([past, future], dim=4)    # (B, C, H, W, P+F)
         else:
             x = future
-
-        mprops_seq_len = x.shape[4]
 
         # Diffusion timestep conditioning → (B, D)
         c = self.time_proj(self.time_embeddings(t))         # (B, hidden_size)
