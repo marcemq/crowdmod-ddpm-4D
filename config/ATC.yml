@@ -69,6 +69,7 @@ MODEL:
             PATIENCE: 10      # wait 10 epochs of no improvement before reducing
             MIN_LR: 0.000001  # floor so LR never dies completely
     DIT:
+      CONDITION: "Past"
       PATCH_SIZE: 4      # With ROWS=12, COLS=36 and PATCH_SIZE=4 → 3×9 = 27 mprops seq tokens.
       HIDDEN_SIZE: 256   # model width; try 512 for more capacity
       DEPTH:       6     # number of DiT blocks
@@ -118,6 +119,7 @@ MODEL:
             PATIENCE: 10      # wait 10 epochs of no improvement before reducing
             MIN_LR: 0.000001  # floor so LR never dies completely
     DIT:
+      CONDITION: "Past"
       PATCH_SIZE: 4      # With ROWS=12, COLS=36 and PATCH_SIZE=4 → 3×9 = 27 mprops seq tokens.
       HIDDEN_SIZE: 256   # model width; try 512 for more capacity
       DEPTH:       6     # number of DiT blocks
