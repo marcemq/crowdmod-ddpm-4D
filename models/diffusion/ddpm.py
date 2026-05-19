@@ -10,7 +10,7 @@ from torchmetrics import MeanMetric
 
 from models.diffusion.forward import ForwardSampler
 from models.backbones.unet import UNet
-from models.backbones.DiT import DiT
+from models.backbones.DiT2D import DiT2D
 from models.backbones.DiT4D import DiT4D
 from models.diffusion.forward import get_from_idx
 from models.guidance import sparsityGradient, preservationMassNumericalGradientOptimal

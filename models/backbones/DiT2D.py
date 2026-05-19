@@ -127,7 +127,7 @@ class FinalLayer(nn.Module):
         return self.linear(modulate(self.norm(x), shift, scale))
 
 
-class DiT(nn.Module):
+class DiT2D(nn.Module):
     """
     Diffusion Transformer for spatiotemporal macroscopic sequences.
 
