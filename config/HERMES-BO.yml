@@ -70,6 +70,7 @@ MODEL:
     DIT:
       CONDITION: "Past"
       PATCH_SIZE: 4      # With ROWS=12, COLS=24 and PATCH_SIZE=4 → 3×6 = 18 mprops seq tokens.
+      T_PATCH_SIZE: 2    # Temporal patch size
       HIDDEN_SIZE: 256   # model width; try 512 for more capacity
       DEPTH:       10    # number of DiT4D blocks
       NUM_HEADS:   16    # HIDDEN_SIZE % NUM_HEADS must == 0
