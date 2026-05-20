@@ -9,7 +9,7 @@ from utils.utils import save_checkpoint, init_wandb, create_directory
 from utils.plot.plot_sampled_mprops import setup_predictions_plot
 from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
 from models.backbones.unet import UNet
-from models.backbones.DiT import DiT
+from models.backbones.DiT2D import DiT2D
 
 class FM_model:
     def __init__(self, cfg, arch, mprops_count, output_dir=None, from_fixed_past=False):
@@ -70,7 +70,7 @@ class FM_model:
                             )
 
         elif self.arch == "FM-DiT":
-            u_predictor = DiT(input_channels    = self.mprops_count,
+            u_predictor = DiT2D(input_channels    = self.mprops_count,
                               output_channels   = self.mprops_count,
                               grid_rows         = self.cfg.MACROPROPS.ROWS,
                               grid_cols         = self.cfg.MACROPROPS.COLS,
