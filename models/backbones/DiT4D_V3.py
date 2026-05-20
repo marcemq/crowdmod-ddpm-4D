@@ -290,4 +290,4 @@ class DiT4D_V3(nn.Module):
 
         # Project each token → t_patch frames, then unpatch + slice
         tokens = self.final_layer(tokens, c)    # (B, T_p*N_s, pt*C*p*p)
-        return self.unpatch(tokens)             # (B, C, H, W, future_len)
+        return self.unpatch(tokens, self.T_p)             # (B, C, H, W, future_len)
