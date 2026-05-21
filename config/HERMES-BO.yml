@@ -22,8 +22,8 @@ MACROPROPS:
   TIME_RES: 0.25
 DATASET:
   NAME: "HERMES-BO"
-  PAST_LEN: 5
-  FUTURE_LEN: 3
+  PAST_LEN: 4
+  FUTURE_LEN: 4
   RAW_SEQ_LEN: 16
   TRAIN_FILE_COUNT: "NA"
   VAL_FILE_COUNT: "NA"
@@ -69,11 +69,11 @@ MODEL:
             MIN_LR: 0.000001  # floor so LR never dies completely
     DIT:
       CONDITION: "Past"
-      PATCH_SIZE: 4      # With ROWS=12, COLS=24 and PATCH_SIZE=4 → 3×6 = 18 mprops seq tokens.
+      PATCH_SIZE:   4    # With ROWS=12, COLS=24 and PATCH_SIZE=4 → 3×6 = 18 mprops seq tokens.
       T_PATCH_SIZE: 2    # Temporal patch size
       HIDDEN_SIZE: 256   # model width; try 512 for more capacity
-      DEPTH:       6    # number of DiT4D blocks
-      NUM_HEADS:   4    # HIDDEN_SIZE % NUM_HEADS must == 0
+      DEPTH:       6     # number of DiT4D blocks
+      NUM_HEADS:   4     # HIDDEN_SIZE % NUM_HEADS must == 0
       MLP_RATIO:   4.0
       DROPOUT_RATE: 0.1
       TIME_EMB_MULT: 4    # time_emb_dims_exp = HIDDEN_SIZE * TIME_MULTIPLE

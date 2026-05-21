@@ -13,6 +13,7 @@ from models.backbones.unet import UNet
 from models.backbones.DiT2D import DiT2D
 from models.backbones.DiT4D import DiT4D
 from models.backbones.DiT4D_V3 import DiT4D_V3
+from models.backbones.DiT4D_V4 import DiT4D_V4
 from models.diffusion.forward import get_from_idx
 from models.guidance import sparsityGradient, preservationMassNumericalGradientOptimal
 from utils.utils import save_checkpoint, init_wandb, create_directory
@@ -85,7 +86,7 @@ class DDPM_model:
                         )
 
         elif self.arch == "DDPM-DiT":
-            denoiser = DiT4D_V3(input_channels    = self.mprops_count,
+            denoiser = DiT4D_V4(input_channels    = self.mprops_count,
                              output_channels   = self.mprops_count,
                              grid_rows         = self.cfg.MACROPROPS.ROWS,
                              grid_cols         = self.cfg.MACROPROPS.COLS,
