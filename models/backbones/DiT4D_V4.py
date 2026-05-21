@@ -188,7 +188,9 @@ class DiTBlockCA(nn.Module):
         attn_t, _ = self.temporal_attn(q, kv, kv, need_weights=False)  # (B*N_s, n_q, D)
 
         # add cross-attn output back into future slots only
-        x_t[:, qs:, :] = x_t[:, qs:, :] + ga2_q * attn_t
+        past_tokens   = x_t[:, :qs, :]
+        future_tokens = x_t[:, qs:, :] + ga2_q * attn_t
+        x_t = torch.cat([past_tokens, future_tokens], dim=1)
 
         # reshape back to flat sequence
         x_t   = x_t.reshape(B, Ns, Tp, -1)               # (B, N_s, T_p, D)

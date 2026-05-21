@@ -113,7 +113,7 @@ class DDPM_model:
         t = torch.randint(low=0, high=forward_sampler.timesteps, size=(future.shape[0],), device=future.device)
         # Apply forward noising process on original images, up to step t (sample from q(x_t|x_0))
         future_macroprops_noisy, eps_true = forward_sampler(future, t)
-        with amp.autocast():
+        with torch.amp.autocast("cuda"):
             # Our prediction for the denoised macropros sequence
             eps_predicted = self.denoiser(future_macroprops_noisy, t, past)
             # Deduce the loss
