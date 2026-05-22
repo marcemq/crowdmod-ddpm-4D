@@ -20,12 +20,12 @@ class MetricsGenerator:
         "MF_BHATT_COEF": "BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based",
         "ENERGY": "GT,PRED",
         "MIN-ENERGY": "GT,PRED",
-        "RE_DENSITY": "re_f6,re_f7,re_f8",
-        "MIN_RE_DENSITY": "re_f6,re_f7,re_f8",
-        "PSNR_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
-        "SSIM_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
-        "MAX_PSNR_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
-        "MAX_SSIM_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "RE_DENSITY": "re_f5,re_f6,re_f7,re_f8",
+        "MIN_RE_DENSITY": "re_f5,re_f6,re_f7,re_f8",
+        "PSNR_OVER_TIME": "rho_f5,vx_f5,vy_f5,rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "SSIM_OVER_TIME": "rho_f5,vx_f5,vy_f5,rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "MAX_PSNR_OVER_TIME": "rho_f5,vx_f5,vy_f5,rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "MAX_SSIM_OVER_TIME": "rho_f5,vx_f5,vy_f5,rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
     }
     def __init__(self, pred_seq_list, gt_seq_list, metrics_params, output_dir=None):
         self.pred_seq_list = pred_seq_list
