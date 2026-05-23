@@ -70,6 +70,7 @@ MODEL:
     DIT:
       CONDITION: "Past"
       PATCH_SIZE: 4      # With ROWS=12, COLS=20 and PATCH_SIZE=4 → 3×5 = 15 mprops seq tokens.
+      T_PATCH_SIZE: 2    # Temporal patch size
       HIDDEN_SIZE: 256   # model width; try 512 for more capacity
       DEPTH:       6     # number of DiT blocks
       NUM_HEADS:   4     # HIDDEN_SIZE % NUM_HEADS must == 0
@@ -77,16 +78,16 @@ MODEL:
       DROPOUT_RATE: 0.1
       TIME_EMB_MULT: 4    # time_emb_dims_exp = HIDDEN_SIZE * TIME_MULTIPLE
       TRAIN:
-        EPOCHS: 200
+        EPOCHS: 1000
         SOLVER:
-          LR: 0.00005
+          LR: 0.0001
           WEIGHT_DECAY: 0.003
           BETAS:
-            - 0.5
+            - 0.9
             - 0.999
           SCHEDULER:
             FACTOR: 0.5       # halve LR on plateau
-            PATIENCE: 10      # wait 10 epochs of no improvement before reducing
+            PATIENCE: 20      # wait 10 epochs of no improvement before reducing
             MIN_LR: 0.000001  # floor so LR never dies completely
   FM:
     TIME_MAX_POS: 1000
