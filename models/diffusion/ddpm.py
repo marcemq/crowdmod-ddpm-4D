@@ -86,7 +86,7 @@ class DDPM_model:
                         )
 
         elif self.arch == "DDPM-DiT":
-            denoiser = DiT4D_V3(input_channels    = self.mprops_count,
+            denoiser = DiT4D_V4(input_channels    = self.mprops_count,
                              output_channels   = self.mprops_count,
                              grid_rows         = self.cfg.MACROPROPS.ROWS,
                              grid_cols         = self.cfg.MACROPROPS.COLS,
