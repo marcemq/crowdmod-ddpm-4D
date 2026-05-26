@@ -20,13 +20,13 @@ logging.basicConfig(format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(messa
                         logging.StreamHandler(sys.stdout)]
                     )
 
-def train_ddpm(cfg, batched_train_data, arch, mprops_count):
+def train_ddpm(cfg, batched_train_data, arch, mprops_count, baseline_ckpt=None):
     torch.manual_seed(42)
     ddpm_model = DDPM_model(cfg, arch, mprops_count)
     trainable_params = count_trainable_params(ddpm_model.denoiser)
     logging.info(f"Total trainable parameters at denoiser:{trainable_params}")
 
-    ddpm_model.train(batched_train_data)
+    ddpm_model.train(batched_train_data, baseline_ckpt)
 
 def train_fm(cfg, batched_train_data, arch, mprops_count):
     torch.manual_seed(42)
@@ -62,7 +62,7 @@ def training_mgmt(args, cfg):
     # === Train models with specific architecture ===
     logging.info(f"=======>>>> Init training for {cfg.DATASET.NAME} dataset with {args.arch} architecture.")
     if args.arch in ["DDPM-UNet", "DDPM-DiT"]:
-        train_ddpm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
+        train_ddpm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count, baseline_ckpt=args.baseline_ckpt)
     elif args.arch in ["FM-UNet", "FM-DiT"]:
         train_fm(cfg, batched_train_data, arch=args.arch, mprops_count=mprops_count)
     elif args.arch == "ConvRNN":
@@ -75,6 +75,8 @@ if __name__ == '__main__':
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
     parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|DDPM-DiT|FM-UNet|FM-DiT|ConvRNN')
+    parser.add_argument('--baseline-ckpt', type=str, default="trained_models/atc/DDPM-DiT_ATC_TE1000_PL5_FL3_CE000_NA.pth", help='Baseline model path')
+
     args = parser.parse_args()
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)
     training_mgmt(args, cfg)

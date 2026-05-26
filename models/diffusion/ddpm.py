@@ -153,9 +153,14 @@ class DDPM_model:
 
         return mean_loss
 
-    def train(self, batched_train_data):
+    def train(self, batched_train_data, baseline_ckpt=None):
         forward_sampler = DDPM(timesteps=self.cfg.MODEL.DDPM.TIMESTEPS, scale=self.cfg.MODEL.DDPM.SCALE)
         forward_sampler.to(self.device)
+
+        if baseline_ckpt is not None:
+            self.denoiser.load_state_dict(torch.load(baseline_ckpt, map_location=self.device, weights_only=True)['model'])
+            self.denoiser.to(self.device)
+            logging.info("Baseline checkpoint loaded successfully.")
 
         best_loss      = 1e6
         consecutive_nan_count = 0

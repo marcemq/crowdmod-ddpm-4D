@@ -78,9 +78,9 @@ MODEL:
       DROPOUT_RATE: 0.1
       TIME_EMB_MULT: 4    # time_emb_dims_exp = HIDDEN_SIZE * TIME_MULTIPLE
       TRAIN:
-        EPOCHS: 1000
+        EPOCHS: 500
         SOLVER:
-          LR: 0.0001
+          LR: 0.00005
           WEIGHT_DECAY: 0.003
           BETAS:
             - 0.9
