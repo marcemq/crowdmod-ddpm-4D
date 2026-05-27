@@ -87,14 +87,42 @@ def get_test_dataset(cfg, filenames_and_numSamples, mprops_count, batch_size=Non
 
     return batched_test_data
 
+def get_output_dir(cfg, args):
+    if args.arch in ["DDPM-UNet", "DDPM-DiT"]:
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}_g{cfg.MODEL.DDPM.GUIDANCE}"
+    elif args.arch in ["FM-UNet", "FM-DiT"]:
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FM.W_TYPE}_intg{cfg.MODEL.FM.INTEGRATOR}"
+    elif args.arch == "ConvRNN":
+        base_cell_name = cfg.MODEL.CONVRNN.CELL_CLASS[4:]
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_{base_cell_name}_modelE{args.model_sample_to_load}"
+    else:
+        raise ValueError(f"Output dir creation: Architecture '{args.arch}' not supported.")
+
+    if getattr(args, "from_fixed_past", False):
+        output_dir += "/fixed_past_samples/"
+
+    return output_dir
+
+def get_backbone_cfg(cfg, arch):
+    """
+    Navigate the nested config to the right backbone node.
+    e.g. cfg.GEN_MODEL.FM.UNET  or  cfg.GEN_MODEL.FM.DIT
+    """
+    gen_model_key, backbone_key = arch.upper().split('-')
+    gen_cfg = getattr(cfg.MODEL, gen_model_key)       # FM | DDPM node
+    return getattr(gen_cfg, backbone_key)                  # UNET | DIT node
+
 def get_checkpoint_save_path(cfg, arch, epoch):
     """
     Return checkpoint save complete path based on arch.
     """
-    if arch == "DDPM-UNet":
-        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
-    elif arch == "FM-UNet":
-        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FLOW_MATCHING.W_TYPE))
+    backbone_cfg = get_backbone_cfg(cfg, arch)
+    total_epochs = backbone_cfg.TRAIN.EPOCHS
+
+    if arch in ["DDPM-UNet", "DDPM-DiT"]:
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, total_epochs, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
+    elif arch in ["FM-UNet", "FM-DiT"]:
+        save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, total_epochs, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FM.W_TYPE))
     elif arch == "ConvRNN":
         cell_class_name = cfg.MODEL.CONVRNN.CELL_CLASS
         base_cell = cell_class_name[4:]
@@ -117,10 +145,13 @@ def get_model_fullname(cfg, arch, epoch):
     """
     Return model fullname based on arch.
     """
-    if arch == "DDPM-UNet":
-        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.DDPM.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
-    elif arch == "FM-UNet":
-        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FLOW_MATCHING.W_TYPE))
+    backbone_cfg = get_backbone_cfg(cfg, arch)
+    total_epochs = backbone_cfg.TRAIN.EPOCHS
+
+    if arch in ["DDPM-UNet", "DDPM-DiT"]:
+        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, total_epochs, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
+    elif arch in ["FM-UNet", "FM-DiT"]:
+        model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, total_epochs, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, cfg.MODEL.FM.W_TYPE))
     elif arch == "ConvRNN":
         cell_class_name = cfg.MODEL.CONVRNN.CELL_CLASS
         base_cell = cell_class_name[4:]
@@ -134,34 +165,21 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
     """
     Initialize W&B based on arch
     """
-    if arch == "DDPM-UNet":
+    if arch in ["DDPM-UNet", "DDPM-DiT", "FM-UNet", "FM-DiT"]:
+        backbone_cfg =  get_backbone_cfg(cfg, arch)
+
         wandb.init(
             project=project_name,
             config={
-                "architecture": arch,
-                "dataset": cfg.DATASET.NAME,
-                "learning_rate": cfg.MODEL.DDPM.TRAIN.SOLVER.LR,
-                "epochs": cfg.MODEL.DDPM.TRAIN.EPOCHS,
-                "batch_size": cfg.DATASET.BATCH_SIZE,
-                "past_len": cfg.DATASET.PAST_LEN,
-                "future_len": cfg.DATASET.FUTURE_LEN,
-                "weight_decay": cfg.MODEL.DDPM.TRAIN.SOLVER.WEIGHT_DECAY,
-                "solver_betas": cfg.MODEL.DDPM.TRAIN.SOLVER.BETAS,
-            }
-        )
-    elif arch == "FM-UNet":
-        wandb.init(
-            project=project_name,
-            config={
-                "architecture": arch,
-                "dataset": cfg.DATASET.NAME,
-                "learning_rate": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.LR,
-                "epochs": cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS,
-                "batch_size": cfg.DATASET.BATCH_SIZE,
-                "past_len": cfg.DATASET.PAST_LEN,
-                "future_len": cfg.DATASET.FUTURE_LEN,
-                "weight_decay": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.WEIGHT_DECAY,
-                "solver_betas": cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.BETAS,
+                "architecture" : arch,
+                "dataset"      : cfg.DATASET.NAME,
+                "batch_size"   : cfg.DATASET.BATCH_SIZE,
+                "past_len"     : cfg.DATASET.PAST_LEN,
+                "future_len"   : cfg.DATASET.FUTURE_LEN,
+                "learning_rate": backbone_cfg.TRAIN.SOLVER.LR,
+                "epochs"       : backbone_cfg.TRAIN.EPOCHS,
+                "weight_decay" : backbone_cfg.TRAIN.SOLVER.WEIGHT_DECAY,
+                "solver_betas" : backbone_cfg.TRAIN.SOLVER.BETAS,
             }
         )
     elif arch == "ConvRNN":
@@ -183,7 +201,7 @@ def init_wandb(cfg, arch, project_name="macroprops-predict-4D"):
         logging.error("Architecture not supported.")
 
 def get_sweep_configuration(arch):
-    if arch == "DDPM-UNet":
+    if arch in ["DDPM-UNet", "DDPM-DiT"]:
         sweep_configuration = {
             "name": "sweep_crowdmod_ddpm",
             "method": "random",
@@ -199,7 +217,7 @@ def get_sweep_configuration(arch):
                 "timesteps": {"values": [500, 1000, 1500]},
             },
         }
-    elif arch == "FM-UNet":
+    elif arch in ["FM-UNet", "FM-DiT"]:
         sweep_configuration = {
             "name": "sweep_crowdmod_fm",
             "method": "random",

@@ -9,6 +9,7 @@ from utils.utils import save_checkpoint, init_wandb, create_directory
 from utils.plot.plot_sampled_mprops import setup_predictions_plot
 from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
 from models.backbones.unet import UNet
+from models.backbones.DiT2D import DiT2D
 
 class FM_model:
     def __init__(self, cfg, arch, mprops_count, output_dir=None, from_fixed_past=False):
@@ -18,21 +19,22 @@ class FM_model:
         self.output_dir = output_dir
         self.from_fixed_past = from_fixed_past
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.u_predictor = self._get_u_predictor()
+        self.device          = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.u_predictor_cfg = self._get_u_predictor_cfg()
+        self.u_predictor     = self._get_u_predictor()
         self.u_predictor.to(self.device)
 
         self.optimizer = torch.optim.Adam(self.u_predictor.parameters(),
-                                          lr = self.cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.LR,
-                                          betas=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.BETAS,
-                                          weight_decay=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.WEIGHT_DECAY)
+                                          lr = self.u_predictor_cfg.TRAIN.SOLVER.LR,
+                                          betas=self.u_predictor_cfg.TRAIN.SOLVER.BETAS,
+                                          weight_decay=self.u_predictor_cfg.TRAIN.SOLVER.WEIGHT_DECAY)
 
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                                         self.optimizer,
                                         mode='min',
-                                        factor=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.SCHEDULER.FACTOR,
-                                        patience=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.SCHEDULER.PATIENCE,
-                                        min_lr=cfg.MODEL.FLOW_MATCHING.TRAIN.SOLVER.SCHEDULER.MIN_LR)
+                                        factor=self.u_predictor_cfg.TRAIN.SOLVER.SCHEDULER.FACTOR,
+                                        patience=self.u_predictor_cfg.TRAIN.SOLVER.SCHEDULER.PATIENCE,
+                                        min_lr=self.u_predictor_cfg.TRAIN.SOLVER.SCHEDULER.MIN_LR)
 
         self.w_type_fns = {
             "Linear": self.w_linear,
@@ -44,23 +46,44 @@ class FM_model:
             "Heun": self.sampling_with_euler,
         }
 
+    def _get_u_predictor_cfg(self):
+        """
+        Navigate the nested config to the right backbone node.
+        e.g. cfg.GEN_MODEL.FM.UNET  or  cfg.GEN_MODEL.FM.DIT
+        """
+        gen_model_key, backbone_key = self.arch.upper().split('-')
+        gen_cfg = getattr(self.cfg.MODEL, gen_model_key)       # FM | DDPM node
+        return getattr(gen_cfg, backbone_key)                  # UNET | DIT node
+
     def _get_u_predictor(self):
         u_predictor = None
         if self.arch == "FM-UNet":
             u_predictor = UNet(input_channels  = self.mprops_count,
                                output_channels = self.mprops_count,
-                               num_res_blocks  = self.cfg.MODEL.FLOW_MATCHING.UNET.NUM_RES_BLOCKS,
-                               base_channels           = self.cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH,
-                               base_channels_multiples = self.cfg.MODEL.FLOW_MATCHING.UNET.BASE_CH_MULT,
-                               apply_attention         = self.cfg.MODEL.FLOW_MATCHING.UNET.APPLY_ATTENTION,
-                               dropout_rate            = self.cfg.MODEL.FLOW_MATCHING.UNET.DROPOUT_RATE,
-                               time_multiple           = self.cfg.MODEL.FLOW_MATCHING.UNET.TIME_EMB_MULT,
-                               condition               = self.cfg.MODEL.FLOW_MATCHING.UNET.CONDITION)
+                               num_res_blocks  = self.u_predictor_cfg.NUM_RES_BLOCKS,
+                               base_channels           = self.u_predictor_cfg.BASE_CH,
+                               base_channels_multiples = self.u_predictor_cfg.BASE_CH_MULT,
+                               apply_attention         = self.u_predictor_cfg.APPLY_ATTENTION,
+                               dropout_rate            = self.u_predictor_cfg.DROPOUT_RATE,
+                               time_multiple           = self.u_predictor_cfg.TIME_EMB_MULT,
+                               condition               = self.u_predictor_cfg.CONDITION
+                            )
 
-        elif self.arch == "FM-ViT":
-            u_predictor = None # Placeholder for ViT architecture
+        elif self.arch == "FM-DiT":
+            u_predictor = DiT2D(input_channels    = self.mprops_count,
+                              output_channels   = self.mprops_count,
+                              grid_rows         = self.cfg.MACROPROPS.ROWS,
+                              grid_cols         = self.cfg.MACROPROPS.COLS,
+                              patch_size        = self.u_predictor_cfg.PATCH_SIZE,
+                              hidden_size       = self.u_predictor_cfg.HIDDEN_SIZE,
+                              depth             = self.u_predictor_cfg.DEPTH,
+                              num_heads         = self.u_predictor_cfg.NUM_HEADS,
+                              mlp_ratio         = self.u_predictor_cfg.MLP_RATIO,
+                              dropout_rate      = self.u_predictor_cfg.DROPOUT_RATE,
+                              time_multiple     = self.u_predictor_cfg.TIME_EMB_MULT,
+                            )
         else:
-            logging.info("Architecture not supported.")
+            raise ValueError(f"Unknown Architecture {self.arch}")
 
         return u_predictor
 
@@ -79,12 +102,12 @@ class FM_model:
         return xt, u_target
 
     def _train_one_epoch_fm(self, loader, epoch):
-        total_epochs = self.cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS
-        time_max_pos = self.cfg.MODEL.FLOW_MATCHING.TIME_MAX_POS
+        total_epochs = self.u_predictor_cfg.TRAIN.EPOCHS
+        time_max_pos = self.cfg.MODEL.FM.TIME_MAX_POS
         # Set in training mode
         self.u_predictor.train()
 
-        wtype = self.cfg.MODEL.FLOW_MATCHING.W_TYPE
+        wtype = self.cfg.MODEL.FM.W_TYPE
         try:
             w_fn = self.w_type_fns[wtype]
         except KeyError:
@@ -93,7 +116,7 @@ class FM_model:
 
         with tqdm(total=len(loader), dynamic_ncols=True) as tq:
             loss_record = MeanMetric()
-            tq.set_description(f"FM Train :: Epoch: {epoch}/{total_epochs}")
+            tq.set_description(f"{self.arch} Train :: Epoch: {epoch}/{total_epochs}")
             # Scan the batches
             for batched_train_data in loader:
                 tq.update(1)
@@ -139,11 +162,11 @@ class FM_model:
         best_loss      = 1e6
         consecutive_nan_count = 0
 
-        low = int(self.cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS * 0.75)
-        high = self.cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS + 1  # randint upper bound is exclusive
-        epochs_cktp_to_save = np.random.randint(low, high, size=self.cfg.MODEL.FLOW_MATCHING.CHECKPOINTS_TO_KEEP)
+        low = int(self.u_predictor_cfg.TRAIN.EPOCHS * 0.75)
+        high = self.u_predictor_cfg.TRAIN.EPOCHS + 1  # randint upper bound is exclusive
+        epochs_cktp_to_save = np.random.randint(low, high, size=self.cfg.MODEL.FM.CHECKPOINTS_TO_KEEP)
         # Training loop
-        for epoch in range(1, self.cfg.MODEL.FLOW_MATCHING.TRAIN.EPOCHS + 1):
+        for epoch in range(1, self.u_predictor_cfg.TRAIN.EPOCHS + 1):
             torch.cuda.empty_cache()
             gc.collect()
 
@@ -183,13 +206,13 @@ class FM_model:
         self.u_predictor.eval()
         # Noise from a normal distribution
         xt = torch.randn((nsamples, self.mprops_count, self.cfg.MACROPROPS.ROWS, self.cfg.MACROPROPS.COLS, self.cfg.DATASET.FUTURE_LEN), device=self.device)
-        time_max_pos = self.cfg.MODEL.FLOW_MATCHING.TIME_MAX_POS
-        delta = 1 / self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR_STEPS.EULER
+        time_max_pos = self.cfg.MODEL.FM.TIME_MAX_POS
+        delta = 1 / self.cfg.MODEL.FM.INTEGRATOR_STEPS.EULER
 
-        pbar = tqdm(range(1, self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR_STEPS.EULER + 1), desc="Sampling (Euler)")
+        pbar = tqdm(range(1, self.cfg.MODEL.FM.INTEGRATOR_STEPS.EULER + 1), desc="Sampling (Euler)")
 
         # Cycle over the integration steps
-        for i, t in enumerate(torch.linspace(0, 1, self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR_STEPS.EULER, device=self.device), start=1):
+        for i, t in enumerate(torch.linspace(0, 1, self.cfg.MODEL.FM.INTEGRATOR_STEPS.EULER, device=self.device), start=1):
             time_indices = (t * time_max_pos).clamp(0, time_max_pos-1).long()
             time_indices = time_indices.to(self.device).expand(xt.size(0))
             # Predict u 'velocity'
@@ -207,13 +230,13 @@ class FM_model:
         self.u_predictor.eval()
         # Noise from a normal distribution
         xt = torch.randn((nsamples, self.mprops_count, self.cfg.MACROPROPS.ROWS, self.cfg.MACROPROPS.COLS, self.cfg.DATASET.FUTURE_LEN), device=self.device)
-        time_max_pos = self.cfg.MODEL.FLOW_MATCHING.TIME_MAX_POS
-        delta = 1 / self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR_STEPS.HEUN
+        time_max_pos = self.cfg.MODEL.FM.TIME_MAX_POS
+        delta = 1 / self.cfg.MODEL.FM.INTEGRATOR_STEPS.HEUN
 
-        pbar = tqdm(range(1, self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR_STEPS.HEUN + 1), desc="Sampling (Heun)")
+        pbar = tqdm(range(1, self.cfg.MODEL.FM.INTEGRATOR_STEPS.HEUN + 1), desc="Sampling (Heun)")
         delta_k2 = 1
         # Cycle over the integration steps
-        for i, t in enumerate(torch.linspace(0, 1, self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR_STEPS.HEUN, device=self.device), start=1):
+        for i, t in enumerate(torch.linspace(0, 1, self.cfg.MODEL.FM.INTEGRATOR_STEPS.HEUN, device=self.device), start=1):
             time_indices = (t * time_max_pos).clamp(0, time_max_pos-1).long()
             time_indices = time_indices.to(self.device).expand(xt.size(0))
             # Apply Heun scheme RK2
@@ -233,7 +256,7 @@ class FM_model:
         self.u_predictor.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
         self.u_predictor.to(self.device)
 
-        intg_type = self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR
+        intg_type = self.cfg.MODEL.FM.INTEGRATOR
         try:
             integrator = self.integrators[intg_type]
         except KeyError:
@@ -280,7 +303,7 @@ class FM_model:
 
         match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_(Linear|Conic)', model_fullname)
 
-        intg_type = self.cfg.MODEL.FLOW_MATCHING.INTEGRATOR
+        intg_type = self.cfg.MODEL.FM.INTEGRATOR
         try:
             integrator = self.integrators[intg_type]
         except KeyError:
@@ -318,6 +341,6 @@ class FM_model:
                 break
 
         logging.info("===" * 20)
-        logging.info(f'Computing metrics on predicted mprops sequences with FM-UNet model.')
+        logging.info(f'Computing metrics on predicted mprops sequences with {self.arch} model.')
         metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
         compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch, self.arch)

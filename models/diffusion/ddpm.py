@@ -10,6 +10,10 @@ from torchmetrics import MeanMetric
 
 from models.diffusion.forward import ForwardSampler
 from models.backbones.unet import UNet
+from models.backbones.DiT2D import DiT2D
+from models.backbones.DiT4D import DiT4D
+from models.backbones.DiT4D_V3 import DiT4D_V3
+from models.backbones.DiT4D_V4 import DiT4D_V4
 from models.diffusion.forward import get_from_idx
 from models.guidance import sparsityGradient, preservationMassNumericalGradientOptimal
 from utils.utils import save_checkpoint, init_wandb, create_directory
@@ -38,43 +42,68 @@ class DDPM_model:
         self.cfg  = cfg
         self.arch = arch
         self.mprops_count = mprops_count
-        self.output_dir = output_dir
+        self.output_dir   = output_dir
         self.from_fixed_past = from_fixed_past
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.denoiser = self._get_denoiser()
+        self.device       = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.denoiser_cfg = self._get_denoiser_cfg()
+        self.denoiser     = self._get_denoiser()
         self.denoiser.to(self.device)
 
         self.optimizer = torch.optim.Adam(self.denoiser.parameters(),
-                                          lr = self.cfg.MODEL.DDPM.TRAIN.SOLVER.LR,
-                                          betas=cfg.MODEL.DDPM.TRAIN.SOLVER.BETAS,
-                                          weight_decay=cfg.MODEL.DDPM.TRAIN.SOLVER.WEIGHT_DECAY)
+                                          lr = self.denoiser_cfg.TRAIN.SOLVER.LR,
+                                          betas=self.denoiser_cfg.TRAIN.SOLVER.BETAS,
+                                          weight_decay=self.denoiser_cfg.TRAIN.SOLVER.WEIGHT_DECAY)
 
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                                         self.optimizer,
                                         mode='min',
-                                        factor=cfg.MODEL.DDPM.TRAIN.SOLVER.SCHEDULER.FACTOR,
-                                        patience=cfg.MODEL.DDPM.TRAIN.SOLVER.SCHEDULER.PATIENCE,
-                                        min_lr=cfg.MODEL.DDPM.TRAIN.SOLVER.SCHEDULER.MIN_LR)
+                                        factor=self.denoiser_cfg.TRAIN.SOLVER.SCHEDULER.FACTOR,
+                                        patience=self.denoiser_cfg.TRAIN.SOLVER.SCHEDULER.PATIENCE,
+                                        min_lr=self.denoiser_cfg.TRAIN.SOLVER.SCHEDULER.MIN_LR)
 
+    def _get_denoiser_cfg(self):
+        """
+        Navigate the nested config to the right backbone node.
+        e.g. cfg.GEN_MODEL.DDPM.UNET  or  cfg.GEN_MODEL.DDPM.DIT
+        """
+        gen_model_key, backbone_key = self.arch.upper().split('-')
+        gen_cfg = getattr(self.cfg.MODEL, gen_model_key)       # FM | DDPM node
+        return getattr(gen_cfg, backbone_key)                  # UNET | DIT node
 
     def _get_denoiser(self):
         denoiser = None
         if self.arch == "DDPM-UNet":
             denoiser = UNet(input_channels  = self.mprops_count,
                             output_channels = self.mprops_count,
-                            num_res_blocks  = self.cfg.MODEL.DDPM.UNET.NUM_RES_BLOCKS,
-                            base_channels           = self.cfg.MODEL.DDPM.UNET.BASE_CH,
-                            base_channels_multiples = self.cfg.MODEL.DDPM.UNET.BASE_CH_MULT,
-                            apply_attention         = self.cfg.MODEL.DDPM.UNET.APPLY_ATTENTION,
-                            dropout_rate            = self.cfg.MODEL.DDPM.UNET.DROPOUT_RATE,
-                            time_multiple           = self.cfg.MODEL.DDPM.UNET.TIME_EMB_MULT,
-                            condition               = self.cfg.MODEL.DDPM.UNET.CONDITION)
+                            num_res_blocks  = self.denoiser_cfg.NUM_RES_BLOCKS,
+                            base_channels           = self.denoiser_cfg.BASE_CH,
+                            base_channels_multiples = self.denoiser_cfg.BASE_CH_MULT,
+                            apply_attention         = self.denoiser_cfg.APPLY_ATTENTION,
+                            dropout_rate            = self.denoiser_cfg.DROPOUT_RATE,
+                            time_multiple           = self.denoiser_cfg.TIME_EMB_MULT,
+                            condition               = self.denoiser_cfg.CONDITION
+                        )
 
-        elif self.arch == "DDPM-ViT":
-            denoiser = None # Placeholder for ViT architecture
+        elif self.arch == "DDPM-DiT":
+            denoiser = DiT4D_V4(input_channels    = self.mprops_count,
+                             output_channels   = self.mprops_count,
+                             grid_rows         = self.cfg.MACROPROPS.ROWS,
+                             grid_cols         = self.cfg.MACROPROPS.COLS,
+                             past_len          = self.cfg.DATASET.PAST_LEN,
+                             future_len        = self.cfg.DATASET.FUTURE_LEN,
+                             t_patch_size      = self.denoiser_cfg.T_PATCH_SIZE,
+                             patch_size        = self.denoiser_cfg.PATCH_SIZE,
+                             hidden_size       = self.denoiser_cfg.HIDDEN_SIZE,
+                             depth             = self.denoiser_cfg.DEPTH,
+                             num_heads         = self.denoiser_cfg.NUM_HEADS,
+                             mlp_ratio         = self.denoiser_cfg.MLP_RATIO,
+                             dropout_rate      = self.denoiser_cfg.DROPOUT_RATE,
+                             time_multiple     = self.denoiser_cfg.TIME_EMB_MULT,
+                             condition         = self.denoiser_cfg.CONDITION,
+                        )
         else:
-            logging.info("Architecture not supported.")
+            raise ValueError(f"Unknown Architecture {self.arch}")
 
         return denoiser
 
@@ -84,7 +113,7 @@ class DDPM_model:
         t = torch.randint(low=0, high=forward_sampler.timesteps, size=(future.shape[0],), device=future.device)
         # Apply forward noising process on original images, up to step t (sample from q(x_t|x_0))
         future_macroprops_noisy, eps_true = forward_sampler(future, t)
-        with amp.autocast():
+        with torch.amp.autocast("cuda"):
             # Our prediction for the denoised macropros sequence
             eps_predicted = self.denoiser(future_macroprops_noisy, t, past)
             # Deduce the loss
@@ -92,13 +121,13 @@ class DDPM_model:
         return loss
 
     def _train_one_epoch(self, forward_sampler:DDPM, loader, epoch):
-        total_epochs = self.cfg.MODEL.DDPM.TRAIN.EPOCHS
+        total_epochs = self.denoiser_cfg.TRAIN.EPOCHS
         loss_record = MeanMetric()
         # Set in training mode
         self.denoiser.train()
 
         with tqdm(total=len(loader), dynamic_ncols=True) as tq:
-            tq.set_description(f"DDPM Train :: Epoch: {epoch}/{total_epochs}")
+            tq.set_description(f"{self.arch} Train :: Epoch: {epoch}/{total_epochs}")
             # Scan the batches
             for batched_train_data in loader:
                 tq.update(1)
@@ -124,18 +153,23 @@ class DDPM_model:
 
         return mean_loss
 
-    def train(self, batched_train_data):
+    def train(self, batched_train_data, baseline_ckpt=None):
         forward_sampler = DDPM(timesteps=self.cfg.MODEL.DDPM.TIMESTEPS, scale=self.cfg.MODEL.DDPM.SCALE)
         forward_sampler.to(self.device)
+
+        if baseline_ckpt is not None:
+            self.denoiser.load_state_dict(torch.load(baseline_ckpt, map_location=self.device, weights_only=True)['model'])
+            self.denoiser.to(self.device)
+            logging.info("Baseline checkpoint loaded successfully.")
 
         best_loss      = 1e6
         consecutive_nan_count = 0
 
-        low = int(self.cfg.MODEL.DDPM.TRAIN.EPOCHS * 0.75)
-        high = self.cfg.MODEL.DDPM.TRAIN.EPOCHS + 1  # randint upper bound is exclusive
+        low = int(self.denoiser_cfg.TRAIN.EPOCHS * 0.75)
+        high = self.denoiser_cfg.TRAIN.EPOCHS + 1  # randint upper bound is exclusive
         epochs_cktp_to_save = np.random.randint(low, high, size=self.cfg.MODEL.DDPM.CHECKPOINTS_TO_KEEP)
         # Training loop
-        for epoch in range(1, self.cfg.MODEL.DDPM.TRAIN.EPOCHS + 1):
+        for epoch in range(1, self.denoiser_cfg.TRAIN.EPOCHS + 1):
             torch.cuda.empty_cache()
             gc.collect()
 
@@ -349,6 +383,6 @@ class DDPM_model:
                 break
 
         logging.info("===" * 20)
-        logging.info(f'Computing metrics on predicted mprops sequences with DDPM model.')
+        logging.info(f'Computing metrics on predicted mprops sequences with {self.arch} model.')
         metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
         compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch, self.arch)
