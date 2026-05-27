@@ -138,6 +138,7 @@ class FinalLayer(nn.Module):
 
 class DiT4D(nn.Module):
     """
+    DiT version 2.
     Diffusion Transformer for spatiotemporal macroscopic sequences.
 
     Uses Conv3D full temporal tube patching. Each of the N spatial tokens

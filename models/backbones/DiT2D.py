@@ -129,6 +129,7 @@ class FinalLayer(nn.Module):
 
 class DiT2D(nn.Module):
     """
+    DiT version 1.
     Diffusion Transformer for spatiotemporal macroscopic sequences.
 
     Drop-in replacement for the sequence UNet.

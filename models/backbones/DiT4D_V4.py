@@ -227,6 +227,7 @@ class FinalLayer(nn.Module):
 
 class DiT4D_V4(nn.Module):
     """
+    DiT version 4.
     DiT backbone with partial temporal tube patching + factorized attention.
 
     Mirrors UNet's forward signature: forward(future, t, past) → future_hat

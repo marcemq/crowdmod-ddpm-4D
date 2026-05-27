@@ -153,6 +153,7 @@ class FinalLayer(nn.Module):
 
 class DiT4D_V3(nn.Module):
     """
+    DiT version 3.
     DiT backbone with partial temporal tube patching (Conv3D, kernel pt < T).
 
     Mirrors UNet's forward signature: forward(future, t, past) → future_hat
