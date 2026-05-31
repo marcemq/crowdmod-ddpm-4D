@@ -260,11 +260,11 @@ class DDPM_model:
             # AR: Generating images for t-1 (deterministic way). Review this step, can we do it no deterministic?
             # AR: redo eq 65, 67 that depends on sigma and test, with sigma=0, and sigma=1
             xnoisy = sqrt_alpha_bar_t_prev * predicted_x0 + sqrt_one_minus_alpha_bar_t_prev * predicted_noise
-            #if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity":
-            #    # Update the noisy image with the sparsity guidance
-            #    sparsity_grad = sparsityGradient(xnoisy, self.cfg, self.device)
-            #    sigma = torch.sqrt(beta_t)
-            #    xnoisy-= 0.004*sigma*sparsity_grad
+            if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity":
+                # Update the noisy image with the sparsity guidance
+                sparsity_grad = sparsityGradient(xnoisy, self.cfg, self.device)
+                sigma = torch.sqrt(beta_t)
+                xnoisy-= 0.004*sigma*sparsity_grad
 
             beta_t                          = beta_t_prev
             sqrt_alpha_bar_t                = sqrt_alpha_bar_t_prev
