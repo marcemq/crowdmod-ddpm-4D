@@ -260,11 +260,11 @@ class DDPM_model:
             # AR: Generating images for t-1 (deterministic way). Review this step, can we do it no deterministic?
             # AR: redo eq 65, 67 that depends on sigma and test, with sigma=0, and sigma=1
             xnoisy = sqrt_alpha_bar_t_prev * predicted_x0 + sqrt_one_minus_alpha_bar_t_prev * predicted_noise
-            if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity":
-                # Update the noisy image with the sparsity guidance
-                sparsity_grad = sparsityGradient(xnoisy, self.cfg, self.device)
-                sigma = torch.sqrt(beta_t)
-                xnoisy-= 0.004*sigma*sparsity_grad
+            #if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity":
+            #    # Update the noisy image with the sparsity guidance
+            #    sparsity_grad = sparsityGradient(xnoisy, self.cfg, self.device)
+            #    sigma = torch.sqrt(beta_t)
+            #    xnoisy-= 0.004*sigma*sparsity_grad
 
             beta_t                          = beta_t_prev
             sqrt_alpha_bar_t                = sqrt_alpha_bar_t_prev
@@ -319,7 +319,7 @@ class DDPM_model:
                     l1 = torch.mean(torch.abs(predictions[:,0,:,:,:])).cpu().detach().numpy()
                     logging.info('L1 norm {:.2f}'.format(l1))
             elif self.cfg.MODEL.DDPM.SAMPLER == "DDIM":
-                taus = np.arange(0, timesteps, self.cfg.MODEL.DDPM.DDIM_DIVIDER)
+                taus = np.arange(0, timesteps-1, self.cfg.MODEL.DDPM.DDIM_DIVIDER)
                 logging.info(f'Shape of subset taus:{taus.shape}')
                 predictions, _ = self._generate_ddim(random_past_samples, taus, backward_sampler, nsamples) # AR review .cpu() call here
             else:
