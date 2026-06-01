@@ -256,7 +256,9 @@ class DDPM_model:
             sqrt_alpha_bar_t_prev           = get_from_idx(backward_sampler.sqrt_alpha_bar, ts)
             sqrt_one_minus_alpha_bar_t_prev = get_from_idx(backward_sampler.sqrt_one_minus_alpha_bar, ts)
             # Predicted x0
-            predicted_x0                    = (xnoisy-sqrt_one_minus_alpha_bar_t*predicted_noise)/sqrt_alpha_bar_t
+            predicted_x0 = (xnoisy-sqrt_one_minus_alpha_bar_t*predicted_noise)/sqrt_alpha_bar_t
+            # stabilizes iterative estimation
+            predicted_x0 = torch.clamp(predicted_x0, -1.0, 1.0)  
             # AR: Generating images for t-1 (deterministic way). Review this step, can we do it no deterministic?
             # AR: redo eq 65, 67 that depends on sigma and test, with sigma=0, and sigma=1
             xnoisy = sqrt_alpha_bar_t_prev * predicted_x0 + sqrt_one_minus_alpha_bar_t_prev * predicted_noise
