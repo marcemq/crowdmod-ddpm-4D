@@ -219,6 +219,12 @@ class DDPM_model:
             eps_pred = self.denoiser(xnoisy, t_tensor, past)
             # Denoise with the sampler and the estimation of the noise
             xnoisy, sigma, alpha_t = backward_sampler.step(eps_pred, xnoisy, t)
+            # DEBUG: first and last step
+            if t == 999:
+                print(f"\n[DDPM] t={t} | xnoisy stats: min={xnoisy.min():.4f} max={xnoisy.max():.4f} mean={xnoisy.mean():.4f}")
+            if t == 0:
+                print(f"[DDPM] t={t} | xnoisy stats: min={xnoisy.min():.4f} max={xnoisy.max():.4f} mean={xnoisy.mean():.4f}")
+            # END DEBUG
             if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity":
                 # Update the noisy image with the sparsity guidance
                 sparsity_grad = sparsityGradient(xnoisy, self.cfg, self.device)
@@ -245,6 +251,7 @@ class DDPM_model:
         sqrt_alpha_bar_t           = get_from_idx(backward_sampler.sqrt_alpha_bar, last_t)
         sqrt_one_minus_alpha_bar_t = get_from_idx(backward_sampler.sqrt_one_minus_alpha_bar, last_t)
         xnoisy_over_time = [xnoisy]
+        first_step = True  # flag since reversed(taus) doesn't give easy index access
         # Now, to reverse the diffusion process, use a sequence of denoising steps
         for t in tqdm(iterable=reversed(taus), dynamic_ncols=False,total=len(taus), desc="DDIM Sampling :: ", position=0):
             # Time vectors
@@ -257,11 +264,18 @@ class DDPM_model:
             sqrt_one_minus_alpha_bar_t_prev = get_from_idx(backward_sampler.sqrt_one_minus_alpha_bar, ts)
             # Predicted x0
             predicted_x0 = (xnoisy-sqrt_one_minus_alpha_bar_t*predicted_noise)/sqrt_alpha_bar_t
-            # stabilizes iterative estimation
-            predicted_x0 = torch.clamp(predicted_x0, -1.0, 1.0)  
             # AR: Generating images for t-1 (deterministic way). Review this step, can we do it no deterministic?
             # AR: redo eq 65, 67 that depends on sigma and test, with sigma=0, and sigma=1
             xnoisy = sqrt_alpha_bar_t_prev * predicted_x0 + sqrt_one_minus_alpha_bar_t_prev * predicted_noise
+            # DEBUG: first and last step
+            if first_step:
+                print(f"\n[DDIM] t={t} | sqrt_alpha_bar_t={sqrt_alpha_bar_t.mean():.4f} | sqrt_alpha_bar_t_prev={sqrt_alpha_bar_t_prev.mean():.4f}")
+                print(f"[DDIM] t={t} | predicted_x0: min={predicted_x0.min():.4f} max={predicted_x0.max():.4f}")
+                print(f"[DDIM] t={t} | xnoisy stats: min={xnoisy.min():.4f} max={xnoisy.max():.4f} mean={xnoisy.mean():.4f}")
+                first_step = False
+            if t == 0:
+                print(f"[DDIM] t={t} | xnoisy stats: min={xnoisy.min():.4f} max={xnoisy.max():.4f} mean={xnoisy.mean():.4f}")
+            # END DEBUG
             if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity":
                 # Update the noisy image with the sparsity guidance
                 sparsity_grad = sparsityGradient(xnoisy, self.cfg, self.device)
