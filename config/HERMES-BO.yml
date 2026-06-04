@@ -41,10 +41,11 @@ MODEL:
   NSAMPLES4PLOTS: 20  # Define number of predicted samples to plot static and dynamic seqs
   DDPM:
     SAMPLER: "DDIM"     # Available options: DDPM|DDIM
+    SIGMA: 0.3        # Sigma value for DDIM sampling
     TIMESTEPS: 1000     # Define canonical number of diffusion timesteps
     SCALE: 0.5          # Define scale for betas in model
     DDIM_DIVIDER: 2     # Define number of timesteps for taus subset
-    GUIDANCE: 'Sparsity'    # Possible values: None, Sparsity, mass_preservation
+    GUIDANCE: 'None'    # Possible values: None, Sparsity, mass_preservation
     CHECKPOINTS_TO_KEEP: 7
     UNET:
       CONDITION: "Past"
