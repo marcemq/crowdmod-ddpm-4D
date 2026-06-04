@@ -371,7 +371,7 @@ class DDPM_model:
                     l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
                     logging.info(f'L1 norm {l1:.2f} using {self.cfg.MODEL.DDPM.GUIDANCE} guidance')
             elif self.cfg.MODEL.DDPM.SAMPLER == "DDIM":
-                taus = np.arange(0, timesteps, self.cfg.MODEL.DDPM.DDIM_DIVIDER)
+                taus = np.arange(0, timesteps-1, self.cfg.MODEL.DDPM.DDIM_DIVIDER)
                 logging.info(f'Shape of subset taus:{taus.shape}')
                 x, _ = self._generate_ddim(random_past_samples, taus, backward_sampler, samples_per_batch) # AR review .cpu() call here
             else:
