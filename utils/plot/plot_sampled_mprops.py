@@ -241,7 +241,7 @@ def get_psnr_per_seq(params, pred_seq_list, gt_seq_list, eps):
     _, _, _, pred_len = pred_seq_list[0].shape
     nsamples_psnr = np.zeros((nsamples, pred_len, params.MPROPS_COUNT))
 
-    rho_range, vx_range, vy_range = _get_mprops_ranges(mprops_factor, params.MPROPS_COUNT)
+    rho_range, vx_range, vy_range = _get_mprops_ranges(mprops_factor, params.MPROPS_COUNT, gt_seq_list)
     logging.info(f'Range of macroprops at sampling \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
 
     for i in range(nsamples):
