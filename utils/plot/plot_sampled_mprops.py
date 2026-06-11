@@ -25,6 +25,8 @@ class MacropropPlotter:
         self.sampler    = cfg.MODEL.DDPM.SAMPLER
         self.cols       = cfg.MACROPROPS.COLS
         self.rows       = cfg.MACROPROPS.ROWS
+        self.params     = cfg.METRICS
+        self.eps        = cfg.MACROPROPS.EPS
         self.arch       = arch
         self.velScale   = velScale
         self.velUncScale = velUncScale
@@ -118,11 +120,11 @@ class MacropropPlotter:
         plt.axis("off")
         fig.savefig(figName, format='svg', bbox_inches='tight')
 
-    def plotDynamic(self, seq_frames):
+    def plotDynamic(self, seq_frames, seq_psnr):
         j_indexes = self._get_j_indexes(plotPast="All")
         rho_min, rho_max = self._get_rho_limits(seq_frames, j_indexes)
         title =  f"Sampling macroprops with {self.arch} architecture\nPast Len:{self.past_len} and Future Len:{self.future_len}"
-
+        idx = 0
         # Iterate over each sequence to create a GIF for each
         for i in range(self.samples4plot*2):
             figsize = FIGSIZE_MAP.get(self.dataset_name)
@@ -161,12 +163,15 @@ class MacropropPlotter:
                 # Update the frame number text and color accordingly
                 if (i + 1) % 2 == 0:
                     frame_text.set_color('black')
+                    psnr_text = ""
                 else:
+                    psnr_text = f'psnr_rho:{seq_psnr[idx, frame, 0]}, psnr_vx:{seq_psnr[idx, frame, 1]}, psnr_vy:{seq_psnr[idx, frame, 2]}'
+                    idx += 1
                     if frame < self.past_len:
                         frame_text.set_color('black')
                     else:
                         frame_text.set_color('blue')
-                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)}')
+                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text}')
 
             # Set up animation for the current sequence
             ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
@@ -205,19 +210,89 @@ class MacropropPlotter:
 
 def setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter):
     seq_frames = []
+    pred_seq_list = []
+    gt_seq_list   = []
+
     for i in range(len(random_past_idx)):
         future_sample_pred = predictions[i]
         future_sample_gt = random_future_samples[i]
         past_sample = random_past_samples[i]
+
         seq_pred = torch.cat([past_sample, future_sample_pred], dim=3)
         seq_gt = torch.cat([past_sample, future_sample_gt], dim=3)
         seq_frames.append(seq_pred)
         seq_frames.append(seq_gt)
+        pred_seq_list.append(seq_pred)
+        gt_seq_list.append(seq_gt)
 
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
+    seq_psnr = get_psnr_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list, macropropPlotter.eps)
+
     if plotType == "Static":
         macropropPlotter.plotStatic(seq_frames, match, plotMprop, plotPast)
     elif plotType == "Dynamic":
-        macropropPlotter.plotDynamic(seq_frames)
+        macropropPlotter.plotDynamic(seq_frames, seq_psnr)
 
     macropropPlotter.plotDensityOverTime(seq_frames)
+
+def get_psnr_per_seq(params, pred_seq_list, gt_seq_list, eps):
+    mprops_factor = np.array(params.PRED_MPROPS_FACTOR)[:params.MPROPS_COUNT, np.newaxis, np.newaxis, np.newaxis]
+    nsamples = len(pred_seq_list)
+    _, _, _, pred_len = pred_seq_list[0].shape
+    nsamples_psnr = np.zeros((nsamples, pred_len, params.MPROPS_COUNT))
+
+    rho_range, vx_range, vy_range = _get_mprops_ranges(mprops_factor, params.MPROPS_COUNT)
+    logging.info(f'Range of macroprops at sampling \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
+
+    for i in range(nsamples):
+        one_pred_seq = pred_seq_list[i].cpu().numpy()
+        one_gt_seq = gt_seq_list[i].cpu().numpy()
+
+        one_pred_seq = one_pred_seq * mprops_factor
+        one_gt_seq = one_gt_seq * mprops_factor
+
+        for j in range(pred_len):
+            psnr_frame_rho = _my_psnr(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range, eps=eps)
+            psnr_frame_vx  = _my_psnr(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range, eps=eps)
+            psnr_frame_vy  = _my_psnr(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range, eps=eps)
+
+            nsamples_psnr[i, j] = (psnr_frame_rho, psnr_frame_vx, psnr_frame_vy)
+
+    return nsamples_psnr
+
+def _get_mprops_ranges(mprops_factor, mprops_count, gt_seq_list):
+        nsamples = len(gt_seq_list)
+        # Initialize arrays to store max and min values for each sample and each property
+        max_vals = np.zeros((nsamples, mprops_count))
+        min_vals = np.zeros((nsamples, mprops_count))
+
+        for i, one_gt_seq in enumerate(gt_seq_list):
+            # Convert the tensor to a numpy array and scale it
+            one_gt_seq = one_gt_seq.cpu().numpy() * mprops_factor
+
+            # Calculate max and min values for rho, vx, and vy, storing them in columns
+            max_vals[i, 0], min_vals[i, 0] = one_gt_seq[0].max(), one_gt_seq[0].min()  # rho
+            max_vals[i, 1], min_vals[i, 1] = one_gt_seq[1].max(), one_gt_seq[1].min()  # vx
+            max_vals[i, 2], min_vals[i, 2] = one_gt_seq[2].max(), one_gt_seq[2].min()  # vy
+
+        # Compute the overall max and min values for each macro-property across all samples
+        global_max_rho, global_max_vx, global_max_vy= max_vals.max(axis=0)
+        global_min_rho, global_min_vx, global_min_vy= min_vals.min(axis=0)
+
+        # Compute the range for each macro-property
+        rho_range = float(global_max_rho - global_min_rho)
+        vx_range  = float(global_max_vx - global_min_vx)
+        vy_range  = float(global_max_vy - global_min_vy)
+
+        return rho_range, vx_range, vy_range
+
+def _my_psnr(y_gt, y_hat, data_range, eps):
+        # Compute mean squared error
+        err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
+        # Prevent overflow and division by zero
+        err = max(err, eps)
+        # Calculate PSNR
+        tmp_num = 20 * np.log10(data_range)
+        tmp_den = 10 * np.log10(err)
+        psnr = tmp_num - tmp_den
+        return psnr
