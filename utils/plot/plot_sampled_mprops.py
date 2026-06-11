@@ -124,7 +124,6 @@ class MacropropPlotter:
         j_indexes = self._get_j_indexes(plotPast="All")
         rho_min, rho_max = self._get_rho_limits(seq_frames, j_indexes)
         title =  f"Sampling macroprops with {self.arch} architecture\nPast Len:{self.past_len} and Future Len:{self.future_len}"
-        idx = [0]
         # Iterate over each sequence to create a GIF for each
         for i in range(self.samples4plot*2):
             figsize = FIGSIZE_MAP.get(self.dataset_name)
@@ -165,27 +164,22 @@ class MacropropPlotter:
                     frame_text.set_color('black')
                     psnr_text = ""
                 else:
-                    psnr_text = (f'psnr_rho:{seq_psnr[idx[0], frame, 0]:.3f}, '
-                                 f'psnr_vx:{seq_psnr[idx[0], frame, 1]:.3f}, '
-                                 f'psnr_vy:{seq_psnr[idx[0], frame, 2]:.3f}'
+                    seq_idx = i // 2
+                    psnr_text = (f'psnr_rho:{seq_psnr[seq_idx, frame, 0]:.3f}, '
+                                 f'psnr_vx:{seq_psnr[seq_idx, frame, 1]:.3f}, '
+                                 f'psnr_vy:{seq_psnr[seq_idx, frame, 2]:.3f}'
                                 )
-                    idx += 1
                     if frame < self.past_len:
                         frame_text.set_color('black')
                     else:
                         frame_text.set_color('blue')
                 frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text}')
 
-            def on_animation_complete(ani_obj):
-            # Increment idx only after the full sequence animation is saved
-                if (i + 1) % 2 != 0:
-                    idx[0] += 1
             # Set up animation for the current sequence
             ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
             # Save each sequence as a separate GIF
             gif_name = f"{self.output_dir}/mprops_GT_seq_{i // 2 + 1}.gif" if (i + 1) % 2 == 0 else f"{self.output_dir}/mprops_seq_{i // 2 + 1}.gif"
             ani.save(gif_name, writer=PillowWriter(fps=2))
-            on_animation_complete(ani)
             plt.close(fig)
 
     def plotDensityOverTime(self, seq_frames):
