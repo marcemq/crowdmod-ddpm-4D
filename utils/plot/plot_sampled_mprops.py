@@ -254,9 +254,13 @@ def get_psnr_per_seq(params, pred_seq_list, gt_seq_list, eps):
         one_gt_seq = one_gt_seq * mprops_factor
 
         for j in range(pred_len):
-            psnr_frame_rho = _my_psnr(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range, eps=eps)
-            psnr_frame_vx  = _my_psnr(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range, eps=eps)
-            psnr_frame_vy  = _my_psnr(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range, eps=eps)
+            gt_frame   = one_gt_seq[:, :, :, j]    # (3, ROWS, COLS)
+            pred_frame = one_pred_seq[:, :, :, j]  # (3, ROWS, COLS)
+            mask = gt_frame[0] > 0.00001          # rho mask, shape (ROWS, COLS)
+
+            psnr_frame_rho = _my_psnr_masked(gt_frame[0], pred_frame[0], rho_range, eps, mask)
+            psnr_frame_vx  = _my_psnr_masked(gt_frame[1], pred_frame[1], vx_range,  eps, mask)
+            psnr_frame_vy  = _my_psnr_masked(gt_frame[2], pred_frame[2], vy_range,  eps, mask)
 
             nsamples_psnr[i, j] = (psnr_frame_rho, psnr_frame_vx, psnr_frame_vy)
 
@@ -298,3 +302,10 @@ def _my_psnr(y_gt, y_hat, data_range, eps):
         tmp_den = 10 * np.log10(err)
         psnr = tmp_num - tmp_den
         return psnr
+
+def _my_psnr_masked(y_gt, y_hat, data_range, eps, mask):    
+    err = np.mean((y_gt[mask] - y_hat[mask]) ** 2, dtype=np.float64)
+    err = max(err, eps)
+    tmp_num = 20 * np.log10(data_range)
+    tmp_den = 10 * np.log10(err)
+    return tmp_num - tmp_den
