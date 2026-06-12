@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.animation import PillowWriter
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from skimage.metrics import structural_similarity as ssim
 
 FIGSIZE_MAP = {
     "ATC":                  (7, 4),
@@ -120,7 +121,7 @@ class MacropropPlotter:
         plt.axis("off")
         fig.savefig(figName, format='svg', bbox_inches='tight')
 
-    def plotDynamic(self, seq_frames, seq_psnr):
+    def plotDynamic(self, seq_frames, seq_psnr, seq_ssim):
         j_indexes = self._get_j_indexes(plotPast="All")
         rho_min, rho_max = self._get_rho_limits(seq_frames, j_indexes)
         title =  f"Sampling macroprops with {self.arch} architecture\nPast Len:{self.past_len} and Future Len:{self.future_len}"
@@ -163,17 +164,22 @@ class MacropropPlotter:
                 if (i + 1) % 2 == 0:
                     frame_text.set_color('black')
                     psnr_text = ""
+                    ssim_text = ""
                 else:
                     seq_idx = i // 2
                     psnr_text = (f'psnr_rho:{seq_psnr[seq_idx, frame, 0]:.3f}, '
                                  f'psnr_vx:{seq_psnr[seq_idx, frame, 1]:.3f}, '
                                  f'psnr_vy:{seq_psnr[seq_idx, frame, 2]:.3f}'
                                 )
+                    ssim_text = (f'ssim_rho:{seq_ssim[seq_idx, frame, 0]:.3f}, '
+                                 f'ssim_vx:{seq_ssim[seq_idx, frame, 1]:.3f}, '
+                                 f'ssim_vy:{seq_ssim[seq_idx, frame, 2]:.3f}'
+                                )
                     if frame < self.past_len:
                         frame_text.set_color('black')
                     else:
                         frame_text.set_color('blue')
-                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text}')
+                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text} \n {ssim_text}')
 
             # Set up animation for the current sequence
             ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
@@ -229,29 +235,45 @@ def setup_predictions_plot(predictions, random_past_idx, random_past_samples, ra
 
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
     seq_psnr = get_psnr_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list, macropropPlotter.eps)
+    seq_ssim = get_ssim_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list)
 
     if plotType == "Static":
         macropropPlotter.plotStatic(seq_frames, match, plotMprop, plotPast)
     elif plotType == "Dynamic":
-        macropropPlotter.plotDynamic(seq_frames, seq_psnr)
+        macropropPlotter.plotDynamic(seq_frames, seq_psnr, seq_ssim)
 
     macropropPlotter.plotDensityOverTime(seq_frames)
 
-def get_psnr_per_seq(params, pred_seq_list, gt_seq_list, eps):
-    mprops_factor = np.array(params.PRED_MPROPS_FACTOR)[:params.MPROPS_COUNT, np.newaxis, np.newaxis, np.newaxis]
+def get_ssim_per_seq(params, pred_seq_list, gt_seq_list):
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
-    nsamples_psnr = np.zeros((nsamples, pred_len, params.MPROPS_COUNT))
-
-    rho_range, vx_range, vy_range = _get_mprops_ranges(mprops_factor, params.MPROPS_COUNT, gt_seq_list)
-    logging.info(f'Range of macroprops at sampling \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
+    nsamples_ssim = np.zeros((nsamples, pred_len, params.MPROPS_COUNT))
+    rho_range, vx_range, vy_range = _get_mprops_ranges(params.MPROPS_COUNT, gt_seq_list)
 
     for i in range(nsamples):
         one_pred_seq = pred_seq_list[i].cpu().numpy()
         one_gt_seq = gt_seq_list[i].cpu().numpy()
 
-        one_pred_seq = one_pred_seq * mprops_factor
-        one_gt_seq = one_gt_seq * mprops_factor
+        for j in range(pred_len):
+            frame_ssim_rho = ssim(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
+            frame_ssim_vx  = ssim(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range)
+            frame_ssim_vy  = ssim(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range)
+
+            nsamples_ssim[i, j] = (frame_ssim_rho, frame_ssim_vx, frame_ssim_vy)
+
+    return nsamples_ssim
+
+def get_psnr_per_seq(params, pred_seq_list, gt_seq_list, eps):
+    nsamples = len(pred_seq_list)
+    _, _, _, pred_len = pred_seq_list[0].shape
+    nsamples_psnr = np.zeros((nsamples, pred_len, params.MPROPS_COUNT))
+
+    rho_range, vx_range, vy_range = _get_mprops_ranges(params.MPROPS_COUNT, gt_seq_list)
+    logging.info(f'Range of macroprops at sampling \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
+
+    for i in range(nsamples):
+        one_pred_seq = pred_seq_list[i].cpu().numpy()
+        one_gt_seq = gt_seq_list[i].cpu().numpy()
 
         for j in range(pred_len):
             gt_frame   = one_gt_seq[:, :, :, j]    # (3, ROWS, COLS)
@@ -266,7 +288,7 @@ def get_psnr_per_seq(params, pred_seq_list, gt_seq_list, eps):
 
     return nsamples_psnr
 
-def _get_mprops_ranges(mprops_factor, mprops_count, gt_seq_list):
+def _get_mprops_ranges(mprops_count, gt_seq_list):
         nsamples = len(gt_seq_list)
         # Initialize arrays to store max and min values for each sample and each property
         max_vals = np.zeros((nsamples, mprops_count))
@@ -274,7 +296,7 @@ def _get_mprops_ranges(mprops_factor, mprops_count, gt_seq_list):
 
         for i, one_gt_seq in enumerate(gt_seq_list):
             # Convert the tensor to a numpy array and scale it
-            one_gt_seq = one_gt_seq.cpu().numpy() * mprops_factor
+            one_gt_seq = one_gt_seq.cpu().numpy()
 
             # Calculate max and min values for rho, vx, and vy, storing them in columns
             max_vals[i, 0], min_vals[i, 0] = one_gt_seq[0].max(), one_gt_seq[0].min()  # rho
@@ -303,7 +325,7 @@ def _my_psnr(y_gt, y_hat, data_range, eps):
         psnr = tmp_num - tmp_den
         return psnr
 
-def _my_psnr_masked(y_gt, y_hat, data_range, eps, mask):    
+def _my_psnr_masked(y_gt, y_hat, data_range, eps, mask):
     err = np.mean((y_gt[mask] - y_hat[mask]) ** 2, dtype=np.float64)
     err = max(err, eps)
     tmp_num = 20 * np.log10(data_range)
