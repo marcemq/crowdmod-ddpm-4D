@@ -121,7 +121,7 @@ class MacropropPlotter:
         plt.axis("off")
         fig.savefig(figName, format='svg', bbox_inches='tight')
 
-    def plotDynamic(self, seq_frames, seq_psnr, seq_ssim):
+    def plotDynamic(self, seq_frames, seq_psnr, seq_ssim, seq_tv):
         j_indexes = self._get_j_indexes(plotPast="All")
         rho_min, rho_max = self._get_rho_limits(seq_frames, j_indexes)
         title =  f"Sampling macroprops with {self.arch} architecture\nPast Len:{self.past_len} and Future Len:{self.future_len}"
@@ -150,7 +150,7 @@ class MacropropPlotter:
             cbar.ax.tick_params(labelsize=10)
 
             plt.title(title, fontsize=12)
-            frame_text = ax.text(0.5, -0.15, '', transform=ax.transAxes, ha='center', fontsize=11, fontweight='bold')
+            frame_text = ax.text(0.5, -0.17, '', transform=ax.transAxes, ha='center', fontsize=11, fontweight='bold')
 
             def update(frame):
                 j = j_indexes[frame]
@@ -165,6 +165,7 @@ class MacropropPlotter:
                     frame_text.set_color('black')
                     psnr_text = ""
                     ssim_text = ""
+                    tv_text   = ""
                 else:
                     seq_idx = i // 2
                     psnr_text = (f'psnr_rho:{seq_psnr[seq_idx, frame, 0]:.3f}, '
@@ -175,11 +176,15 @@ class MacropropPlotter:
                                  f'ssim_vx:{seq_ssim[seq_idx, frame, 1]:.3f}, '
                                  f'ssim_vy:{seq_ssim[seq_idx, frame, 2]:.3f}'
                                 )
+                    tv_text   = (f'tv_rho:{seq_tv[seq_idx, frame, 0]:.3f}, '
+                                 f'tv_vx:{seq_tv[seq_idx, frame, 1]:.3f}, '
+                                 f'tv_vy:{seq_tv[seq_idx, frame, 2]:.3f}'
+                                )
                     if frame < self.past_len:
                         frame_text.set_color('black')
                     else:
                         frame_text.set_color('blue')
-                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text} \n {ssim_text}')
+                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text} \n {ssim_text} \n {tv_text}')
 
             # Set up animation for the current sequence
             ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
@@ -236,11 +241,12 @@ def setup_predictions_plot(predictions, random_past_idx, random_past_samples, ra
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
     seq_psnr = get_psnr_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list, macropropPlotter.eps)
     seq_ssim = get_ssim_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list)
+    seq_tv   = get_tv_per_seq(pred_seq_list, gt_seq_list, mprops_count=3)
 
     if plotType == "Static":
         macropropPlotter.plotStatic(seq_frames, match, plotMprop, plotPast)
     elif plotType == "Dynamic":
-        macropropPlotter.plotDynamic(seq_frames, seq_psnr, seq_ssim)
+        macropropPlotter.plotDynamic(seq_frames, seq_psnr, seq_ssim, seq_tv)
 
     macropropPlotter.plotDensityOverTime(seq_frames)
 
@@ -315,15 +321,15 @@ def _get_mprops_ranges(mprops_count, gt_seq_list):
         return rho_range, vx_range, vy_range
 
 def _my_psnr(y_gt, y_hat, data_range, eps):
-        # Compute mean squared error
-        err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
-        # Prevent overflow and division by zero
-        err = max(err, eps)
-        # Calculate PSNR
-        tmp_num = 20 * np.log10(data_range)
-        tmp_den = 10 * np.log10(err)
-        psnr = tmp_num - tmp_den
-        return psnr
+    # Compute mean squared error
+    err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
+    # Prevent overflow and division by zero
+    err = max(err, eps)
+    # Calculate PSNR
+    tmp_num = 20 * np.log10(data_range)
+    tmp_den = 10 * np.log10(err)
+    psnr = tmp_num - tmp_den
+    return psnr
 
 def _my_psnr_masked(y_gt, y_hat, data_range, eps, mask):
     err = np.mean((y_gt[mask] - y_hat[mask]) ** 2, dtype=np.float64)
@@ -331,3 +337,26 @@ def _my_psnr_masked(y_gt, y_hat, data_range, eps, mask):
     tmp_num = 20 * np.log10(data_range)
     tmp_den = 10 * np.log10(err)
     return tmp_num - tmp_den
+
+def _compute_tv(field):
+    # field shape: (ROWS, COLS)
+    diff_rows = np.abs(np.diff(field, axis=0))  # vertical
+    diff_cols = np.abs(np.diff(field, axis=1))  # horizontal
+    return diff_rows.sum() + diff_cols.sum()
+
+def get_tv_per_seq(pred_seq_list, gt_seq_list, mprops_count):
+    nsamples = len(pred_seq_list)
+    _, _, _, pred_len = pred_seq_list[0].shape
+    nsamples_tv = np.zeros((nsamples, pred_len, mprops_count))
+
+    for i in range(nsamples):
+        one_pred_seq = pred_seq_list[i].cpu().numpy()
+        one_gt_seq   = gt_seq_list[i].cpu().numpy()
+
+        for j in range(pred_len):
+            for c in range(mprops_count):
+                tv_pred = _compute_tv(one_pred_seq[c, :, :, j])
+                tv_gt   = _compute_tv(one_gt_seq[c,   :, :, j])
+                nsamples_tv[i, j, c] = np.abs(tv_pred - tv_gt)
+
+    return nsamples_tv
