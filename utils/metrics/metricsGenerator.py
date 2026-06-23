@@ -11,10 +11,12 @@ from utils.metrics.motionFeatureExtractor import MotionFeatureExtractor, get_bha
 
 class MetricsGenerator:
     HEADERS = {
-        "PSNR": "rho,vx,vy",
-        "SSIM": "rho,vx,vy",
-        "MAX_PSNR": "rho,vx,vy",
-        "MAX_SSIM": "rho,vx,vy",
+        "PSNR"      : "rho,vx,vy",
+        "MASK_PSNR" : "rho,vx,vy",
+        "SSIM"      : "rho,vx,vy",
+        "MAX_PSNR"  : "rho,vx,vy",
+        "MAX_MASK_PSNR": "rho,vx,vy",
+        "MAX_SSIM"     : "rho,vx,vy",
         "MF_MSE": "MSE_Hist_2D_Based,MSE_Hist_1D_Based",
         "MF_BHATT_DIST": "BHATT_DIST_Hist_2D_Based,BHATT_DIST_Hist_1D_Based",
         "MF_BHATT_COEF": "BHATT_COEF_Hist_2D_Based,BHATT_COEF_Hist_1D_Based",
@@ -22,10 +24,13 @@ class MetricsGenerator:
         "MIN-ENERGY": "GT,PRED",
         "RE_DENSITY": "re_f6,re_f7,re_f8",
         "MIN_RE_DENSITY": "re_f6,re_f7,re_f8",
-        "PSNR_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
-        "SSIM_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
-        "MAX_PSNR_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
-        "MAX_SSIM_OVER_TIME": "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "PSNR_OVER_TIME"      : "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "MASK_PSNR_OVER_TIME" : "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "SSIM_OVER_TIME"      : "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "TV_OVER_TIME"        : "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "MAX_PSNR_OVER_TIME"      : "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "MAX_MASK_PSNR_OVER_TIME" : "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
+        "MAX_SSIM_OVER_TIME"      : "rho_f6,vx_f6,vy_f6,rho_f7,vx_f7,vy_f7,rho_f8,vx_f8,vy_f8",
     }
     def __init__(self, pred_seq_list, gt_seq_list, metrics_params, output_dir=None):
         self.pred_seq_list = pred_seq_list
@@ -35,7 +40,7 @@ class MetricsGenerator:
         self.data_dict = {name: None for name in self.HEADERS}
 
     # ----------------------------- Internal Helpers ----------------------------- #
-    def _get_mprops_ranges(self, mprops_factor, mprops_count):
+    def _get_mprops_ranges(self, mprops_count):
         nsamples = len(self.gt_seq_list)
         # Initialize arrays to store max and min values for each sample and each property
         max_vals = np.zeros((nsamples, mprops_count))
@@ -43,7 +48,7 @@ class MetricsGenerator:
 
         for i, one_gt_seq in enumerate(self.gt_seq_list):
             # Convert the tensor to a numpy array and scale it
-            one_gt_seq = one_gt_seq.cpu().numpy() * mprops_factor
+            one_gt_seq = one_gt_seq.cpu().numpy()
 
             # Calculate max and min values for rho, vx, and vy, storing them in columns
             max_vals[i, 0], min_vals[i, 0] = one_gt_seq[0].max(), one_gt_seq[0].min()  # rho
@@ -72,6 +77,19 @@ class MetricsGenerator:
         psnr = tmp_num - tmp_den
         return psnr
 
+    def _my_psnr_masked(self, y_gt, y_hat, data_range, eps, mask):
+        err = np.mean((y_gt[mask] - y_hat[mask]) ** 2, dtype=np.float64)
+        err = max(err, eps)
+        tmp_num = 20 * np.log10(data_range)
+        tmp_den = 10 * np.log10(err)
+        return tmp_num - tmp_den
+
+    def _compute_tv(field):
+        # field shape: (ROWS, COLS)
+        diff_rows = np.abs(np.diff(field, axis=0))  # vertical
+        diff_cols = np.abs(np.diff(field, axis=1))  # horizontal
+        return diff_rows.sum() + diff_cols.sum()
+
     def _motion_feature_by_mse(self, mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt):
         motion_feat_mse = np.zeros((len(mf_2D_pred), 2))
         for sample in range(len(mf_2D_pred)):
@@ -98,11 +116,10 @@ class MetricsGenerator:
         return file_name
 
     # ----------------------------- Metrics ----------------------------- #
-    def compute_psnr_metric(self, chunkRepdPastSeq, eps):
+    def compute_psnr_metric(self, chunkRepdPastSeq, eps, masked_flag=False):
         """
-        Compute PSNR and MAX-PSNR for predicted and gt sequences.
+        Compute PSNR, MASKED_PSNR, MAX-PSNR and MAX-MASKED_PSNR  for predicted and gt sequences.
         """
-        mprops_factor = np.array(self.params.PRED_MPROPS_FACTOR)[:self.params.MPROPS_COUNT, np.newaxis, np.newaxis, np.newaxis]
         nsamples = len(self.pred_seq_list)
         _, _, _, pred_len = self.pred_seq_list[0].shape
         nsamples_psnr = np.zeros((nsamples, self.params.MPROPS_COUNT))
@@ -112,30 +129,36 @@ class MetricsGenerator:
         nsamples_psnr_over_time = np.zeros((nsamples, self.params.MPROPS_COUNT*pred_len))
         max_psnr_over_time = np.zeros((nsamples//chunkRepdPastSeq, self.params.MPROPS_COUNT*pred_len))
 
-        rho_range, vx_range, vy_range = self._get_mprops_ranges(mprops_factor, self.params.MPROPS_COUNT)
+        rho_range, vx_range, vy_range = self._get_mprops_ranges(self.params.MPROPS_COUNT)
         logging.info(f'Range of macroprops \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
 
         for i in range(nsamples):
             one_pred_seq = self.pred_seq_list[i].cpu().numpy()
             one_gt_seq = self.gt_seq_list[i].cpu().numpy()
 
-            one_pred_seq = one_pred_seq * mprops_factor
-            one_gt_seq = one_gt_seq * mprops_factor
-
             psnr_rho, psnr_vx, psnr_vy = 0, 0, 0
             for j in range(pred_len):
-                frame_rho = self._my_psnr(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range, eps=eps)
-                frame_vx  = self._my_psnr(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range, eps=eps)
-                frame_vy  = self._my_psnr(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range, eps=eps)
+                gt_frame   = one_gt_seq[:, :, :, j]    # (3, ROWS, COLS)
+                pred_frame = one_pred_seq[:, :, :, j]  # (3, ROWS, COLS)
+                mask = gt_frame[0] > 0.00001           # rho mask, shape (ROWS, COLS)
 
-                psnr_rho += frame_rho
-                psnr_vx  += frame_vx
-                psnr_vy  += frame_vy
+                if masked_flag:
+                    psnr_frame_rho = self._my_psnr_masked(gt_frame[0], pred_frame[0], rho_range, eps, mask)
+                    psnr_frame_vx  = self._my_psnr_masked(gt_frame[1], pred_frame[1], vx_range,  eps, mask)
+                    psnr_frame_vy  = self._my_psnr_masked(gt_frame[2], pred_frame[2], vy_range,  eps, mask)
+                else:
+                    psnr_frame_rho = self._my_psnr(gt_frame[0], pred_frame[0], rho_range, eps)
+                    psnr_frame_vx  = self._my_psnr(gt_frame[1], pred_frame[1], vx_range,  eps)
+                    psnr_frame_vy  = self._my_psnr(gt_frame[2], pred_frame[2], vy_range,  eps)
+
+                psnr_rho += psnr_frame_rho
+                psnr_vx  += psnr_frame_vx
+                psnr_vy  += psnr_frame_vy
 
                 # Store per-frame PSNR: columns ordered as rho_f0, vx_f0, vy_f0, rho_f1, ...
-                nsamples_psnr_over_time[i, j * self.params.MPROPS_COUNT + 0] = frame_rho
-                nsamples_psnr_over_time[i, j * self.params.MPROPS_COUNT + 1] = frame_vx
-                nsamples_psnr_over_time[i, j * self.params.MPROPS_COUNT + 2] = frame_vy
+                nsamples_psnr_over_time[i, j * self.params.MPROPS_COUNT + 0] = psnr_frame_rho
+                nsamples_psnr_over_time[i, j * self.params.MPROPS_COUNT + 1] = psnr_frame_vx
+                nsamples_psnr_over_time[i, j * self.params.MPROPS_COUNT + 2] = psnr_frame_vy
 
             # Average PSNR across frames
             nsamples_psnr[i] = (psnr_rho/pred_len, psnr_vx/pred_len, psnr_vy/pred_len)
@@ -152,16 +175,21 @@ class MetricsGenerator:
             psnr_time_chunk = nsamples_psnr_over_time[i:i+chunkRepdPastSeq]
             max_psnr_over_time[chunk_idx] = psnr_time_chunk.max(axis=0)
 
-        self.data_dict['PSNR']= nsamples_psnr
-        self.data_dict['MAX_PSNR'] = max_psnr
-        self.data_dict["PSNR_OVER_TIME"] = nsamples_psnr_over_time
-        self.data_dict["MAX_PSNR_OVER_TIME"] = max_psnr_over_time
+        if masked_flag:
+            self.data_dict['PSNR']= nsamples_psnr
+            self.data_dict['MAX_PSNR'] = max_psnr
+            self.data_dict["PSNR_OVER_TIME"] = nsamples_psnr_over_time
+            self.data_dict["MAX_PSNR_OVER_TIME"] = max_psnr_over_time
+        else:
+            self.data_dict['MASK_PSNR']= nsamples_psnr
+            self.data_dict['MAX_MASK_PSNR'] = max_psnr
+            self.data_dict["MASK_PSNR_OVER_TIME"] = nsamples_psnr_over_time
+            self.data_dict["MAX_MASK_PSNR_OVER_TIME"] = max_psnr_over_time
 
     def compute_ssim_metric(self, chunkRepdPastSeq):
         """
         Compute SSIM and MAX-SSIM for predicted and gt sequences.
         """
-        mprops_factor = np.array(self.params.PRED_MPROPS_FACTOR)[:self.params.MPROPS_COUNT, np.newaxis, np.newaxis, np.newaxis]
         nsamples = len(self.pred_seq_list)
         _, _, _, pred_len = self.pred_seq_list[0].shape
         nsamples_ssim = np.zeros((nsamples, self.params.MPROPS_COUNT))
@@ -171,14 +199,11 @@ class MetricsGenerator:
         nsamples_ssim_over_time = np.zeros((nsamples, self.params.MPROPS_COUNT*pred_len))
         max_ssim_over_time = np.zeros((nsamples//chunkRepdPastSeq, self.params.MPROPS_COUNT*pred_len))
 
-        rho_range, vx_range, vy_range = self._get_mprops_ranges(mprops_factor, self.params.MPROPS_COUNT)
+        rho_range, vx_range, vy_range = self._get_mprops_ranges(self.params.MPROPS_COUNT)
 
         for i in range(nsamples):
             one_pred_seq = self.pred_seq_list[i].cpu().numpy()
             one_gt_seq = self.gt_seq_list[i].cpu().numpy()
-
-            one_pred_seq = one_pred_seq * mprops_factor
-            one_gt_seq = one_gt_seq * mprops_factor
 
             ssim_rho, ssim_vx, ssim_vy = 0, 0, 0
             for j in range(pred_len):
@@ -296,6 +321,26 @@ class MetricsGenerator:
         self.data_dict['RE_DENSITY'] = nsamples_re_density
         self.data_dict['MIN_RE_DENSITY'] = min_re_density
 
+    def compute_tv_metric(self):
+        """
+        Compute TOTAL VARIANCE metric.
+        """
+        nsamples = len(self.pred_seq_list)
+        _, _, _, pred_len = self.pred_seq_list[0].shape
+        nsamples_tv_otime = np.zeros((nsamples, self.params.MPROPS_COUNT*pred_len))
+
+        for i in range(nsamples):
+            one_pred_seq = self.pred_seq_list[i].cpu().numpy()
+            one_gt_seq   = self.gt_seq_list[i].cpu().numpy()
+
+            for j in range(pred_len):
+                for c in range(self.params.MPROPS_COUNT):
+                    tv_pred = self._compute_tv(one_pred_seq[c, :, :, j])
+                    tv_gt   = self._compute_tv(one_gt_seq[c,   :, :, j])
+                    nsamples_tv_otime[i, j, c] = np.abs(tv_pred - tv_gt)
+
+        self.data_dict['TV_OVER_TIME'] = nsamples_tv_otime
+
     # ----------------------------- Saving and Plotting ----------------------------- #
     def save_data_metrics(self, match, title, samples_per_batch):
         """
@@ -337,6 +382,8 @@ class MetricsGenerator:
 def compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch, arch="DDPM-UNet") :
     if metric in ['PSNR', 'ALL']:
         metricsGenerator.compute_psnr_metric(chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+    if metric in ['MASK_PSNR', 'ALL']:
+        metricsGenerator.compute_psnr_metric(chunkRepdPastSeq, cfg.MACROPROPS.EPS, masked_flag=True)
     if metric in ['SSIM', 'ALL']:
         metricsGenerator.compute_ssim_metric(chunkRepdPastSeq)
     if metric in ['MF_MSE', 'MF_BHATT', 'ALL']:
@@ -347,6 +394,8 @@ def compute_metrics(cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batc
          metricsGenerator.compute_energy_metric(chunkRepdPastSeq)
     if metric in ['RE_DENSITY', 'ALL']:
         metricsGenerator.compute_re_density_metric(chunkRepdPastSeq, cfg.MACROPROPS.EPS)
+    if metric in ['TV', 'ALL']:
+        metricsGenerator.compute_tv_metric()
 
     title = f"{cfg.DATASET.BATCH_SIZE * chunkRepdPastSeq * batches_to_use} samples in total (BS:{cfg.DATASET.BATCH_SIZE}, Rep:{chunkRepdPastSeq}, TB:{batches_to_use})-({arch})"
     metricsGenerator.save_data_metrics(match, title, samples_per_batch)

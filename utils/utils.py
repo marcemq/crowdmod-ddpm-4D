@@ -88,7 +88,9 @@ def get_test_dataset(cfg, filenames_and_numSamples, mprops_count, batch_size=Non
     return batched_test_data
 
 def get_output_dir(cfg, args):
-    if args.arch in ["DDPM-UNet", "DDPM-DiT"]:
+    if args.arch in ["DDPM-UNet"]:
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}div{cfg.MODEL.DDPM.DDIM_DIVIDER}_g{cfg.MODEL.DDPM.GUIDANCE}"
+    elif args.arch in ["DDPM-DiT"]:
         output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}_g{cfg.MODEL.DDPM.GUIDANCE}"
     elif args.arch in ["FM-UNet", "FM-DiT"]:
         output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FM.W_TYPE}_intg{cfg.MODEL.FM.INTEGRATOR}"
