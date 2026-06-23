@@ -252,7 +252,7 @@ def setup_predictions_plot(predictions, random_past_idx, random_past_samples, ra
     if plotType == "Static":
         macropropPlotter.plotStatic(seq_frames, match, plotMprop, plotPast)
     elif plotType == "Dynamic":
-        macropropPlotter.plotDynamic(seq_frames, seq_masked_psnr, seq_ssim, seq_tv)
+        macropropPlotter.plotDynamic(seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv))
 
     macropropPlotter.plotDensityOverTime(seq_frames)
 
