@@ -121,7 +121,7 @@ class MacropropPlotter:
         plt.axis("off")
         fig.savefig(figName, format='svg', bbox_inches='tight')
 
-    def plotDynamic(self, seq_frames, seq_psnr, seq_ssim, seq_tv):
+    def plotDynamic(self, seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv):
         j_indexes = self._get_j_indexes(plotPast="All")
         rho_min, rho_max = self._get_rho_limits(seq_frames, j_indexes)
         title =  f"Sampling macroprops with {self.arch} architecture\nPast Len:{self.past_len} and Future Len:{self.future_len}"
@@ -150,7 +150,7 @@ class MacropropPlotter:
             cbar.ax.tick_params(labelsize=10)
 
             plt.title(title, fontsize=12)
-            frame_text = ax.text(0.5, -0.17, '', transform=ax.transAxes, ha='center', fontsize=11, fontweight='bold')
+            frame_text = ax.text(0.5, -0.13, '', transform=ax.transAxes, ha='center', fontsize=11)
 
             def update(frame):
                 j = j_indexes[frame]
@@ -163,14 +163,19 @@ class MacropropPlotter:
                 # Update the frame number text and color accordingly
                 if (i + 1) % 2 == 0:
                     frame_text.set_color('black')
-                    psnr_text = ""
+                    mpsnr_text = ""
+                    mpsnr_text = ""
                     ssim_text = ""
                     tv_text   = ""
                 else:
                     seq_idx = i // 2
-                    psnr_text = (f'psnr_rho:{seq_psnr[seq_idx, frame, 0]:.3f}, '
-                                 f'psnr_vx:{seq_psnr[seq_idx, frame, 1]:.3f}, '
-                                 f'psnr_vy:{seq_psnr[seq_idx, frame, 2]:.3f}'
+                    psnr_text = (f'mpsnr_rho:{seq_psnr[seq_idx, frame, 0]:.3f}, '
+                                 f'mpsnr_vx:{seq_psnr[seq_idx, frame, 1]:.3f}, '
+                                 f'mpsnr_vy:{seq_psnr[seq_idx, frame, 2]:.3f}'
+                                )
+                    mpsnr_text = (f'mpsnr_rho:{seq_masked_psnr[seq_idx, frame, 0]:.3f}, '
+                                 f'mpsnr_vx:{seq_masked_psnr[seq_idx, frame, 1]:.3f}, '
+                                 f'mpsnr_vy:{seq_masked_psnr[seq_idx, frame, 2]:.3f}'
                                 )
                     ssim_text = (f'ssim_rho:{seq_ssim[seq_idx, frame, 0]:.3f}, '
                                  f'ssim_vx:{seq_ssim[seq_idx, frame, 1]:.3f}, '
@@ -184,7 +189,7 @@ class MacropropPlotter:
                         frame_text.set_color('black')
                     else:
                         frame_text.set_color('blue')
-                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text} \n {ssim_text} \n {tv_text}')
+                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text} \n {mpsnr_text} \n {ssim_text} \n {tv_text}')
 
             # Set up animation for the current sequence
             ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
@@ -239,14 +244,15 @@ def setup_predictions_plot(predictions, random_past_idx, random_past_samples, ra
         gt_seq_list.append(seq_gt)
 
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
-    seq_psnr = get_psnr_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list, macropropPlotter.eps)
+    seq_psnr        = get_psnr_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list, macropropPlotter.eps, masked_flag=False)
+    seq_masked_psnr = get_psnr_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list, macropropPlotter.eps, masked_flag=True)
     seq_ssim = get_ssim_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list)
     seq_tv   = get_tv_per_seq(pred_seq_list, gt_seq_list, mprops_count=3)
 
     if plotType == "Static":
         macropropPlotter.plotStatic(seq_frames, match, plotMprop, plotPast)
     elif plotType == "Dynamic":
-        macropropPlotter.plotDynamic(seq_frames, seq_psnr, seq_ssim, seq_tv)
+        macropropPlotter.plotDynamic(seq_frames, seq_masked_psnr, seq_ssim, seq_tv)
 
     macropropPlotter.plotDensityOverTime(seq_frames)
 
@@ -269,7 +275,7 @@ def get_ssim_per_seq(params, pred_seq_list, gt_seq_list):
 
     return nsamples_ssim
 
-def get_psnr_per_seq(params, pred_seq_list, gt_seq_list, eps):
+def get_psnr_per_seq(params, pred_seq_list, gt_seq_list, eps, masked_flag=False):
     nsamples = len(pred_seq_list)
     _, _, _, pred_len = pred_seq_list[0].shape
     nsamples_psnr = np.zeros((nsamples, pred_len, params.MPROPS_COUNT))
@@ -284,11 +290,16 @@ def get_psnr_per_seq(params, pred_seq_list, gt_seq_list, eps):
         for j in range(pred_len):
             gt_frame   = one_gt_seq[:, :, :, j]    # (3, ROWS, COLS)
             pred_frame = one_pred_seq[:, :, :, j]  # (3, ROWS, COLS)
-            mask = gt_frame[0] > 0.00001          # rho mask, shape (ROWS, COLS)
+            mask = gt_frame[0] > 0.00001           # rho mask, shape (ROWS, COLS)
 
-            psnr_frame_rho = _my_psnr_masked(gt_frame[0], pred_frame[0], rho_range, eps, mask)
-            psnr_frame_vx  = _my_psnr_masked(gt_frame[1], pred_frame[1], vx_range,  eps, mask)
-            psnr_frame_vy  = _my_psnr_masked(gt_frame[2], pred_frame[2], vy_range,  eps, mask)
+            if masked_flag:
+                psnr_frame_rho = _my_psnr_masked(gt_frame[0], pred_frame[0], rho_range, eps, mask)
+                psnr_frame_vx  = _my_psnr_masked(gt_frame[1], pred_frame[1], vx_range,  eps, mask)
+                psnr_frame_vy  = _my_psnr_masked(gt_frame[2], pred_frame[2], vy_range,  eps, mask)
+            else:
+                psnr_frame_rho = _my_psnr(gt_frame[0], pred_frame[0], rho_range, eps)
+                psnr_frame_vx  = _my_psnr(gt_frame[1], pred_frame[1], vx_range,  eps)
+                psnr_frame_vy  = _my_psnr(gt_frame[2], pred_frame[2], vy_range,  eps)
 
             nsamples_psnr[i, j] = (psnr_frame_rho, psnr_frame_vx, psnr_frame_vy)
 
