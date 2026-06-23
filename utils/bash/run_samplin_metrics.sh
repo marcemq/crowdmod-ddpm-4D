@@ -87,7 +87,7 @@ run_pair
 
 # 2. DDPM + sparsity guidance
 banner "DDPM — sparsity guidance"
-yq -i '.MODEL.DDPM.GUIDANCE = "sparsity"' "$config"
+yq -i '.MODEL.DDPM.GUIDANCE = "Sparsity"' "$config"
 run_pair
 
 git restore $config
@@ -98,7 +98,7 @@ for div in "${ddim_dividers[@]}"; do
     banner "DDIM  |  DDIM_DIV = $div  |  guidance = sparsity"
 
     yq -i '.MODEL.DDPM.SAMPLER   = "DDIM"'     "$config"
-    yq -i '.MODEL.DDPM.GUIDANCE  = "sparsity"' "$config"
+    yq -i '.MODEL.DDPM.GUIDANCE  = "Sparsity"' "$config"
     yq -i '.MODEL.DDPM.DDIM_DIVIDER = env(DIV)' "$config" DIV="$div"
 
     run_pair
