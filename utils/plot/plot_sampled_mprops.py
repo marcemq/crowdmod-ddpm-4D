@@ -150,7 +150,7 @@ class MacropropPlotter:
             cbar.ax.tick_params(labelsize=10)
 
             plt.title(title, fontsize=12)
-            frame_text = ax.text(0.5, -0.11, '', transform=ax.transAxes, ha='center', fontsize=10)
+            frame_text = ax.text(0.5, -0.24, '', transform=ax.transAxes, ha='center', fontsize=10)
 
             def update(frame):
                 j = j_indexes[frame]
