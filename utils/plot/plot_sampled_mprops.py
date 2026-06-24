@@ -163,17 +163,17 @@ class MacropropPlotter:
                 # Update the frame number text and color accordingly
                 if (i + 1) % 2 == 0:
                     frame_text.set_color('black')
-                    mpsnr_text = ""
-                    mpsnr_text = ""
-                    ssim_text = ""
-                    tv_text   = ""
+                    mask_psnr_text = ""
+                    psnr_text      = ""
+                    ssim_text      = ""
+                    tv_text        = ""
                 else:
                     seq_idx = i // 2
                     psnr_text = (f'mpsnr_rho:{seq_psnr[seq_idx, frame, 0]:.3f}, '
                                  f'mpsnr_vx:{seq_psnr[seq_idx, frame, 1]:.3f}, '
                                  f'mpsnr_vy:{seq_psnr[seq_idx, frame, 2]:.3f}'
                                 )
-                    mpsnr_text = (f'mpsnr_rho:{seq_masked_psnr[seq_idx, frame, 0]:.3f}, '
+                    mask_psnr_text = (f'mpsnr_rho:{seq_masked_psnr[seq_idx, frame, 0]:.3f}, '
                                  f'mpsnr_vx:{seq_masked_psnr[seq_idx, frame, 1]:.3f}, '
                                  f'mpsnr_vy:{seq_masked_psnr[seq_idx, frame, 2]:.3f}'
                                 )
@@ -189,7 +189,7 @@ class MacropropPlotter:
                         frame_text.set_color('black')
                     else:
                         frame_text.set_color('blue')
-                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text} \n {mpsnr_text} \n {ssim_text} \n {tv_text}')
+                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text} \n {mask_psnr_text} \n {ssim_text} \n {tv_text}')
 
             # Set up animation for the current sequence
             ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
