@@ -150,7 +150,7 @@ class MacropropPlotter:
             cbar.ax.tick_params(labelsize=10)
 
             plt.title(title, fontsize=12)
-            frame_text = ax.text(0.5, -0.13, '', transform=ax.transAxes, ha='center', fontsize=11)
+            frame_text = ax.text(0.5, -0.11, '', transform=ax.transAxes, ha='center', fontsize=10)
 
             def update(frame):
                 j = j_indexes[frame]
@@ -169,9 +169,9 @@ class MacropropPlotter:
                     tv_text        = ""
                 else:
                     seq_idx = i // 2
-                    psnr_text = (f'mpsnr_rho:{seq_psnr[seq_idx, frame, 0]:.3f}, '
-                                 f'mpsnr_vx:{seq_psnr[seq_idx, frame, 1]:.3f}, '
-                                 f'mpsnr_vy:{seq_psnr[seq_idx, frame, 2]:.3f}'
+                    psnr_text = (f'psnr_rho:{seq_psnr[seq_idx, frame, 0]:.3f}, '
+                                 f'psnr_vx:{seq_psnr[seq_idx, frame, 1]:.3f}, '
+                                 f'psnr_vy:{seq_psnr[seq_idx, frame, 2]:.3f}'
                                 )
                     mask_psnr_text = (f'mpsnr_rho:{seq_masked_psnr[seq_idx, frame, 0]:.3f}, '
                                  f'mpsnr_vx:{seq_masked_psnr[seq_idx, frame, 1]:.3f}, '
