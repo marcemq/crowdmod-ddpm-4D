@@ -93,7 +93,7 @@ run_pair
 git restore $config
 
 # 3. DDIM sweep
-for div in "${ddim_dividers[@]}"; do
+for div in "${ddim_div[@]}"; do
 
     banner "DDIM  |  DDIM_DIV = $div  |  guidance = sparsity"
 
