@@ -99,7 +99,7 @@ for div in "${ddim_div[@]}"; do
 
     yq -i '.MODEL.DDPM.SAMPLER   = "DDIM"'     "$config"
     yq -i '.MODEL.DDPM.GUIDANCE  = "Sparsity"' "$config"
-    yq -i '.MODEL.DDPM.DDIM_DIVIDER = env(DIV)' "$config" DIV="$div"
+    DIV="$div" yq -i '.MODEL.DDPM.DDIM_DIVIDER = env(DIV)' "$config"
 
     run_pair
     git restore "$config"
