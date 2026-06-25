@@ -38,6 +38,7 @@ class MetricsGenerator:
         self.params = metrics_params
         self.output_dir = output_dir
         self.data_dict = {name: None for name in self.HEADERS}
+        self.rho_range, self.vx_range, self.vy_range = self._get_mprops_ranges(self.params.MPROPS_COUNT)
 
     # ----------------------------- Internal Helpers ----------------------------- #
     def _get_mprops_ranges(self, mprops_count):
@@ -84,7 +85,7 @@ class MetricsGenerator:
         tmp_den = 10 * np.log10(err)
         return tmp_num - tmp_den
 
-    def _compute_tv(field):
+    def _compute_tv(self, field):
         # field shape: (ROWS, COLS)
         diff_rows = np.abs(np.diff(field, axis=0))  # vertical
         diff_cols = np.abs(np.diff(field, axis=1))  # horizontal
@@ -128,9 +129,7 @@ class MetricsGenerator:
         # psnr per each predicted frame in sequence
         nsamples_psnr_over_time = np.zeros((nsamples, self.params.MPROPS_COUNT*pred_len))
         max_psnr_over_time = np.zeros((nsamples//chunkRepdPastSeq, self.params.MPROPS_COUNT*pred_len))
-
-        rho_range, vx_range, vy_range = self._get_mprops_ranges(self.params.MPROPS_COUNT)
-        logging.info(f'Range of macroprops \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
+        logging.info(f'Range of macroprops \n rho:{self.rho_range:.4f}, vx:{self.vx_range:.4f} and vy:{self.vy_range:.4f}')
 
         for i in range(nsamples):
             one_pred_seq = self.pred_seq_list[i].cpu().numpy()
@@ -143,13 +142,13 @@ class MetricsGenerator:
                 mask = gt_frame[0] > 0.00001           # rho mask, shape (ROWS, COLS)
 
                 if masked_flag:
-                    psnr_frame_rho = self._my_psnr_masked(gt_frame[0], pred_frame[0], rho_range, eps, mask)
-                    psnr_frame_vx  = self._my_psnr_masked(gt_frame[1], pred_frame[1], vx_range,  eps, mask)
-                    psnr_frame_vy  = self._my_psnr_masked(gt_frame[2], pred_frame[2], vy_range,  eps, mask)
+                    psnr_frame_rho = self._my_psnr_masked(gt_frame[0], pred_frame[0], self.rho_range, eps, mask)
+                    psnr_frame_vx  = self._my_psnr_masked(gt_frame[1], pred_frame[1], self.vx_range,  eps, mask)
+                    psnr_frame_vy  = self._my_psnr_masked(gt_frame[2], pred_frame[2], self.vy_range,  eps, mask)
                 else:
-                    psnr_frame_rho = self._my_psnr(gt_frame[0], pred_frame[0], rho_range, eps)
-                    psnr_frame_vx  = self._my_psnr(gt_frame[1], pred_frame[1], vx_range,  eps)
-                    psnr_frame_vy  = self._my_psnr(gt_frame[2], pred_frame[2], vy_range,  eps)
+                    psnr_frame_rho = self._my_psnr(gt_frame[0], pred_frame[0], self.rho_range, eps)
+                    psnr_frame_vx  = self._my_psnr(gt_frame[1], pred_frame[1], self.vx_range,  eps)
+                    psnr_frame_vy  = self._my_psnr(gt_frame[2], pred_frame[2], self.vy_range,  eps)
 
                 psnr_rho += psnr_frame_rho
                 psnr_vx  += psnr_frame_vx
@@ -199,17 +198,15 @@ class MetricsGenerator:
         nsamples_ssim_over_time = np.zeros((nsamples, self.params.MPROPS_COUNT*pred_len))
         max_ssim_over_time = np.zeros((nsamples//chunkRepdPastSeq, self.params.MPROPS_COUNT*pred_len))
 
-        rho_range, vx_range, vy_range = self._get_mprops_ranges(self.params.MPROPS_COUNT)
-
         for i in range(nsamples):
             one_pred_seq = self.pred_seq_list[i].cpu().numpy()
             one_gt_seq = self.gt_seq_list[i].cpu().numpy()
 
             ssim_rho, ssim_vx, ssim_vy = 0, 0, 0
             for j in range(pred_len):
-                frame_rho = ssim(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
-                frame_vx  = ssim(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range)
-                frame_vy  = ssim(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range)
+                frame_rho = ssim(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=self.rho_range)
+                frame_vx  = ssim(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=self.vx_range)
+                frame_vy  = ssim(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=self.vy_range)
 
                 ssim_rho += frame_rho
                 ssim_vx  += frame_vx
@@ -336,7 +333,7 @@ class MetricsGenerator:
             for j in range(pred_len):
                 for c in range(self.params.MPROPS_COUNT):
                     tv_pred = self._compute_tv(one_pred_seq[c, :, :, j])
-                    tv_gt   = self._compute_tv(one_gt_seq[c,   :, :, j])
+                    tv_gt   = self._compute_tv(one_gt_seq[c, :, :, j])
                     nsamples_tv_otime[i, j, c] = np.abs(tv_pred - tv_gt)
 
         self.data_dict['TV_OVER_TIME'] = nsamples_tv_otime
