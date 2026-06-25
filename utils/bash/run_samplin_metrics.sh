@@ -1,6 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
+# ── CLI args ────────────────────────────────────────────────────────────────
+DS_IDX="${1:-1}"          # dataset index (default: 1 → HERMES-BO)
+MODEL_CKPT="${2:-000}"    # checkpoint tag  (default: 000)
+
 # ── Script usage ───────────────────────────────────────────────────────────-
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "Usage: $(basename "$0") [DS_IDX=1] [MODEL_CKPT=000]"
@@ -21,10 +25,6 @@ if [[ $DS_IDX -lt 0 || $DS_IDX -ge ${#configs_list[@]} ]]; then
     echo "Error: DS_IDX=$DS_IDX out of range (0–$((${#configs_list[@]}-1)))"
     exit 1
 fi
-
-# ── CLI args ────────────────────────────────────────────────────────────────
-DS_IDX="${1:-1}"          # dataset index (default: 1 → HERMES-BO)
-MODEL_CKPT="${2:-000}"    # checkpoint tag  (default: 000)
 
 # # ── Dataset config and files ──────────────────────────────────────────────
 configs_list=(
