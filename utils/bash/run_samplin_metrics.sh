@@ -20,12 +20,6 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     exit 0
 fi
 
-# Validate DS_IDX is in range
-if [[ $DS_IDX -lt 0 || $DS_IDX -ge ${#configs_list[@]} ]]; then
-    echo "Error: DS_IDX=$DS_IDX out of range (0–$((${#configs_list[@]}-1)))"
-    exit 1
-fi
-
 # # ── Dataset config and files ──────────────────────────────────────────────
 configs_list=(
     "config/ATC_ddpm.yml"
@@ -42,6 +36,12 @@ datafiles_list=(
     "config/HERMES-CR-90_datafiles.yml"
     "config/HERMES-CR-90-OBST_datafiles.yml"
 )
+
+# Validate DS_IDX is in range
+if [[ $DS_IDX -lt 0 || $DS_IDX -ge ${#configs_list[@]} ]]; then
+    echo "Error: DS_IDX=$DS_IDX out of range (0–$((${#configs_list[@]}-1)))"
+    exit 1
+fi
 
 config="${configs_list[$DS_IDX]}"
 datafiles="${datafiles_list[$DS_IDX]}"
