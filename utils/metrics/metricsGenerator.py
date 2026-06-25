@@ -324,7 +324,7 @@ class MetricsGenerator:
         """
         nsamples = len(self.pred_seq_list)
         _, _, _, pred_len = self.pred_seq_list[0].shape
-        nsamples_tv_otime = np.zeros((nsamples, self.params.MPROPS_COUNT*pred_len))
+        nsamples_tv_otime = np.zeros((nsamples, pred_len, self.params.MPROPS_COUNT))
 
         for i in range(nsamples):
             one_pred_seq = self.pred_seq_list[i].cpu().numpy()
