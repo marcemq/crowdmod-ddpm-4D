@@ -1,5 +1,5 @@
 import argparse
-import json
+import json, re
 import numpy as np
 import pandas as pd
 import matplotlib.lines as mlines
@@ -13,21 +13,39 @@ frame_cols = ['f6', 'f7', 'f8']
 frame_labels = ['f+1', 'f+2', 'f+3']
 x = np.arange(len(frame_labels))
 
-colors = {
-    'DDPM-UNet_sampDDPM_gNone':       '#3266ad',
-    'DDPM-UNet_sampDDPM_gSparsity':   "#14BABA",
-    'FM-UNet_Linear_intgEuler': '#3a9e75',
-    'ConvRNN_GRUCell':  '#c45c3a',
-    'ConvRNN_LSTMCell': '#8b5db8',
-}
+color_palette = [
+    '#3266ad', '#14BABA', '#3a9e75', '#c45c3a', '#8b5db8',
+    '#116555', '#d21f04', '#64df62', '#f0a500', '#9e2a7a',
+    '#2a7a9e', '#7a9e2a', '#e67e22', '#1abc9c', '#e74c3c',
+    '#9b59b6', '#f39c12', '#2ecc71', '#d35400', '#2980b9',
+    '#27ae60', '#8e44ad', '#c0392b', '#16a085', '#f1c40f',
+    '#7f8c8d', '#34495e', '#e8daef', '#a9cce3', '#a9dfbf',
+]
 
-short_model_names = {
-    'DDPM-UNet_sampDDPM_gNone':       'DIF-UNet_sDDPM_gN',
-    'DDPM-UNet_sampDDPM_gSparsity':   'DIF-UNet_sDDPM_gS',
-    'FM-UNet_Linear_intgEuler': 'FM-UNet_LpEi',
-    'ConvRNN_GRUCell':  'ConvGRU',
-    'ConvRNN_LSTMCell': 'ConvLSTM',
-}
+def make_short_name(long_name: str) -> str:
+    """Derive a short plot label from a long model directory name."""
+    s = long_name
+    s = s.replace('DDPM-UNet', 'DIF-U')
+    s = s.replace('FM-UNet',   'FM-U')
+    s = s.replace('ConvRNN',   'Conv')
+    s = re.sub(r'sDDIMdiv(\d+)', r'DDIM_D\1', s)
+    s = s.replace('gSparsity', 'gS')
+    s = s.replace('gNone',     'gN')
+    s = s.replace('GRUCell',   'GRU')
+    s = s.replace('LSTMCell',  'LSTM')
+    s = s.replace('Linear_intgEuler', 'LpEi')
+    s = re.sub(r'_+', '_', s).strip('_')
+    return s
+
+def build_colors(files: dict) -> dict:
+    """
+    Dynamically build { long_name: color } from files_dict keys.
+    """
+    model_keys = next(iter(files.values())).keys()  # any files_dict, same keys
+    return {
+        long_name: color_palette[i % len(color_palette)]
+        for i, long_name in enumerate(model_keys)
+    }
 
 def resolve_path(base: Path, json_path: str) -> Path:
     """Strip the leading directory from json_path (e.g. 'output_hermes_bn/...') and prepend base."""
@@ -61,7 +79,7 @@ def load_files_dicts(raw_metrics_dir: str) -> dict:
         with open(metrics_json_file) as f:
             m = json.load(f)
 
-        label = model_dir.name.replace('_modelE000', '')
+        label = model_dir.name.replace('_mE000', '')
         files_psnr_otime[label]     = resolve_path(base, m["PSNR_OVER_TIME"])
         files_ssim_otime[label]     = resolve_path(base, m["SSIM_OVER_TIME"])
         files_max_psnr_otime[label] = resolve_path(base, m["MAX_PSNR_OVER_TIME"])
@@ -84,7 +102,7 @@ def load_files_dicts(raw_metrics_dir: str) -> dict:
         'bhatt':          files_bhatt,
     }
 
-def metrics_comparison_models(title, files_dict, figure_name, ylim):
+def metrics_comparison_models(title, files_dict, figure_name, ylim, colors):
     stats = {}
     for name, path in files_dict.items():
         df = pd.read_csv(path)
@@ -127,7 +145,7 @@ def metrics_comparison_models(title, files_dict, figure_name, ylim):
                 capsize=4,
                 capthick=0.8,
                 elinewidth=0.8,
-                label=short_model_names[model],
+                label=make_short_name(model),
             )
 
         ax.set_title(var_label, fontsize=12, fontweight='medium', pad=8)
@@ -154,7 +172,7 @@ def metrics_comparison_models(title, files_dict, figure_name, ylim):
             markersize=3,
             markerfacecolor=color,
             markeredgecolor=color,
-            label=short_model_names[model],
+            label=make_short_name(model),
         )
         legend_handles.append(handle)
 
@@ -172,7 +190,7 @@ def metrics_comparison_models(title, files_dict, figure_name, ylim):
     plt.savefig(figure_name + '.pdf', bbox_inches='tight', dpi=300)
     plt.savefig(figure_name + '.png', bbox_inches='tight', dpi=300)
 
-def metrics_summary(title, files_dict, figure_name, ylabel, xlim=None, files_max_dict=None):
+def metrics_summary(title, files_dict, figure_name, ylabel, colors, xlim=None, files_max_dict=None):
     stats = {}
     for name, path in files_dict.items():
         df = pd.read_csv(path)
@@ -236,7 +254,7 @@ def metrics_summary(title, files_dict, figure_name, ylabel, xlim=None, files_max
         if pi == 0:
             ax.set_yticklabels([])
             for mi, (model, color) in enumerate(colors.items()):
-                ax.text(-0.02, mi, short_model_names[model],
+                ax.text(-0.02, mi, make_short_name(model),
                         transform=ax.get_yaxis_transform(),
                         ha='right', va='center',
                         fontsize=9, fontweight='bold', color=color)
@@ -249,7 +267,7 @@ def metrics_summary(title, files_dict, figure_name, ylabel, xlim=None, files_max
     plt.savefig(figure_name + '.pdf', bbox_inches='tight', dpi=300)
     plt.savefig(figure_name + '.png', bbox_inches='tight', dpi=300)
 
-def bathh_comparison_models(title, files_dict, figure_name, xlim=None):
+def bathh_comparison_models(title, files_dict, figure_name, colors, xlim=None):
     bhatt_variables  = ['BHATT_COEF_Hist_2D_Based', 'BHATT_COEF_Hist_1D_Based']
     bhatt_var_labels = ['BHATT_COEF_Hist_2D', 'BHATT_COEF_Hist_1D']
 
@@ -301,7 +319,7 @@ def bathh_comparison_models(title, files_dict, figure_name, xlim=None):
         if pi == 0:
             ax.set_yticklabels([])
             for mi, (model, color) in enumerate(colors.items()):
-                ax.text(-0.02, mi, short_model_names[model],
+                ax.text(-0.02, mi, make_short_name(model),
                         transform=ax.get_yaxis_transform(),
                         ha='right', va='center',
                         fontsize=9, fontweight='bold', color=color)
@@ -320,7 +338,12 @@ if __name__ == '__main__':
     parser.add_argument('--raw-metrics-dir', type=str, default='output_hermes_bo/',help='Raw metrics directory')
     args = parser.parse_args()
     files = load_files_dicts(args.raw_metrics_dir)
+    colors = build_colors(files)
 
+    print("Discovered models:")
+    for long_name, color in colors.items():
+        print(f"  {long_name:55s} → {make_short_name(long_name)}  ({color})")
+    
     out_dir = Path(args.raw_metrics_dir) / "comp_plots"
     create_directory(out_dir)
 
@@ -352,6 +375,7 @@ if __name__ == '__main__':
             files_dict=files_dict,
             figure_name=str(out_dir / f'{key}_{short_ds_names[args.dataset]}'),  # e.g. psnr_otime_bo
             ylim=ylim,
+            colors=colors
         )
 
     for key, (metric_label, files_dict, xlim) in plots_config.items():
@@ -360,10 +384,13 @@ if __name__ == '__main__':
             files_dict=files_dict,
             figure_name=str(out_dir / f'summary_{key}_{short_ds_names[args.dataset]}'),  # e.g. summary_psnr_bo
             ylabel=metric_label,
-            xlim=xlim
+            xlim=xlim,
+            colors=colors,
         )
 
     bathh_comparison_models(title=f"{args.dataset} -- BHATT COEF of motion feature summary",
                     files_dict=files['bhatt'],
                     figure_name=str(out_dir / f"summary_bhatt_{short_ds_names[args.dataset]}"),
-                    xlim=(0.2, 0.8))
+                    xlim=(0.2, 0.8),
+                    colors=colors,
+                )
