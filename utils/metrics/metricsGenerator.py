@@ -175,15 +175,15 @@ class MetricsGenerator:
             max_psnr_over_time[chunk_idx] = psnr_time_chunk.max(axis=0)
 
         if masked_flag:
-            self.data_dict['PSNR']= nsamples_psnr
-            self.data_dict['MAX_PSNR'] = max_psnr
-            self.data_dict["PSNR_OVER_TIME"] = nsamples_psnr_over_time
-            self.data_dict["MAX_PSNR_OVER_TIME"] = max_psnr_over_time
-        else:
             self.data_dict['MASK_PSNR']= nsamples_psnr
             self.data_dict['MAX_MASK_PSNR'] = max_psnr
             self.data_dict["MASK_PSNR_OVER_TIME"] = nsamples_psnr_over_time
             self.data_dict["MAX_MASK_PSNR_OVER_TIME"] = max_psnr_over_time
+        else:
+            self.data_dict['PSNR']= nsamples_psnr
+            self.data_dict['MAX_PSNR'] = max_psnr
+            self.data_dict["PSNR_OVER_TIME"] = nsamples_psnr_over_time
+            self.data_dict["MAX_PSNR_OVER_TIME"] = max_psnr_over_time
 
     def compute_ssim_metric(self, chunkRepdPastSeq):
         """
