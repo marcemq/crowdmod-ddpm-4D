@@ -14,12 +14,12 @@ frame_labels = ['f+1', 'f+2', 'f+3']
 x = np.arange(len(frame_labels))
 
 color_palette = [
-    '#3266ad', '#14BABA', '#3a9e75', '#c45c3a', '#8b5db8',
-    '#116555', '#d21f04', '#64df62', '#f0a500', '#9e2a7a',
-    '#2a7a9e', '#7a9e2a', '#e67e22', '#1abc9c', '#e74c3c',
-    '#9b59b6', '#f39c12', '#2ecc71', '#d35400', '#2980b9',
-    '#27ae60', '#8e44ad', '#c0392b', '#16a085', '#f1c40f',
-    '#7f8c8d', '#34495e', '#e8daef', '#a9cce3', '#a9dfbf',
+    '#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4',
+    '#42d4f4', '#f032e6', '#bfef45', '#fabed4', '#469990',
+    '#dcbeff', '#9a6324', '#fffac8', '#800000', '#aaffc3',
+    '#808000', '#ffd8b1', '#000075', '#a9a9a9', '#ffffff',
+    '#000000', '#e6beff', '#ff4500', '#00ced1', '#ff1493',
+    '#7fff00', '#dc143c', '#00bfff', '#ff8c00', '#adff2f',
 ]
 
 def make_short_name(long_name: str) -> str:
@@ -37,11 +37,19 @@ def make_short_name(long_name: str) -> str:
     s = re.sub(r'_+', '_', s).strip('_')
     return s
 
+def _ddim_sort_key(long_name: str):
+    """Sort DDIM models by divider number, non-DDIM models go last."""
+    match = re.search(r'sDDIMdiv(\d+)', long_name)
+    if match:
+        return (0, int(match.group(1)))
+    return (1, long_name)  # non-DDIM models after
+
 def build_colors(files: dict) -> dict:
     """
-    Dynamically build { long_name: color } from files_dict keys.
+    Dynamically build { long_name: color } from files_dict keys,
+    with DDIM models sorted by divider number first.
     """
-    model_keys = next(iter(files.values())).keys()  # any files_dict, same keys
+    model_keys = sorted(next(iter(files.values())).keys(), key=_ddim_sort_key)
     return {
         long_name: color_palette[i % len(color_palette)]
         for i, long_name in enumerate(model_keys)
@@ -59,15 +67,20 @@ def load_files_dicts(raw_metrics_dir: str) -> dict:
     """
     base = Path(raw_metrics_dir)
 
-    files_psnr_otime     = {}
-    files_ssim_otime     = {}
-    files_max_psnr_otime = {}
-    files_max_ssim_otime = {}
-    files_psnr           = {}
-    files_ssim           = {}
-    files_max_psnr       = {}
-    files_max_ssim       = {}
-    files_bhatt          = {}
+    files_psnr_otime      = {}
+    files_mpsnr_otime     = {}
+    files_ssim_otime      = {}
+    files_tv_otime        = {}
+    files_max_psnr_otime  = {}
+    files_max_mpsnr_otime = {}
+    files_max_ssim_otime  = {}
+    files_psnr            = {}
+    files_mpsnr           = {}
+    files_ssim            = {}
+    files_max_psnr        = {}
+    files_max_mpsnr       = {}
+    files_max_ssim        = {}
+    files_bhatt           = {}
 
     for model_dir in sorted(base.iterdir()):
         if not model_dir.is_dir():
@@ -80,26 +93,36 @@ def load_files_dicts(raw_metrics_dir: str) -> dict:
             m = json.load(f)
 
         label = model_dir.name.replace('_mE000', '')
-        files_psnr_otime[label]     = resolve_path(base, m["PSNR_OVER_TIME"])
-        files_ssim_otime[label]     = resolve_path(base, m["SSIM_OVER_TIME"])
-        files_max_psnr_otime[label] = resolve_path(base, m["MAX_PSNR_OVER_TIME"])
-        files_max_ssim_otime[label] = resolve_path(base, m["MAX_SSIM_OVER_TIME"])
-        files_psnr[label]           = resolve_path(base, m["PSNR"])
-        files_ssim[label]           = resolve_path(base, m["SSIM"])
-        files_max_psnr[label]       = resolve_path(base, m["MAX_PSNR"])
-        files_max_ssim[label]       = resolve_path(base, m["MAX_SSIM"])
-        files_bhatt[label]          = resolve_path(base, m["MF_BHATT_COEF"])
+        files_psnr_otime[label]      = resolve_path(base, m["PSNR_OVER_TIME"])
+        files_mpsnr_otime[label]     = resolve_path(base, m["MASK_PSNR_OVER_TIME"])
+        files_ssim_otime[label]      = resolve_path(base, m["SSIM_OVER_TIME"])
+        files_tv_otime[label]        = resolve_path(base, m["TV_OVER_TIME"])
+        files_max_psnr_otime[label]  = resolve_path(base, m["MAX_PSNR_OVER_TIME"])
+        files_max_mpsnr_otime[label] = resolve_path(base, m["MAX_MASK_PSNR_OVER_TIME"])
+        files_max_ssim_otime[label]  = resolve_path(base, m["MAX_SSIM_OVER_TIME"])
+        files_psnr[label]            = resolve_path(base, m["PSNR"])
+        files_mpsnr[label]           = resolve_path(base, m["MASK_PSNR"])
+        files_ssim[label]            = resolve_path(base, m["SSIM"])
+        files_max_psnr[label]        = resolve_path(base, m["MAX_PSNR"])
+        files_max_mpsnr[label]       = resolve_path(base, m["MAX_MASK_PSNR"])
+        files_max_ssim[label]        = resolve_path(base, m["MAX_SSIM"])
+        files_bhatt[label]           = resolve_path(base, m["MF_BHATT_COEF"])
 
     return {
-        'psnr_otime':     files_psnr_otime,
-        'ssim_otime':     files_ssim_otime,
-        'max_psnr_otime': files_max_psnr_otime,
-        'max_ssim_otime': files_max_ssim_otime,
-        'psnr':           files_psnr,
-        'ssim':           files_ssim,
-        'max_psnr':       files_max_psnr,
-        'max_ssim':       files_max_ssim,
-        'bhatt':          files_bhatt,
+        'psnr_otime':      files_psnr_otime,
+        'mpsnr_otime':     files_mpsnr_otime,
+        'ssim_otime':      files_ssim_otime,
+        'tv_otime':        files_tv_otime,
+        'max_psnr_otime':  files_max_psnr_otime,
+        'max_mpsnr_otime': files_max_mpsnr_otime,
+        'max_ssim_otime':  files_max_ssim_otime,
+        'psnr':            files_psnr,
+        'mpsnr':           files_mpsnr,
+        'ssim':            files_ssim,
+        'max_psnr':        files_max_psnr,
+        'max_mpsnr':       files_max_mpsnr,
+        'max_ssim':        files_max_ssim,
+        'bhatt':           files_bhatt,
     }
 
 def metrics_comparison_models(title, files_dict, figure_name, ylim, colors):
@@ -356,17 +379,22 @@ if __name__ == '__main__':
     }
 
     plots_config_otime = {
-        'psnr_otime':     ('PSNR',     files['psnr_otime'],     (10, 42)),
-        'ssim_otime':     ('SSIM',     files['ssim_otime'],     (0, 1)),
-        'max_psnr_otime': ('MAX-PSNR', files['max_psnr_otime'], (10, 42)),
-        'max_ssim_otime': ('MAX-SSIM', files['max_ssim_otime'], (0, 1)),
+        'psnr_otime':     ('PSNR',          files['psnr_otime'],      (10, 42)),
+        'mpsnr_otime':    ('MASK_PSNR',     files['mpsnr_otime'],     (10, 42)),
+        'ssim_otime':     ('SSIM',          files['ssim_otime'],      (0, 1)),
+        'tv_otime':       ('TV',            files['tv_otime'],        (0, 80)),
+        'max_psnr_otime': ('MAX_PSNR',      files['max_psnr_otime'],  (10, 42)),
+        'max_mpsnr_otime':('MAX_MASK_PSNR', files['max_mpsnr_otime'], (10, 42)),
+        'max_ssim_otime': ('MAX_SSIM',      files['max_ssim_otime'],  (0, 1)),
     }
 
     plots_config = {
-        'psnr':     ('PSNR',     files['psnr'],     (10, 40)),
-        'ssim':     ('SSIM',     files['ssim'],     (0.2, 1)),
-        'max_psnr': ('MAX-PSNR', files['max_psnr'], (10, 40)),
-        'max_ssim': ('MAX-SSIM', files['max_ssim'], (0.2, 1)),
+        'psnr':     ('PSNR',          files['psnr'],      (10, 40)),
+        'mpsnr':    ('MASK_PSNR',     files['mpsnr'],     (10, 40)),
+        'ssim':     ('SSIM',          files['ssim'],      (0.2, 1)),
+        'max_psnr': ('MAX_PSNR',      files['max_psnr'],  (10, 40)),
+        'max_mpsnr':('MAX_MASK_PSNR', files['max_mpsnr'], (10, 40)),
+        'max_ssim': ('MAX_SSIM',      files['max_ssim'],  (0.2, 1)),
     }
 
     for key, (metric_label, files_dict, ylim) in plots_config_otime.items():
