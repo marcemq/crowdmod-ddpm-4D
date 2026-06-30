@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.animation import PillowWriter
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from skimage.metrics import structural_similarity as ssim
 
 FIGSIZE_MAP = {
     "ATC":                  (7, 4),
@@ -25,6 +26,8 @@ class MacropropPlotter:
         self.sampler    = cfg.MODEL.DDPM.SAMPLER
         self.cols       = cfg.MACROPROPS.COLS
         self.rows       = cfg.MACROPROPS.ROWS
+        self.params     = cfg.METRICS
+        self.eps        = cfg.MACROPROPS.EPS
         self.arch       = arch
         self.velScale   = velScale
         self.velUncScale = velUncScale
@@ -118,11 +121,10 @@ class MacropropPlotter:
         plt.axis("off")
         fig.savefig(figName, format='svg', bbox_inches='tight')
 
-    def plotDynamic(self, seq_frames):
+    def plotDynamic(self, seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv):
         j_indexes = self._get_j_indexes(plotPast="All")
         rho_min, rho_max = self._get_rho_limits(seq_frames, j_indexes)
         title =  f"Sampling macroprops with {self.arch} architecture\nPast Len:{self.past_len} and Future Len:{self.future_len}"
-
         # Iterate over each sequence to create a GIF for each
         for i in range(self.samples4plot*2):
             figsize = FIGSIZE_MAP.get(self.dataset_name)
@@ -148,7 +150,7 @@ class MacropropPlotter:
             cbar.ax.tick_params(labelsize=10)
 
             plt.title(title, fontsize=12)
-            frame_text = ax.text(0.5, -0.15, '', transform=ax.transAxes, ha='center', fontsize=11, fontweight='bold')
+            frame_text = ax.text(0.5, -0.24, '', transform=ax.transAxes, ha='center', fontsize=10)
 
             def update(frame):
                 j = j_indexes[frame]
@@ -161,12 +163,33 @@ class MacropropPlotter:
                 # Update the frame number text and color accordingly
                 if (i + 1) % 2 == 0:
                     frame_text.set_color('black')
+                    mask_psnr_text = ""
+                    psnr_text      = ""
+                    ssim_text      = ""
+                    tv_text        = ""
                 else:
+                    seq_idx = i // 2
+                    psnr_text = (f'psnr_rho:{seq_psnr[seq_idx, frame, 0]:.3f}, '
+                                 f'psnr_vx:{seq_psnr[seq_idx, frame, 1]:.3f}, '
+                                 f'psnr_vy:{seq_psnr[seq_idx, frame, 2]:.3f}'
+                                )
+                    mask_psnr_text = (f'mpsnr_rho:{seq_masked_psnr[seq_idx, frame, 0]:.3f}, '
+                                 f'mpsnr_vx:{seq_masked_psnr[seq_idx, frame, 1]:.3f}, '
+                                 f'mpsnr_vy:{seq_masked_psnr[seq_idx, frame, 2]:.3f}'
+                                )
+                    ssim_text = (f'ssim_rho:{seq_ssim[seq_idx, frame, 0]:.3f}, '
+                                 f'ssim_vx:{seq_ssim[seq_idx, frame, 1]:.3f}, '
+                                 f'ssim_vy:{seq_ssim[seq_idx, frame, 2]:.3f}'
+                                )
+                    tv_text   = (f'tv_rho:{seq_tv[seq_idx, frame, 0]:.3f}, '
+                                 f'tv_vx:{seq_tv[seq_idx, frame, 1]:.3f}, '
+                                 f'tv_vy:{seq_tv[seq_idx, frame, 2]:.3f}'
+                                )
                     if frame < self.past_len:
                         frame_text.set_color('black')
                     else:
                         frame_text.set_color('blue')
-                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)}')
+                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text} \n {mask_psnr_text} \n {ssim_text} \n {tv_text}')
 
             # Set up animation for the current sequence
             ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
@@ -205,19 +228,146 @@ class MacropropPlotter:
 
 def setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter):
     seq_frames = []
+    pred_seq_list = []
+    gt_seq_list   = []
+
     for i in range(len(random_past_idx)):
         future_sample_pred = predictions[i]
         future_sample_gt = random_future_samples[i]
         past_sample = random_past_samples[i]
+
         seq_pred = torch.cat([past_sample, future_sample_pred], dim=3)
         seq_gt = torch.cat([past_sample, future_sample_gt], dim=3)
         seq_frames.append(seq_pred)
         seq_frames.append(seq_gt)
+        pred_seq_list.append(seq_pred)
+        gt_seq_list.append(seq_gt)
 
     match = re.search(r'TE\d+_PL\d+_FL\d+_CE\d+_VN[FT]', model_fullname)
+    seq_psnr        = get_psnr_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list, macropropPlotter.eps, masked_flag=False)
+    seq_masked_psnr = get_psnr_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list, macropropPlotter.eps, masked_flag=True)
+    seq_ssim = get_ssim_per_seq(macropropPlotter.params, pred_seq_list, gt_seq_list)
+    seq_tv   = get_tv_per_seq(pred_seq_list, gt_seq_list, mprops_count=3)
+
     if plotType == "Static":
         macropropPlotter.plotStatic(seq_frames, match, plotMprop, plotPast)
     elif plotType == "Dynamic":
-        macropropPlotter.plotDynamic(seq_frames)
+        macropropPlotter.plotDynamic(seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv)
 
     macropropPlotter.plotDensityOverTime(seq_frames)
+
+def get_ssim_per_seq(params, pred_seq_list, gt_seq_list):
+    nsamples = len(pred_seq_list)
+    _, _, _, pred_len = pred_seq_list[0].shape
+    nsamples_ssim = np.zeros((nsamples, pred_len, params.MPROPS_COUNT))
+    rho_range, vx_range, vy_range = _get_mprops_ranges(params.MPROPS_COUNT, gt_seq_list)
+
+    for i in range(nsamples):
+        one_pred_seq = pred_seq_list[i].cpu().numpy()
+        one_gt_seq = gt_seq_list[i].cpu().numpy()
+
+        for j in range(pred_len):
+            frame_ssim_rho = ssim(one_gt_seq[0, :, :, j], one_pred_seq[0, :, :, j], data_range=rho_range)
+            frame_ssim_vx  = ssim(one_gt_seq[1, :, :, j], one_pred_seq[1, :, :, j], data_range=vx_range)
+            frame_ssim_vy  = ssim(one_gt_seq[2, :, :, j], one_pred_seq[2, :, :, j], data_range=vy_range)
+
+            nsamples_ssim[i, j] = (frame_ssim_rho, frame_ssim_vx, frame_ssim_vy)
+
+    return nsamples_ssim
+
+def get_psnr_per_seq(params, pred_seq_list, gt_seq_list, eps, masked_flag=False):
+    nsamples = len(pred_seq_list)
+    _, _, _, pred_len = pred_seq_list[0].shape
+    nsamples_psnr = np.zeros((nsamples, pred_len, params.MPROPS_COUNT))
+
+    rho_range, vx_range, vy_range = _get_mprops_ranges(params.MPROPS_COUNT, gt_seq_list)
+    logging.info(f'Range of macroprops at sampling \n rho:{rho_range:.4f}, vx:{vx_range:.4f} and vy:{vy_range:.4f}')
+
+    for i in range(nsamples):
+        one_pred_seq = pred_seq_list[i].cpu().numpy()
+        one_gt_seq = gt_seq_list[i].cpu().numpy()
+
+        for j in range(pred_len):
+            gt_frame   = one_gt_seq[:, :, :, j]    # (3, ROWS, COLS)
+            pred_frame = one_pred_seq[:, :, :, j]  # (3, ROWS, COLS)
+            mask = gt_frame[0] > 0.00001           # rho mask, shape (ROWS, COLS)
+
+            if masked_flag:
+                psnr_frame_rho = _my_psnr_masked(gt_frame[0], pred_frame[0], rho_range, eps, mask)
+                psnr_frame_vx  = _my_psnr_masked(gt_frame[1], pred_frame[1], vx_range,  eps, mask)
+                psnr_frame_vy  = _my_psnr_masked(gt_frame[2], pred_frame[2], vy_range,  eps, mask)
+            else:
+                psnr_frame_rho = _my_psnr(gt_frame[0], pred_frame[0], rho_range, eps)
+                psnr_frame_vx  = _my_psnr(gt_frame[1], pred_frame[1], vx_range,  eps)
+                psnr_frame_vy  = _my_psnr(gt_frame[2], pred_frame[2], vy_range,  eps)
+
+            nsamples_psnr[i, j] = (psnr_frame_rho, psnr_frame_vx, psnr_frame_vy)
+
+    return nsamples_psnr
+
+def _get_mprops_ranges(mprops_count, gt_seq_list):
+        nsamples = len(gt_seq_list)
+        # Initialize arrays to store max and min values for each sample and each property
+        max_vals = np.zeros((nsamples, mprops_count))
+        min_vals = np.zeros((nsamples, mprops_count))
+
+        for i, one_gt_seq in enumerate(gt_seq_list):
+            # Convert the tensor to a numpy array and scale it
+            one_gt_seq = one_gt_seq.cpu().numpy()
+
+            # Calculate max and min values for rho, vx, and vy, storing them in columns
+            max_vals[i, 0], min_vals[i, 0] = one_gt_seq[0].max(), one_gt_seq[0].min()  # rho
+            max_vals[i, 1], min_vals[i, 1] = one_gt_seq[1].max(), one_gt_seq[1].min()  # vx
+            max_vals[i, 2], min_vals[i, 2] = one_gt_seq[2].max(), one_gt_seq[2].min()  # vy
+
+        # Compute the overall max and min values for each macro-property across all samples
+        global_max_rho, global_max_vx, global_max_vy= max_vals.max(axis=0)
+        global_min_rho, global_min_vx, global_min_vy= min_vals.min(axis=0)
+
+        # Compute the range for each macro-property
+        rho_range = float(global_max_rho - global_min_rho)
+        vx_range  = float(global_max_vx - global_min_vx)
+        vy_range  = float(global_max_vy - global_min_vy)
+
+        return rho_range, vx_range, vy_range
+
+def _my_psnr(y_gt, y_hat, data_range, eps):
+    # Compute mean squared error
+    err = np.mean((y_gt - y_hat) ** 2, dtype=np.float64)
+    # Prevent overflow and division by zero
+    err = max(err, eps)
+    # Calculate PSNR
+    tmp_num = 20 * np.log10(data_range)
+    tmp_den = 10 * np.log10(err)
+    psnr = tmp_num - tmp_den
+    return psnr
+
+def _my_psnr_masked(y_gt, y_hat, data_range, eps, mask):
+    err = np.mean((y_gt[mask] - y_hat[mask]) ** 2, dtype=np.float64)
+    err = max(err, eps)
+    tmp_num = 20 * np.log10(data_range)
+    tmp_den = 10 * np.log10(err)
+    return tmp_num - tmp_den
+
+def _compute_tv(field):
+    # field shape: (ROWS, COLS)
+    diff_rows = np.abs(np.diff(field, axis=0))  # vertical
+    diff_cols = np.abs(np.diff(field, axis=1))  # horizontal
+    return diff_rows.sum() + diff_cols.sum()
+
+def get_tv_per_seq(pred_seq_list, gt_seq_list, mprops_count):
+    nsamples = len(pred_seq_list)
+    _, _, _, pred_len = pred_seq_list[0].shape
+    nsamples_tv = np.zeros((nsamples, pred_len, mprops_count))
+
+    for i in range(nsamples):
+        one_pred_seq = pred_seq_list[i].cpu().numpy()
+        one_gt_seq   = gt_seq_list[i].cpu().numpy()
+
+        for j in range(pred_len):
+            for c in range(mprops_count):
+                tv_pred = _compute_tv(one_pred_seq[c, :, :, j])
+                tv_gt   = _compute_tv(one_gt_seq[c,   :, :, j])
+                nsamples_tv[i, j, c] = np.abs(tv_pred - tv_gt)
+
+    return nsamples_tv

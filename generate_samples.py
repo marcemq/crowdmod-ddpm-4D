@@ -42,22 +42,6 @@ def getGrid(x, cols, mode="RGB", showGrid=False):
         plt.show()
     return grid_img
 
-#def get_output_dir(cfg, args):
-#    if args.arch in ["DDPM-UNet", "DDPM-DiT"]:
-#        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}_g{cfg.MODEL.DDPM.GUIDANCE}"
-#    elif args.arch in ["FM-UNet", "FM-DiT"]:
-#        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FM.W_TYPE}_intg{cfg.MODEL.FM.INTEGRATOR}"
-#    elif args.arch == "ConvRNN":
-#        base_cell_name = cfg.MODEL.CONVRNN.CELL_CLASS[4:]
-#        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_{base_cell_name}_modelE{args.model_sample_to_load}"
-#    else:
-#        raise ValueError(f"Output dir creation: Architecture '{args.arch}' not supported.")
-#
-#    if args.from_fixed_past:
-#        output_dir += "/fixed_past_samples/"
-#
-#    return output_dir
-
 def generate_samples_ddpm(cfg, args, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, mprops_count):
     output_dir = get_output_dir(cfg, args)
     macropropPlotter = MacropropPlotter(cfg, output_dir, arch=args.arch, velScale=args.vel_scale, velUncScale=args.vel_unc_scale, headwidth=args.headwidth)

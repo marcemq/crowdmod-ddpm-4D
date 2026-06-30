@@ -88,13 +88,18 @@ def get_test_dataset(cfg, filenames_and_numSamples, mprops_count, batch_size=Non
     return batched_test_data
 
 def get_output_dir(cfg, args):
-    if args.arch in ["DDPM-UNet", "DDPM-DiT"]:
-        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_samp{cfg.MODEL.DDPM.SAMPLER}_g{cfg.MODEL.DDPM.GUIDANCE}"
+    if args.arch in ["DDPM-UNet"]:
+        if cfg.MODEL.DDPM.SAMPLER == "DDPM":
+            output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_mE{args.model_sample_to_load}_s{cfg.MODEL.DDPM.SAMPLER}_g{cfg.MODEL.DDPM.GUIDANCE}"
+        else:
+            output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_mE{args.model_sample_to_load}_s{cfg.MODEL.DDPM.SAMPLER}div{cfg.MODEL.DDPM.DDIM_DIVIDER}_g{cfg.MODEL.DDPM.GUIDANCE}"
+    elif args.arch in ["DDPM-DiT"]:
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_mE{args.model_sample_to_load}_s{cfg.MODEL.DDPM.SAMPLER}_g{cfg.MODEL.DDPM.GUIDANCE}"
     elif args.arch in ["FM-UNet", "FM-DiT"]:
-        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_modelE{args.model_sample_to_load}_{cfg.MODEL.FM.W_TYPE}_intg{cfg.MODEL.FM.INTEGRATOR}"
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_mE{args.model_sample_to_load}_{cfg.MODEL.FM.W_TYPE}_intg{cfg.MODEL.FM.INTEGRATOR}"
     elif args.arch == "ConvRNN":
         base_cell_name = cfg.MODEL.CONVRNN.CELL_CLASS[4:]
-        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_{base_cell_name}_modelE{args.model_sample_to_load}"
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_{base_cell_name}_mE{args.model_sample_to_load}"
     else:
         raise ValueError(f"Output dir creation: Architecture '{args.arch}' not supported.")
 
