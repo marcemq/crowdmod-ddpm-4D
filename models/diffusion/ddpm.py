@@ -223,7 +223,7 @@ class DDPM_model:
             if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity":
                 # Update the noisy image with the sparsity guidance
                 sparsity_grad = sparsityGradient(xnoisy, self.cfg, self.device)
-                xnoisy-= 0.004*sigma*sparsity_grad # 0.004*sqrt(1-alpha_t)
+                xnoisy-= self.cfg.MODEL.LAMBDA_DDPM.GUIDANCE*sigma*sparsity_grad # 0.004*sqrt(1-alpha_t)
             if self.cfg.MODEL.DDPM.GUIDANCE == "mass_preservation":
                 mass_preserv_grad = preservationMassNumericalGradientOptimal(xnoisy, self.device, delta_t=1.0, delta_l=1.0, eps=0.1)
                 xnoisy-= (1-alpha_t)*mass_preserv_grad
@@ -268,7 +268,7 @@ class DDPM_model:
                 # Update the noisy image with the sparsity guidance
                 sparsity_grad = sparsityGradient(xnoisy, self.cfg, self.device)
                 sigma = torch.sqrt(beta_t)
-                xnoisy-= 0.004*sigma*sparsity_grad
+                xnoisy-= self.cfg.MODEL.LAMBDA_DDPM.GUIDANCE*sigma*sparsity_grad
 
             beta_t                          = beta_t_prev
             sqrt_alpha_bar_t                = sqrt_alpha_bar_t_prev
