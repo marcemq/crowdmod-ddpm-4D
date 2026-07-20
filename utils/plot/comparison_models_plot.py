@@ -6,6 +6,7 @@ import matplotlib.lines as mlines
 from matplotlib import pyplot as plt
 from pathlib import Path
 from utils.utils import create_directory
+from utils.plot.plot_helpers import make_short_name, ddim_sort_key
 
 variables  = ['rho', 'vx', 'vy']
 var_labels = [r'$\rho$ (rho)', 'vx', 'vy']
@@ -22,34 +23,12 @@ color_palette = [
     '#7fff00', '#dc143c', '#00bfff', '#ff8c00', '#adff2f',
 ]
 
-def make_short_name(long_name: str) -> str:
-    """Derive a short plot label from a long model directory name."""
-    s = long_name
-    s = s.replace('DDPM-UNet', 'DIF-U')
-    s = s.replace('FM-UNet',   'FM-U')
-    s = s.replace('ConvRNN',   'Conv')
-    s = re.sub(r'sDDIMdiv(\d+)', r'DDIM_D\1', s)
-    s = s.replace('gSparsity', 'gS')
-    s = s.replace('gNone',     'gN')
-    s = s.replace('GRUCell',   'GRU')
-    s = s.replace('LSTMCell',  'LSTM')
-    s = s.replace('Linear_intgEuler', 'LpEi')
-    s = re.sub(r'_+', '_', s).strip('_')
-    return s
-
-def _ddim_sort_key(long_name: str):
-    """Sort DDIM models by divider number, non-DDIM models go last."""
-    match = re.search(r'sDDIMdiv(\d+)', long_name)
-    if match:
-        return (0, int(match.group(1)))
-    return (1, long_name)  # non-DDIM models after
-
 def build_colors(files: dict) -> dict:
     """
     Dynamically build { long_name: color } from files_dict keys,
     with DDIM models sorted by divider number first.
     """
-    model_keys = sorted(next(iter(files.values())).keys(), key=_ddim_sort_key)
+    model_keys = sorted(next(iter(files.values())).keys(), key=ddim_sort_key)
     return {
         long_name: color_palette[i % len(color_palette)]
         for i, long_name in enumerate(model_keys)
