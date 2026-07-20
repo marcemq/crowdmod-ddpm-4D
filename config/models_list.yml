@@ -1,0 +1,10 @@
+# Example --models for gif_comparison_viewer.py
+# List the exact model dir names, in the order you want them displayed.
+# Run with --list-models to get the exact names to copy in here.
+MODELS:
+  - "DDPM-UNet_mE000_sDDIMdiv2_gSparsity"
+  - "DDPM-UNet_mE000_sDDIMdiv4_gSparsity"
+  - "DDPM-UNet_mE000_sDDIMdiv5_gSparsity"
+  - "DDPM-UNet_mE000_sDDIMdiv10_gSparsity"
+  - "DDPM-UNet_mE000_sDDPM_gNone"
+  - "DDPM-UNet_mE000_sDDPM_gSparsity"
