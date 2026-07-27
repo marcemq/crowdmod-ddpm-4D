@@ -11,6 +11,71 @@ except ImportError:
 
 FRAMES_CACHE_DIRNAME = ".frames_cache"
 
+# Same figsize (width, height) in inches used when the GIFs themselves were
+# rendered (see MacropropPlotter/FIGSIZE_MAP in utils/plot/plot_sampled_mprops.py).
+# Since ani.save() writes the full figure canvas at figsize*dpi with no
+# bbox_inches='tight' cropping, each frame's PNG/GIF pixel aspect ratio is
+# exactly figsize[0]/figsize[1] -- used here only to keep each card's <img>
+# from distorting, not for sizing the grid itself.
+FIGSIZE_MAP = {
+    "ATC":                  (7, 4),
+    "ATC4TEST":             (7, 4),
+    "HERMES-BO":            (7, 4),
+    "HERMES-BN":            (4, 7),
+    "HERMES-CR-90":         (5, 4),
+    "HERMES-CR-90-OBST":    (5, 4),
+}
+DEFAULT_FIGSIZE = (7, 4)  # fallback when the dataset can't be detected/given
+
+# How many grid columns to use per dataset. Narrower/portrait sequences
+# (e.g. HERMES-BN) can afford more columns before getting hard to read;
+# wider ones (e.g. HERMES-BO) need fewer, larger columns.
+COLUMNS_MAP = {
+    "ATC":                  5,
+    "ATC4TEST":             5,
+    "HERMES-BO":            5,
+    "HERMES-BN":            7,
+    "HERMES-CR-90":         6,
+    "HERMES-CR-90-OBST":    6,
+}
+DEFAULT_NUM_COLS = 5
+
+GRID_GAP_PX = 14
+GRID_PADDING_PX = 40  # matches main { padding: 16px 20px ... } -> 20px each side
+MIN_CARD_FLOOR_PX = 120  # never let cards get smaller than this, however many columns are requested
+
+
+def min_card_width_px(num_cols: int, reference_width_px: int) -> int:
+    """
+    Work out the minmax() floor that makes `num_cols` columns fit exactly
+    at `reference_width_px` (a "typical" browser width), so the grid uses
+    auto-fit/minmax() -- fluid, reflows continuously as the window is
+    resized -- while still landing on the intended column count at a
+    normal desktop width, instead of a handful of fixed breakpoints.
+    """
+    usable = reference_width_px - GRID_PADDING_PX
+    width = (usable - GRID_GAP_PX * (num_cols - 1)) / num_cols
+    return max(MIN_CARD_FLOOR_PX, int(width))  # floor, so num_cols is guaranteed to fit, never n-1
+
+
+def _normalize(name: str) -> str:
+    return name.lower().replace('-', '_')
+
+
+def detect_dataset(main_dir_name: str):
+    """
+    Best-effort match of a dataset key against the main-models-dir folder
+    name (e.g. 'output_hermes_bn_004' -> 'HERMES-BN'). Longest keys are
+    checked first so 'HERMES-CR-90-OBST' wins over 'HERMES-CR-90' when
+    both would match.
+    """
+    norm_dir = _normalize(main_dir_name)
+    candidate_keys = set(FIGSIZE_MAP) | set(COLUMNS_MAP)
+    for key in sorted(candidate_keys, key=len, reverse=True):
+        if _normalize(key) in norm_dir:
+            return key
+    return None
+
 
 def discover_models_exp(raw_metrics_dir: Path, subfolder: str):
     """
@@ -284,7 +349,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(__MIN_CARD_PX__px, 1fr));
     gap: 14px;
   }
   .card {
@@ -319,6 +384,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     display: block;
     cursor: zoom-in;
     background: #fafbfc;
+    aspect-ratio: __IMG_ASPECT_W__ / __IMG_ASPECT_H__;
+    object-fit: contain;
   }
   .empty-note {
     color: var(--muted);
@@ -374,9 +441,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <button id="playPauseBtn" title="Play / pause (space)">&#9654;</button>
       <button id="nextFrameBtn" title="Next frame (&rarr;)">&#9197;</button>
       <span>Frame</span>
-      <input type="number" id="frameNumber" min="0" max="__NUM_FRAMES_MAX__" value="0">
+      <input type="number" id="frameNumber" min="1" max="__NUM_FRAMES_MAX__" value="1">
       <span>/ __NUM_FRAMES__</span>
-      <input type="range" id="frameSlider" min="0" max="__NUM_FRAMES_MAX__" value="0">
+      <input type="range" id="frameSlider" min="1" max="__NUM_FRAMES_MAX__" value="1">
     </div>
     <div class="gt-toggle">
       <input type="checkbox" id="gtToggle" checked>
@@ -407,6 +474,9 @@ const FRAMES_AVAILABLE = NUM_FRAMES > 0;
 const FRAMES_DIRNAME = "__FRAMES_DIRNAME__";
 const FRAME_INTERVAL_MS = 220;
 
+// state.frame is 0-based internally (matches frame_00.png, frame_01.png,
+// ... filenames on disk). The UI always displays frame + 1, since the
+// sequences themselves are captioned "Frame: 1/N" starting at 1.
 const state = {
   seq: 1,
   frame: 0,
@@ -532,17 +602,18 @@ function setSeq(n) {
   state.frame = 0;
   seqNumberEl.value = n;
   seqSliderEl.value = n;
-  frameNumberEl.value = 0;
-  frameSliderEl.value = 0;
+  frameNumberEl.value = 1;
+  frameSliderEl.value = 1;
   renderGrid();
 }
 
 function setFrame(n) {
+  // n is 0-based here; clamp against the 0-based range [0, NUM_FRAMES-1].
   if (!FRAMES_AVAILABLE) return;
   n = Math.max(0, Math.min(NUM_FRAMES - 1, n));
   state.frame = n;
-  frameNumberEl.value = n;
-  frameSliderEl.value = n;
+  frameNumberEl.value = n + 1;   // display 1-based
+  frameSliderEl.value = n + 1;   // display 1-based
   refreshImages();
 }
 
@@ -587,8 +658,9 @@ seqSliderEl.addEventListener('input', () => setSeq(parseInt(seqSliderEl.value, 1
 prevFrameBtn.addEventListener('click', () => stepFrame(-1));
 nextFrameBtn.addEventListener('click', () => stepFrame(1));
 playPauseBtn.addEventListener('click', togglePlayback);
-frameNumberEl.addEventListener('change', () => { pausePlayback(); setFrame(parseInt(frameNumberEl.value || '0', 10)); });
-frameSliderEl.addEventListener('input', () => { pausePlayback(); setFrame(parseInt(frameSliderEl.value, 10)); });
+// Displayed values are 1-based; convert back to 0-based before setFrame().
+frameNumberEl.addEventListener('change', () => { pausePlayback(); setFrame(parseInt(frameNumberEl.value || '1', 10) - 1); });
+frameSliderEl.addEventListener('input', () => { pausePlayback(); setFrame(parseInt(frameSliderEl.value, 10) - 1); });
 
 gtToggleEl.addEventListener('change', () => { state.showGT = gtToggleEl.checked; renderGrid(); });
 document.getElementById('selectAll').addEventListener('click', () => {
@@ -632,7 +704,8 @@ renderGrid();
 """
 
 
-def generate_html(models, num_seqs, num_frames, output_path: Path, title: str):
+def generate_html(models, num_seqs, num_frames, output_path: Path, title: str,
+                   min_card_px: int, img_aspect):
     html = HTML_TEMPLATE
     html = html.replace("__TITLE__", title)
 
@@ -648,9 +721,12 @@ def generate_html(models, num_seqs, num_frames, output_path: Path, title: str):
     )
     html = html.replace("__NUM_SEQS__", str(num_seqs))
     html = html.replace("__NUM_FRAMES__", str(num_frames))
-    html = html.replace("__NUM_FRAMES_MAX__", str(max(num_frames - 1, 0)))
+    html = html.replace("__NUM_FRAMES_MAX__", str(max(num_frames, 1)))
     html = html.replace("__FRAMES_DIRNAME__", FRAMES_CACHE_DIRNAME)
     html = html.replace("__MODELS_JSON__", json.dumps(models))
+    html = html.replace("__MIN_CARD_PX__", str(min_card_px))
+    html = html.replace("__IMG_ASPECT_W__", str(img_aspect[0]))
+    html = html.replace("__IMG_ASPECT_H__", str(img_aspect[1]))
     output_path.write_text(html, encoding="utf-8")
 
 
@@ -677,6 +753,18 @@ if __name__ == '__main__':
     parser.add_argument('--no-frame-extract', action='store_true',
                          help='Skip PNG frame extraction (faster to generate, but disables frame-by-frame '
                               'stepping; falls back to plain animated GIFs).')
+    parser.add_argument('--dataset', type=str, default=None, choices=sorted(set(FIGSIZE_MAP) | set(COLUMNS_MAP)),
+                         help='Dataset name, used to pick the GIF aspect ratio (FIGSIZE_MAP) and number of grid '
+                              'columns (COLUMNS_MAP) for that dataset. Auto-detected from --main-models-dir\'s '
+                              'folder name if not given (e.g. "output_hermes_bn_004" -> HERMES-BN).')
+    parser.add_argument('--columns', type=int, default=None,
+                         help='Target number of grid columns at --reference-width, overriding '
+                              'COLUMNS_MAP/auto-detection. The grid still reflows fluidly below/above that '
+                              'width (fewer columns on a narrow window, more on an ultra-wide one).')
+    parser.add_argument('--reference-width', type=int, default=1500,
+                         help='Browser width (px) at which the target column count is meant to land exactly. '
+                              'The grid uses auto-fit/minmax() under the hood, so it still reflows smoothly '
+                              'for any actual window size -- this just calibrates what "normal" looks like.')
     parser.add_argument('--title', type=str, default=None,
                          help='Page title. Defaults to the main-models-dir name.')
     args = parser.parse_args()
@@ -709,6 +797,26 @@ if __name__ == '__main__':
     if num_seqs == 0:
         raise SystemExit("Found model dirs but couldn't count any mprops_seq_N.gif files.")
 
+    dataset_name = args.dataset or detect_dataset(main_dir.name)
+    figsize = FIGSIZE_MAP.get(dataset_name, DEFAULT_FIGSIZE)
+    if dataset_name:
+        print(f"Dataset: {dataset_name} (figsize {figsize[0]}x{figsize[1]})")
+    else:
+        print(f"Could not auto-detect dataset from '{main_dir.name}'; using default figsize "
+              f"{DEFAULT_FIGSIZE[0]}x{DEFAULT_FIGSIZE[1]}. Pass --dataset to set it explicitly.")
+
+    if args.columns is not None:
+        num_cols = args.columns
+        print(f"Using explicit --columns={num_cols}.")
+    else:
+        num_cols = COLUMNS_MAP.get(dataset_name, DEFAULT_NUM_COLS)
+        print(f"Using {num_cols} grid columns "
+              + (f"for {dataset_name} (COLUMNS_MAP)." if dataset_name in COLUMNS_MAP
+                 else f"(default, dataset not in COLUMNS_MAP). Pass --columns to override."))
+    min_card_px = min_card_width_px(num_cols, args.reference_width)
+    print(f"Grid targets {num_cols} columns at a {args.reference_width}px-wide browser "
+          f"(minmax floor: {min_card_px}px) and reflows fluidly at other widths.")
+
     num_frames = 0
     if args.no_frame_extract:
         print("--no-frame-extract set: skipping PNG extraction, using animated GIFs only.")
@@ -727,7 +835,7 @@ if __name__ == '__main__':
     output_path = Path(args.output_html) if args.output_html else main_dir / "gif_comparison.html"
     title = args.title or f"Sampling comparison — {main_dir.name}"
 
-    generate_html(models, num_seqs, num_frames, output_path, title)
+    generate_html(models, num_seqs, num_frames, output_path, title, min_card_px, figsize)
 
     print(f"Loaded {len(models)} models, {num_seqs} sequences each:")
     for m in models:
@@ -736,4 +844,4 @@ if __name__ == '__main__':
     print("Open it directly in a browser (relative paths assume it stays next to the model folders).")
 
 # execution example:
-# python3 utils/plot/gif_comparison_viewer.py --main-models-dir=output_hermes_bn/ --models-file=config/models_list.yml
+# python3 utils/plot/gif_comparison_viewer.py --main-models-dir=output_hermes_bo/ --models-file=config/models_list.yml --columns=5
