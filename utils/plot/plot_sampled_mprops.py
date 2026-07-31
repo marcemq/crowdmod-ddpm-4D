@@ -20,6 +20,7 @@ class MacropropPlotter:
     def __init__(self, cfg, output_dir, arch="DDPM-UNet", velScale=0.5, velUncScale=1.0, headwidth=5):
         self.output_dir = output_dir
         self.dataset_name = cfg.DATASET.NAME
+        self.max_rho4plot = cfg.DATASET.MAX_RHO_4_PLOT
         self.samples4plot = cfg.MODEL.NSAMPLES4PLOTS
         self.past_len   = cfg.DATASET.PAST_LEN
         self.future_len = cfg.DATASET.FUTURE_LEN
@@ -77,7 +78,7 @@ class MacropropPlotter:
             figName= f"{self.output_dir}/mpSampling_{self.arch}_{match.group()}.svg"
 
         j_indexes = self._get_j_indexes(plotPast)
-        rho_min, rho_max = self._get_rho_limits(seq_frames, j_indexes)
+        rho_min, rho_max = 0, self.max_rho4plot
 
         static_samples4plot = 4
         fig, ax = plt.subplots(static_samples4plot*2, len(j_indexes), figsize=(10,8), facecolor='white')
@@ -123,7 +124,7 @@ class MacropropPlotter:
 
     def plotDynamic(self, seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv):
         j_indexes = self._get_j_indexes(plotPast="All")
-        rho_min, rho_max = self._get_rho_limits(seq_frames, j_indexes)
+        rho_min, rho_max = 0, self.max_rho4plot
         title =  f"Sampling macroprops with {self.arch} architecture\nPast Len:{self.past_len} and Future Len:{self.future_len}"
         # Iterate over each sequence to create a GIF for each
         for i in range(self.samples4plot*2):
