@@ -9,20 +9,21 @@ MODEL_CKPT="${2:-000}"    # checkpoint tag  (default: 000)
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "Usage: $(basename "$0") [DS_IDX=1] [MODEL_CKPT=000]"
     echo ""
-    echo "  DS_IDX     Dataset index (0=ATC, 1=HERMES-BO, 2=HERMES-BN,"
-    echo "                            3=HERMES-CR-90, 4=HERMES-CR-90-OBST)"
+    echo "  DS_IDX     Dataset index (0=ATC, 1=HERMES-T, 2=HERMES-BO, 3=HERMES-BN,"
+    echo "                            4=HERMES-CR-90, 5=HERMES-CR-90-OBST)"
     echo "  MODEL_CKPT Checkpoint tag string (e.g. 000, 050, 120)"
     echo ""
     echo "Examples:"
     echo "  $(basename "$0")          # HERMES-BO, ckpt 000"
     echo "  $(basename "$0") 0        # ATC, ckpt 000"
-    echo "  $(basename "$0") 3 050    # HERMES-CR-90, ckpt 050"
+    echo "  $(basename "$0") 4 050    # HERMES-CR-90, ckpt 050"
     exit 0
 fi
 
 # # ── Dataset config and files ──────────────────────────────────────────────
 configs_list=(
     "config/ATC_ddpm.yml"
+    "config/HERMES-T.yml"
     "config/HERMES-BO.yml"
     "config/HERMES-BN.yml"
     "config/HERMES-CR-90.yml"
@@ -31,6 +32,7 @@ configs_list=(
 
 datafiles_list=(
     "config/ATC_datafiles.yml"
+    "config/HERMES-T_datafiles.yml"
     "config/HERMES-BO_datafiles.yml"
     "config/HERMES-BN_datafiles.yml"
     "config/HERMES-CR-90_datafiles.yml"
