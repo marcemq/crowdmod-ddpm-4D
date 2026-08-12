@@ -20,7 +20,7 @@ FRAMES_CACHE_DIRNAME = ".frames_cache"
 FIGSIZE_MAP = {
     "ATC":                  (7, 4),
     "ATC4TEST":             (7, 4),
-    "HERMES-T":             (7, 4),
+    "HERMES-T":             (5, 4),
     "HERMES-BO":            (7, 4),
     "HERMES-BN":            (4, 7),
     "HERMES-CR-90":         (5, 4),
