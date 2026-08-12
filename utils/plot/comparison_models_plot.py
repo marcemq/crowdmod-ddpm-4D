@@ -336,7 +336,7 @@ def bathh_comparison_models(title, files_dict, figure_name, colors, xlim=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to create the comparison plots")
-    parser.add_argument('--dataset', type=str, default='HERMES-BO', help='Specific dataset name, options: ATC|HERMES-BO|HERMES-BN|HERMES-CR-90|HERMES-HERMES-CR-90-OBST')
+    parser.add_argument('--dataset', type=str, default='HERMES-BO', help='Specific dataset name, options: ATC|HERMES-T|HERMES-BO|HERMES-BN|HERMES-CR-90|HERMES-HERMES-CR-90-OBST')
     parser.add_argument('--raw-metrics-dir', type=str, default='output_hermes_bo/',help='Raw metrics directory')
     args = parser.parse_args()
     files = load_files_dicts(args.raw_metrics_dir)
@@ -351,6 +351,7 @@ if __name__ == '__main__':
 
     short_ds_names = {
         "ATC":             "atc",
+        "HERMES-T":        "t",
         "HERMES-BO":       "bo",
         "HERMES-BN":       "bn",
         "HERMES-CR-90":    "cr_90",
