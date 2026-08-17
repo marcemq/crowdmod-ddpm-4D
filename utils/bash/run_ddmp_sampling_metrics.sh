@@ -62,7 +62,7 @@ COMMON_FLAGS=(
     --arch="DDPM-UNet"
 )
 METRICS_FLAGS=(
-    --chunk-repd-past=20
+    --chunk-repd-past-seq=20
     --batches-to-use=20
 )
 

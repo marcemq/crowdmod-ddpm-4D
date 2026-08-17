@@ -7,7 +7,7 @@ MODEL_CKPT="${2:-000}"      # checkpoint tag  (default: 000)
 
 # ── Script usage ───────────────────────────────────────────────────────────-
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
-    echo "Usage: $(basename "$0") [DS_IDX=1] [MODEL_CKPT=000] [W_TYPE=Linear]"
+    echo "Usage: $(basename "$0") [DS_IDX=1] [MODEL_CKPT=000]"
     echo ""
     echo "  DS_IDX     Dataset index (0=ATC, 1=HERMES-T, 2=HERMES-BO, 3=HERMES-BN,"
     echo "                            4=HERMES-CR-90, 5=HERMES-CR-90-OBST)"
@@ -59,7 +59,7 @@ COMMON_FLAGS=(
     --arch="FM-UNet"
 )
 METRICS_FLAGS=(
-    --chunk-repd-past=20
+    --chunk-repd-past-seq=20
     --batches-to-use=20
 )
 
