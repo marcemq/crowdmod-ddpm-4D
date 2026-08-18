@@ -68,7 +68,7 @@ run_pair() {
     python3 generate_samples.py \
         "${COMMON_FLAGS[@]}" \
         --plot-type="Dynamic" \
-        --from-fixed-past=True
+        --from-fixed-past="True"
 
     python3 generate_metrics.py \
         "${COMMON_FLAGS[@]}" \
@@ -81,25 +81,25 @@ banner() { echo; echo "═══════════════════
 banner "Dataset : ${config}  |  Datafiles : ${datafiles}  |  Ckpt : ${MODEL_CKPT}"
 
 # 1. FM_linear + Euler
-banner "FM_Linear -- Euler integrator"
+banner "1. FM_Linear -- Euler integrator"
 run_pair
 
 # 2. FM_linear + Heun
-banner "FM_Linear -- Heun integrator"
+banner "2. FM_Linear -- Heun integrator"
 yq -i '.MODEL.FM.INTEGRATOR = "Heun"' "$config"
 run_pair
 
 git restore "$config"
 
 # 3. FM_Conic + Euler
-banner "FM_Conic -- Euler integrator"
+banner "3. FM_Conic -- Euler integrator"
 yq -i '.MODEL.FM.W_TYPE = "Conic"' "$config"
 run_pair
 
 git restore "$config"
 
 # 4. FM_Conic + Heun
-banner "FM_Conic -- Heun integrator"
+banner "4. FM_Conic -- Heun integrator"
 yq -i '.MODEL.FM.W_TYPE     = "Conic"' "$config"
 yq -i '.MODEL.FM.INTEGRATOR = "Heun"'  "$config"
 run_pair
