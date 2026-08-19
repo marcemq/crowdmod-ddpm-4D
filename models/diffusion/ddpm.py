@@ -390,3 +390,81 @@ class DDPM_model:
         logging.info(f'Computing metrics on predicted mprops sequences with {self.arch} model.')
         metricsGenerator = MetricsGenerator(pred_seq_list, gt_seq_list, self.cfg.METRICS, output_dir)
         compute_metrics(self.cfg, metricsGenerator, metric, chunkRepdPastSeq, match, batches_to_use, samples_per_batch, self.arch)
+
+    def explore_variability(self, batched_test_data, plotType, model_fullname, plotMprop, plotPast, samePastSeq, macropropPlotter, total_samples, chunkRepdPastSeq):
+        logging.info(f'Model full name:{model_fullname}')
+        create_directory(self.output_dir)
+
+        self.denoiser.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
+        self.denoiser.to(self.device)
+
+        timesteps = self.cfg.MODEL.DDPM.TIMESTEPS
+        backward_sampler = DDPM(timesteps=self.cfg.MODEL.DDPM.TIMESTEPS, scale=self.cfg.MODEL.DDPM.SCALE)
+        backward_sampler.to(self.device)
+        macropropPlotter.samples4plot = total_samples
+
+        count_batch = 0
+        pred_seq_list, gt_seq_list = [], []
+        # cicle over batched test data
+        for batch in batched_test_data:
+            logging.info("===" * 20)
+            logging.info(f'Computing sampling on batch:{count_batch+1}')
+            past_test, future_test = batch
+            past_test, future_test = past_test.float(), future_test.float()
+            past_test, future_test = past_test.to(device=self.device), future_test.to(device=self.device)
+            # Compute the idx of the past sequences to work on
+            if past_test.shape[0] < total_samples:
+                random_past_idx = torch.randperm(past_test.shape[0])
+            else:
+                random_past_idx = torch.randperm(past_test.shape[0])[:total_samples]
+
+            expanded_random_past_idx = torch.repeat_interleave(random_past_idx, chunkRepdPastSeq)
+            random_past_idx = expanded_random_past_idx[:total_samples]
+            random_past_samples = past_test[random_past_idx]
+            random_future_samples = future_test[random_past_idx]
+
+            if self.cfg.MODEL.DDPM.SAMPLER == "DDPM":
+                x, _  = self._generate_ddpm(random_past_samples, backward_sampler, total_samples) # AR review .cpu() call here
+                if self.cfg.MODEL.DDPM.GUIDANCE == "Sparsity" or self.cfg.MODEL.DDPM.GUIDANCE=="mass_preservation" or self.cfg.MODEL.DDPM.GUIDANCE == "None":
+                    l1 = torch.mean(torch.abs(x[:,0,:,:,:])).cpu().detach().numpy()
+                    logging.info(f'L1 norm {l1:.2f} using {self.cfg.MODEL.DDPM.GUIDANCE} guidance')
+            elif self.cfg.MODEL.DDPM.SAMPLER == "DDIM":
+                taus = np.arange(0, timesteps-1, self.cfg.MODEL.DDPM.DDIM_DIVIDER)
+                logging.info(f'Shape of subset taus:{taus.shape}')
+                x, _ = self._generate_ddim(random_past_samples, taus, backward_sampler, total_samples) # AR review .cpu() call here
+            else:
+                logging.info(f"{self.cfg.MODEL.DDPM.SAMPLER} sampler not supported")
+
+            future_samples_pred = x
+            for i in range(len(random_past_idx)):
+                pred_seq_list.append(future_samples_pred[i])
+                gt_seq_list.append(random_future_samples[i])
+
+            # We compute once
+            break
+
+        logging.info("===" * 20)
+        logging.info(f'Exploring variability on predicted mprops sequences with {self.arch} model.')
+
+        setup_predictions_plot(x, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
+        logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")
+
+        # === Reshape and compute stats across the repeats axis ===
+        C, R, Cc, F = mprops_count, self.cfg.MACROPROPS.ROWS, self.cfg.MACROPROPS.COLS, self.cfg.DATASET.FUTURE_LEN
+        predictions = x.reshape(n_past_seqs, n_repeats, C, R, Cc, F)
+ 
+        mean_pred = predictions.mean(dim=1)                    # (n_past_seqs, C, ROWS, COLS, F)
+        var_pred  = predictions.var(dim=1, unbiased=True)      # (n_past_seqs, C, ROWS, COLS, F)
+ 
+        save_path = f"{output_dir}/variability_data.pt"
+        torch.save({
+            'mean': mean_pred.cpu(),
+            'var': var_pred.cpu(),
+            'past': base_past_samples.cpu(),
+            'future_gt': base_future_samples.cpu(),
+            'n_repeats': n_repeats,
+        }, save_path)
+        logging.info(f"Saved mean/variance tensors to {save_path}")
+ 
+        return mean_pred, var_pred, base_past_samples, base_future_samples, output_dir
+             
