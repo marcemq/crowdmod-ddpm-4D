@@ -18,6 +18,7 @@ from models.diffusion.forward import get_from_idx
 from models.guidance import sparsityGradient, preservationMassNumericalGradientOptimal
 from utils.utils import save_checkpoint, init_wandb, create_directory
 from utils.plot.plot_sampled_mprops import setup_predictions_plot
+from utils.plot.plot_variability import plot_variability, plot_variability_summary
 from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
 
 class DDPM(ForwardSampler):
@@ -465,6 +466,6 @@ class DDPM_model:
             'n_repeats': n_repeats,
         }, save_path)
         logging.info(f"Saved mean/variance tensors to {save_path}")
- 
-        return mean_pred, var_pred, base_past_samples, base_future_samples, output_dir
-             
+
+        plot_variability(mean_pred, var_pred, past_seq, seq_idx, output_dir, cfg, velUncScale=3.0)
+        plot_variability_summary(var_pred, output_dir, cfg)          
