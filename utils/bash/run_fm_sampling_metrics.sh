@@ -51,6 +51,10 @@ datafiles="${datafiles_list[$DS_IDX]}"
 # ── Always restore config on exit (clean or crash) ──────────────────────────
 trap 'echo "[trap] Restoring $config"; git restore "$config"' EXIT
 
+# ── Integration steps to sweep ───────────────────────────────────────────────────
+euler_steps=(1000 950 900)
+heun_steps=(500 450 400)
+
 # ── Shared flags ─────────────────────────────────────────────────────────────
 COMMON_FLAGS=(
     --config-yml-file="$config"
@@ -81,27 +85,47 @@ banner() { echo; echo "═══════════════════
 banner "Dataset : ${config}  |  Datafiles : ${datafiles}  |  Ckpt : ${MODEL_CKPT}"
 
 # 1. FM_linear + Euler
-banner "1. FM_Linear -- Euler integrator"
-run_pair
+for euler_step in "${euler_steps[@]}"; do
+    banner "FM_Linear | Euler integrator with $euler_step step"
+    EULER_STEP="$euler_step" yq -i '.MODEL.FM.INTEGRATOR_STEPS.EULER = env(EULER_STEP)' "$config"
+
+    run_pair
+    git restore "$config"
+
+done
 
 # 2. FM_linear + Heun
-banner "2. FM_Linear -- Heun integrator"
-yq -i '.MODEL.FM.INTEGRATOR = "Heun"' "$config"
-run_pair
+for heun_step in "${heun_steps[@]}"; do
+    banner "FM_Linear | Heun integrator with $heun_step step"
+    yq -i '.MODEL.FM.INTEGRATOR = "Heun"' "$config"
+    HEUN_STEP="$heun_step" yq -i '.MODEL.FM.INTEGRATOR_STEPS.HEUN = env(HEUN_STEP)' "$config"
 
-git restore "$config"
+    run_pair
+    git restore "$config"
+
+done
 
 # 3. FM_Conic + Euler
-banner "3. FM_Conic -- Euler integrator"
-yq -i '.MODEL.FM.W_TYPE = "Conic"' "$config"
-run_pair
+for euler_step in "${euler_steps[@]}"; do
+    banner "FM_Conic | Euler integrator with $euler_step step"
+    yq -i '.MODEL.FM.W_TYPE = "Conic"' "$config"
+    EULER_STEP="$euler_step" yq -i '.MODEL.FM.INTEGRATOR_STEPS.EULER = env(EULER_STEP)' "$config"
 
-git restore "$config"
+    run_pair
+    git restore "$config"
+
+done
 
 # 4. FM_Conic + Heun
-banner "4. FM_Conic -- Heun integrator"
-yq -i '.MODEL.FM.W_TYPE     = "Conic"' "$config"
-yq -i '.MODEL.FM.INTEGRATOR = "Heun"'  "$config"
-run_pair
+for heun_step in "${heun_steps[@]}"; do
+    banner "FM_Conic | Heun integrator with $heun_step step"
+    yq -i '.MODEL.FM.W_TYPE     = "Conic"' "$config"
+    yq -i '.MODEL.FM.INTEGRATOR = "Heun"' "$config"
+    HEUN_STEP="$heun_step" yq -i '.MODEL.FM.INTEGRATOR_STEPS.HEUN = env(HEUN_STEP)' "$config"
 
-git restore "$config"
+    run_pair
+    git restore "$config"
+
+done
+
+banner "All runs completed."
