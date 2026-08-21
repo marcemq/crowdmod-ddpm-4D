@@ -408,7 +408,8 @@ class DDPM_model:
         past_test = past_test.float().to(self.device)
         future_test = future_test.float().to(self.device)
 
-        n_past_seqs = min(n_past_seqs, past_test.shape[0])
+        n_past_seqs = past_test.shape[0]
+        random_past_idx = torch.randperm(past_test.shape[0])
         expanded_random_past_idx = torch.repeat_interleave(random_past_idx, n_repeats)
         random_past_idx = expanded_random_past_idx[:total_samples]
         random_past_samples = past_test[random_past_idx]
@@ -448,7 +449,7 @@ class DDPM_model:
         logging.info(f"Saved mean/variance tensors to {save_path}")
 
         for seq_idx in range(n_past_seqs):
-            plot_variability(mean_pred, var_pred, random_past_samples, seq_idx, self.output_dir, self.cfg, velUncScale=vel_unc_scale)
+            plot_variability(mean_pred, var_pred, random_past_samples, seq_idx, self.output_dir, self.cfg, velUncScale=macropropPlotter.vel_unc_scale)
             plot_variability_summary(var_pred, self.output_dir, self.cfg)
 
         logging.info(f"All variability plots saved in {self.output_dir}")

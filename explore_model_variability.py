@@ -48,7 +48,7 @@ def model_variability_mgmt(args, cfg):
     batched_test_data = get_test_dataset(cfg, filenames_and_numSamples, mprops_count, from_fixed_past=args.from_fixed_past)
     
     # === Set total_samples ===
-    total_samples = batched_test_data.batch_size*args.n_repeat
+    total_samples = batched_test_data.batch_size*args.n_repeats
     logging.info(f"Total samples to predict:{total_samples}")
 
     # === Generate samples per architecture ===
