@@ -428,7 +428,7 @@ class DDPM_model:
         logging.info("===" * 20)
         logging.info(f'Computing prediction variability with {self.arch} model.')
 
-        setup_predictions_plot(x[:n_seqs_to_plot*n_repeats], random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
+        setup_predictions_plot(x[:n_seqs_to_plot*n_repeats], random_past_idx[:n_seqs_to_plot*n_repeats], random_past_samples[:n_seqs_to_plot*n_repeats], random_future_samples[:n_seqs_to_plot*n_repeats], model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
         logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")
 
         # === Reshape and compute stats across the repeats axis ===
