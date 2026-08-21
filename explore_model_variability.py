@@ -76,7 +76,7 @@ if __name__ == '__main__':
     parser.add_argument('--arch', type=str, default='DDPM-UNet', help='Architecture to be used, options: DDPM-UNet|DDPM-DiT|FM-UNet|FM-DiT|ConvRNN')
     parser.add_argument('--n-seqs-to-plot', type=int, default=5, help='Number of distinct predicted sequences to plot.')
     parser.add_argument('--n-repeats', type=int, default=20, help='Number of repeated predictions per past sequence.')
-    parser.add_argument('--from-fixed-past', type=bool, default=False, help='Compute model variability from fixed past seqs for comparison.')
+    parser.add_argument('--from-fixed-past', type=bool, default=True, help='Compute model variability from fixed past seqs for comparison.')
     args = parser.parse_args()
 
     cfg = getYamlConfig(args.config_yml_file, args.configList_yml_file)

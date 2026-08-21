@@ -402,7 +402,7 @@ class DDPM_model:
         timesteps = self.cfg.MODEL.DDPM.TIMESTEPS
         backward_sampler = DDPM(timesteps=self.cfg.MODEL.DDPM.TIMESTEPS, scale=self.cfg.MODEL.DDPM.SCALE)
         backward_sampler.to(self.device)
-        macropropPlotter.samples4plot = total_samples
+        macropropPlotter.samples4plot = n_seqs_to_plot
 
         past_test, future_test = next(iter(batched_test_data))
         past_test = past_test.float().to(self.device)
@@ -428,7 +428,7 @@ class DDPM_model:
         logging.info("===" * 20)
         logging.info(f'Computing prediction variability with {self.arch} model.')
 
-        setup_predictions_plot(x[:n_seqs_to_plot], random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
+        setup_predictions_plot(x[:n_seqs_to_plot*n_repeats], random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
         logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")
 
         # === Reshape and compute stats across the repeats axis ===
@@ -450,6 +450,7 @@ class DDPM_model:
 
         for seq_idx in range(n_past_seqs):
             plot_variability(mean_pred, var_pred, random_past_samples, seq_idx, self.output_dir, self.cfg, velUncScale=macropropPlotter.vel_unc_scale)
-            plot_variability_summary(var_pred, self.output_dir, self.cfg)
+
+        plot_variability_summary(var_pred, self.output_dir, self.cfg)
 
         logging.info(f"All variability plots saved in {self.output_dir}")
