@@ -3,6 +3,8 @@ import numpy as np
 import torch
 import pandas as pd
 from matplotlib import pyplot as plt
+import matplotlib.animation as animation
+from matplotlib.animation import PillowWriter
  
 from utils.plot.plot_sampled_mprops import FIGSIZE_MAP
  
@@ -26,14 +28,14 @@ def plot_repeated_predictions_gif(pred_seqs, gt_seq, seq_num, output_dir, cfg, a
     figsize = FIGSIZE_MAP.get(dataset_name, (7, 4))
     n_repeats = pred_seqs.shape[0]
     total_len = gt_seq.shape[-1]
- 
+
     pred_seqs_np = pred_seqs.cpu().numpy()
     gt_seq_np = gt_seq.cpu().numpy()
- 
+
     # Shared color scale across GT + all repeats, so density looks consistent
     # whether you're looking at the GT gif or flipping between prediction repeats.
     rho_max = max(gt_seq_np[0].max(), pred_seqs_np[:, 0].max())
- 
+
     def _save_gif(rho_frames, vel_frames, gif_name, title):
         fig, ax = plt.subplots(1, 1, figsize=figsize, facecolor='white')
         axp = ax.matshow(rho_frames[0], cmap=plt.cm.Blues, vmin=0, vmax=rho_max)
@@ -42,21 +44,21 @@ def plot_repeated_predictions_gif(pred_seqs, gt_seq, seq_num, output_dir, cfg, a
         cbar = fig.colorbar(axp, ax=ax, orientation='vertical', fraction=0.015)
         cbar.set_label('Density rho', fontsize=11)
         plt.title(title, fontsize=12)
- 
+
         def update(frame):
             axp.set_array(rho_frames[frame])
             Q.set_UVC(vel_frames[frame][0], -vel_frames[frame][1])
- 
+
         ani = animation.FuncAnimation(fig, update, frames=len(rho_frames), repeat=True)
         ani.save(f"{output_dir}/{gif_name}.gif", writer=PillowWriter(fps=fps))
         plt.close(fig)
         logging.info(f"Saved {output_dir}/{gif_name}.gif")
- 
+
     # --- One GT gif ---
     gt_rho = [gt_seq_np[0, :, :, t] for t in range(total_len)]
     gt_vel = [(gt_seq_np[1, :, :, t], gt_seq_np[2, :, :, t]) for t in range(total_len)]
     _save_gif(gt_rho, gt_vel, f"mprops_GT_seq_{seq_num}", f"GT | seq {seq_num} | {arch}")
- 
+
     # --- n_repeats prediction gifs, one per stochastic draw ---
     for r in range(n_repeats):
         pred_rho = [pred_seqs_np[r, 0, :, :, t] for t in range(total_len)]

@@ -438,10 +438,10 @@ class DDPM_model:
             past_block = random_past_samples[block][0]           # (Ch, R, C, PAST_LEN) -- same past for the whole block
             gt_block   = random_future_samples[block][0]         # (Ch, R, C, FUTURE_LEN) -- same GT for the whole block
             pred_block = x[block]                                  # (n_repeats, Ch, R, C, FUTURE_LEN)
- 
+
             gt_full_seq = torch.cat([past_block, gt_block], dim=-1)
             pred_full_seqs = torch.cat([past_block.unsqueeze(0).expand(n_repeats, -1, -1, -1, -1), pred_block], dim=-1)
- 
+
             plot_repeated_predictions_gif(pred_full_seqs, gt_full_seq, seq_idx + 1, self.output_dir, self.cfg, self.arch,
                                        velScale=macropropPlotter.velScale, headwidth=macropropPlotter.headwidth)
         logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")
