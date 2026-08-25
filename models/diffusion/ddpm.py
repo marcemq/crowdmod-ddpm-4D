@@ -402,7 +402,7 @@ class DDPM_model:
         timesteps = self.cfg.MODEL.DDPM.TIMESTEPS
         backward_sampler = DDPM(timesteps=self.cfg.MODEL.DDPM.TIMESTEPS, scale=self.cfg.MODEL.DDPM.SCALE)
         backward_sampler.to(self.device)
-        macropropPlotter.samples4plot = n_seqs_to_plot
+        macropropPlotter.samples4plot = n_seqs_to_plot*n_repeats
 
         past_test, future_test = next(iter(batched_test_data))
         past_test = past_test.float().to(self.device)
@@ -450,7 +450,7 @@ class DDPM_model:
         logging.info(f"Saved mean/variance tensors to {save_path}")
 
         for seq_idx in range(n_past_seqs):
-            plot_variability(mean_pred, var_pred, random_past_samples, seq_idx, self.output_dir, self.cfg, velUncScale=macropropPlotter.vel_unc_scale)
+            plot_variability(mean_pred, var_pred, random_past_samples, seq_idx, self.output_dir, self.cfg, velUncScale=macropropPlotter.velUncScale)
 
         plot_variability_summary(var_pred, self.output_dir, self.cfg)
 
