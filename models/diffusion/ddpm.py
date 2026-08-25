@@ -18,7 +18,7 @@ from models.diffusion.forward import get_from_idx
 from models.guidance import sparsityGradient, preservationMassNumericalGradientOptimal
 from utils.utils import save_checkpoint, init_wandb, create_directory
 from utils.plot.plot_sampled_mprops import setup_predictions_plot
-from utils.plot.plot_variability import plot_variability, plot_variability_summary
+from utils.plot.plot_variability import plot_variability, plot_variability_summary, plot_repeated_predictions_gif
 from utils.metrics.metricsGenerator import MetricsGenerator, compute_metrics
 
 class DDPM(ForwardSampler):
@@ -402,19 +402,21 @@ class DDPM_model:
         timesteps = self.cfg.MODEL.DDPM.TIMESTEPS
         backward_sampler = DDPM(timesteps=self.cfg.MODEL.DDPM.TIMESTEPS, scale=self.cfg.MODEL.DDPM.SCALE)
         backward_sampler.to(self.device)
-        macropropPlotter.samples4plot = n_seqs_to_plot*n_repeats
 
         past_test, future_test = next(iter(batched_test_data))
         past_test = past_test.float().to(self.device)
         future_test = future_test.float().to(self.device)
 
         n_past_seqs = past_test.shape[0]
+        n_seqs_to_plot = min(n_seqs_to_plot, n_past_seqs)
+
         random_past_idx = torch.randperm(past_test.shape[0])
         expanded_random_past_idx = torch.repeat_interleave(random_past_idx, n_repeats)
         random_past_idx = expanded_random_past_idx[:total_samples]
         random_past_samples = past_test[random_past_idx]
         random_future_samples = future_test[random_past_idx]
-        logging.info(f"Sampling {n_repeats} predictions each for {n_past_seqs} past sequences ({total_samples} total reverse-diffusion passes).")
+        logging.info(f"Sampling {n_repeats} predictions each for {n_past_seqs} past sequences "
+                 f"({total_samples} total samples); plotting {n_seqs_to_plot} of them.")
 
         if self.cfg.MODEL.DDPM.SAMPLER == "DDPM":
             x, _ = self._generate_ddpm(random_past_samples, backward_sampler, total_samples)
@@ -428,8 +430,20 @@ class DDPM_model:
         logging.info("===" * 20)
         logging.info(f'Computing prediction variability with {self.arch} model.')
 
-        # Plot only discting n_seqs_to_plot and its repeated predictions to see in gif comparison the variability of predictions
-        setup_predictions_plot(x[:n_seqs_to_plot*n_repeats], random_past_idx[:n_seqs_to_plot*n_repeats], random_past_samples[:n_seqs_to_plot*n_repeats], random_future_samples[:n_seqs_to_plot*n_repeats], model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
+        # --- GIF comparison: one GT + n_repeats predictions, per distinct sequence, plotted only for n_seqs_to_plot ---
+        # random_past_idx / random_past_samples / random_future_samples / x are ordered
+        # in blocks of n_repeats: [seq0_rep0..rep(n-1), seq1_rep0..rep(n-1), ...]
+        for seq_idx in range(n_seqs_to_plot):
+            block = slice(seq_idx * n_repeats, (seq_idx + 1) * n_repeats)
+            past_block = random_past_samples[block][0]           # (Ch, R, C, PAST_LEN) -- same past for the whole block
+            gt_block   = random_future_samples[block][0]         # (Ch, R, C, FUTURE_LEN) -- same GT for the whole block
+            pred_block = x[block]                                  # (n_repeats, Ch, R, C, FUTURE_LEN)
+ 
+            gt_full_seq = torch.cat([past_block, gt_block], dim=-1)
+            pred_full_seqs = torch.cat([past_block.unsqueeze(0).expand(n_repeats, -1, -1, -1, -1), pred_block], dim=-1)
+ 
+            plot_repeated_predictions_gif(pred_full_seqs, gt_full_seq, seq_idx + 1, self.output_dir, self.cfg, self.arch,
+                                       velScale=macropropPlotter.velScale, headwidth=macropropPlotter.headwidth)
         logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")
 
         # === Reshape and compute stats across the repeats axis ===
@@ -449,9 +463,11 @@ class DDPM_model:
         }, save_path)
         logging.info(f"Saved mean/variance tensors to {save_path}")
 
-        for seq_idx in range(n_past_seqs):
+        # Spatial variability heatmaps: only the n_seqs_to_plot sequences plotted above.
+        for seq_idx in range(n_seqs_to_plot):
             plot_variability(mean_pred, var_pred, random_past_samples, seq_idx, self.output_dir, self.cfg, velUncScale=macropropPlotter.velUncScale)
 
+        # Aggregate summary computed over ALL n_past_seqs, for better statistics than just the plotted subset.
         plot_variability_summary(var_pred, self.output_dir, self.cfg)
 
         logging.info(f"All variability plots saved in {self.output_dir}")

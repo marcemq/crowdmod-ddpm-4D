@@ -6,7 +6,63 @@ from matplotlib import pyplot as plt
  
 from utils.plot.plot_sampled_mprops import FIGSIZE_MAP
  
+def plot_repeated_predictions_gif(pred_seqs, gt_seq, seq_num, output_dir, cfg, arch,
+                                   velScale=0.5, headwidth=5, fps=2):
+    """
+    Render ONE ground-truth gif and n_repeats prediction gifs (one per stochastic
+    draw) for a single past sequence, all sharing a common density color scale
+    so frames are visually comparable across repeats and against GT.
  
+    Args:
+        pred_seqs: (n_repeats, C, ROWS, COLS, PAST_LEN+FUTURE_LEN) full sequences
+                   (past frames concatenated with each repeated prediction)
+        gt_seq:    (C, ROWS, COLS, PAST_LEN+FUTURE_LEN) single ground-truth full sequence
+        seq_num:   1-indexed sequence number, used in filenames
+        output_dir: where to save gifs
+        cfg: run config (dataset name / figsize)
+        arch: architecture name, shown in the title
+    """
+    dataset_name = cfg.DATASET.NAME
+    figsize = FIGSIZE_MAP.get(dataset_name, (7, 4))
+    n_repeats = pred_seqs.shape[0]
+    total_len = gt_seq.shape[-1]
+ 
+    pred_seqs_np = pred_seqs.cpu().numpy()
+    gt_seq_np = gt_seq.cpu().numpy()
+ 
+    # Shared color scale across GT + all repeats, so density looks consistent
+    # whether you're looking at the GT gif or flipping between prediction repeats.
+    rho_max = max(gt_seq_np[0].max(), pred_seqs_np[:, 0].max())
+ 
+    def _save_gif(rho_frames, vel_frames, gif_name, title):
+        fig, ax = plt.subplots(1, 1, figsize=figsize, facecolor='white')
+        axp = ax.matshow(rho_frames[0], cmap=plt.cm.Blues, vmin=0, vmax=rho_max)
+        Q = ax.quiver(vel_frames[0][0], -vel_frames[0][1], color='green', angles='xy',
+                      scale_units='xy', scale=velScale, minshaft=3.5, width=0.009, headwidth=headwidth)
+        cbar = fig.colorbar(axp, ax=ax, orientation='vertical', fraction=0.015)
+        cbar.set_label('Density rho', fontsize=11)
+        plt.title(title, fontsize=12)
+ 
+        def update(frame):
+            axp.set_array(rho_frames[frame])
+            Q.set_UVC(vel_frames[frame][0], -vel_frames[frame][1])
+ 
+        ani = animation.FuncAnimation(fig, update, frames=len(rho_frames), repeat=True)
+        ani.save(f"{output_dir}/{gif_name}.gif", writer=PillowWriter(fps=fps))
+        plt.close(fig)
+        logging.info(f"Saved {output_dir}/{gif_name}.gif")
+ 
+    # --- One GT gif ---
+    gt_rho = [gt_seq_np[0, :, :, t] for t in range(total_len)]
+    gt_vel = [(gt_seq_np[1, :, :, t], gt_seq_np[2, :, :, t]) for t in range(total_len)]
+    _save_gif(gt_rho, gt_vel, f"mprops_GT_seq_{seq_num}", f"GT | seq {seq_num} | {arch}")
+ 
+    # --- n_repeats prediction gifs, one per stochastic draw ---
+    for r in range(n_repeats):
+        pred_rho = [pred_seqs_np[r, 0, :, :, t] for t in range(total_len)]
+        pred_vel = [(pred_seqs_np[r, 1, :, :, t], pred_seqs_np[r, 2, :, :, t]) for t in range(total_len)]
+        _save_gif(pred_rho, pred_vel, f"mprops_seq_{seq_num}_rep{r+1}", f"Pred rep {r+1} | seq {seq_num} | {arch}")
+
 def plot_variability(mean_pred, var_pred, past_seq, seq_idx, output_dir, cfg,
                       velUncScale=3.0, rho_cmap='Blues', var_cmap='inferno'):
     """
