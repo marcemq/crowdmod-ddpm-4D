@@ -51,6 +51,10 @@ datafiles="${datafiles_list[$DS_IDX]}"
 # ── Always restore config on exit (clean or crash) ──────────────────────────
 trap 'echo "[trap] Restoring $config"; git restore "$config"' EXIT
 
+# ── Log file ───────────────────────────────────────────────────
+log_file="run_fm_$(date +%Y%m%d_%H%M%S).log"
+exec > >(tee -a "$log_file") 2>&1
+
 # ── Integration steps to sweep ───────────────────────────────────────────────────
 euler_steps=(1000 950 900)
 heun_steps=(500 450 400)
