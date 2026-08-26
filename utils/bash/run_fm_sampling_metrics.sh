@@ -52,7 +52,7 @@ datafiles="${datafiles_list[$DS_IDX]}"
 trap 'echo "[trap] Restoring $config"; git restore "$config"' EXIT
 
 # ── Log file ───────────────────────────────────────────────────
-log_file="run_fm_$(date +%Y%m%d_%H%M%S).log"
+log_file="logs/run_fm_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$log_file") 2>&1
 
 # ── Integration steps to sweep ───────────────────────────────────────────────────
