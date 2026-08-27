@@ -96,7 +96,8 @@ def get_output_dir(cfg, args):
     elif args.arch in ["DDPM-DiT"]:
         output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_mE{args.model_sample_to_load}_s{cfg.MODEL.DDPM.SAMPLER}_g{cfg.MODEL.DDPM.GUIDANCE}"
     elif args.arch in ["FM-UNet", "FM-DiT"]:
-        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_mE{args.model_sample_to_load}_{cfg.MODEL.FM.W_TYPE}_intg{cfg.MODEL.FM.INTEGRATOR}"
+        n_steps = getattr(cfg.MODEL.FM.INTEGRATOR_STEPS, cfg.MODEL.FM.INTEGRATOR.upper())
+        output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_mE{args.model_sample_to_load}_{cfg.MODEL.FM.W_TYPE}_i{cfg.MODEL.FM.INTEGRATOR}{n_steps}"
     elif args.arch == "ConvRNN":
         base_cell_name = cfg.MODEL.CONVRNN.CELL_CLASS[4:]
         output_dir = f"{cfg.DATA_FS.OUTPUT_DIR}/{args.arch}_{base_cell_name}_mE{args.model_sample_to_load}"

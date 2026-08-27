@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ── CLI args ────────────────────────────────────────────────────────────────
-DS_IDX="${1:-1}"          # dataset index (default: 1 → HERMES-BO)
+DS_IDX="${1:-1}"          # dataset index (default: 1 → HERMES-T)
 MODEL_CKPT="${2:-000}"    # checkpoint tag  (default: 000)
 
 # ── Script usage ───────────────────────────────────────────────────────────-
@@ -14,7 +14,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "  MODEL_CKPT Checkpoint tag string (e.g. 000, 050, 120)"
     echo ""
     echo "Examples:"
-    echo "  $(basename "$0")          # HERMES-BO, ckpt 000"
+    echo "  $(basename "$0")          # HERMES-T, ckpt 000"
     echo "  $(basename "$0") 0        # ATC, ckpt 000"
     echo "  $(basename "$0") 4 050    # HERMES-CR-90, ckpt 050"
     exit 0
@@ -62,7 +62,7 @@ COMMON_FLAGS=(
     --arch="DDPM-UNet"
 )
 METRICS_FLAGS=(
-    --chunk-repd-past=20
+    --chunk-repd-past-seq=20
     --batches-to-use=20
 )
 
