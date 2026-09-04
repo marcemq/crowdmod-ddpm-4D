@@ -56,8 +56,8 @@ log_file="logs/run_fm_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$log_file") 2>&1
 
 # ── Integration steps to sweep ───────────────────────────────────────────────────
-euler_steps=(1000 950 900)
-heun_steps=(500 450 400)
+euler_steps=(1000 800 600 500)
+heun_steps=(500 400 300 250)
 
 # ── Shared flags ─────────────────────────────────────────────────────────────
 COMMON_FLAGS=(
