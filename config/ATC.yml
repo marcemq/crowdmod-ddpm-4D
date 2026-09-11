@@ -110,16 +110,16 @@ MODEL:
       DROPOUT_RATE: 0.05
       TIME_EMB_MULT: 4 # 128
       TRAIN:
-        EPOCHS: 600
+        EPOCHS: 300
         SOLVER:
-          LR: 0.0001
+          LR: 0.0002
           WEIGHT_DECAY: 0.0001
           BETAS:
             - 0.9
             - 0.999
           SCHEDULER:
             FACTOR: 0.5       # halve LR on plateau
-            PATIENCE: 10      # wait 10 epochs of no improvement before reducing
+            PATIENCE: 5      # wait 10 epochs of no improvement before reducing
             MIN_LR: 0.0000001  # floor so LR never dies completely
     DIT:
       CONDITION: "Past"
