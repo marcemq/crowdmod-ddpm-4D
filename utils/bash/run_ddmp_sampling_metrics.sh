@@ -22,7 +22,7 @@ fi
 
 # # ── Dataset config and files ──────────────────────────────────────────────
 configs_list=(
-    "config/ATC_ddpm.yml"
+    "config/ATC.yml"
     "config/HERMES-T.yml"
     "config/HERMES-BO.yml"
     "config/HERMES-BN.yml"
