@@ -17,6 +17,16 @@ FIGSIZE_MAP = {
     "HERMES-CR-90-OBST":    (5, 4),
 }
 
+FRAME_TEXT_MAP = {
+    "ATC":                  (6, 4),
+    "ATC4TEST":             (6, 4),
+    "HERMES-T":             (5, 4),
+    "HERMES-BO":            (7, 4),
+    "HERMES-BN":            (4, 7),
+    "HERMES-CR-90":         (5, 4),
+    "HERMES-CR-90-OBST":    (5, 4),
+}
+
 class MacropropPlotter:
     def __init__(self, cfg, output_dir, arch="DDPM-UNet", velScale=0.5, velUncScale=1.0, headwidth=5):
         self.output_dir = output_dir
@@ -123,7 +133,7 @@ class MacropropPlotter:
         plt.axis("off")
         fig.savefig(figName, format='svg', bbox_inches='tight')
 
-    def plotDynamic(self, seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv):
+    def plotDynamic(self, seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv, show_metrics_bottom):
         j_indexes = self._get_j_indexes(plotPast="All")
         rho_min, rho_max = 0, self.max_rho4plot
         title =  f"Sampling macroprops with {self.arch}, P/F : {self.past_len}/{self.future_len}"
@@ -152,7 +162,10 @@ class MacropropPlotter:
             cbar.ax.tick_params(labelsize=10)
 
             plt.title(title, fontsize=12)
-            frame_text = ax.text(0.5, -0.24, '', transform=ax.transAxes, ha='center', fontsize=10)
+            if show_metrics_bottom:
+                frame_text = ax.text(0.5, -0.24, '', transform=ax.transAxes, ha='center', fontsize=10)
+            else:
+                frame_text = ax.text(0.5, -0.15, '', transform=ax.transAxes, ha='center', fontsize=11, fontweight='bold')
 
             def update(frame):
                 j = j_indexes[frame]
@@ -191,7 +204,10 @@ class MacropropPlotter:
                         frame_text.set_color('black')
                     else:
                         frame_text.set_color('blue')
-                frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text} \n {mask_psnr_text} \n {ssim_text} \n {tv_text}')
+                if show_metrics_bottom:
+                    frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text} \n {mask_psnr_text} \n {ssim_text} \n {tv_text}')
+                else:
+                    frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)}')
 
             # Set up animation for the current sequence
             ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
@@ -228,7 +244,7 @@ class MacropropPlotter:
 
         logging.info(f"Density plots saved in {self.output_dir}")
 
-def setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter):
+def setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter, show_metrics_bottom=False):
     seq_frames = []
     pred_seq_list = []
     gt_seq_list   = []
@@ -254,7 +270,7 @@ def setup_predictions_plot(predictions, random_past_idx, random_past_samples, ra
     if plotType == "Static":
         macropropPlotter.plotStatic(seq_frames, match, plotMprop, plotPast)
     elif plotType == "Dynamic":
-        macropropPlotter.plotDynamic(seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv)
+        macropropPlotter.plotDynamic(seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv, show_metrics_bottom)
 
     macropropPlotter.plotDensityOverTime(seq_frames)
 

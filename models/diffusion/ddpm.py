@@ -329,7 +329,7 @@ class DDPM_model:
             else:
                 logging.info(f"{self.cfg.MODEL.DDPM.SAMPLER} sampler not supported")
 
-            setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
+            setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter, self.cfg.METRICS.SHOW_METRICS_BOTTOM)
             logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")
             break
 
