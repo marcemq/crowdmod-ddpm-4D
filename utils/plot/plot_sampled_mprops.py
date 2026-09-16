@@ -152,11 +152,11 @@ class MacropropPlotter:
             # This is the minimum bottom edge; it may move upward for wide datasets.
             if show_metrics_bottom:
                 min_axes_bottom = 0.30
-                frame_text_y = 0.035
+                footer_gap = 0.04
                 frame_fontsize = 8
             else:
                 min_axes_bottom = 0.15
-                frame_text_y = 0.045
+                footer_gap = 0.06
                 frame_fontsize = 11
 
             # Set up the initial plot and color bar
@@ -181,12 +181,8 @@ class MacropropPlotter:
 
             # Crucially: calculate bottom after determining the final plot height.
             axes_bottom = axes_top - axes_height
-
-            axes_height = axes_width * fig_w / (data_aspect * fig_h)
-            max_axes_height = 0.84 - axes_bottom          # preserve title space
-            if axes_height > max_axes_height:
-                axes_height = max_axes_height
-                axes_width = axes_height * data_aspect * fig_h / fig_w
+            # Put the footer directly below the grid, rather than at the bottom of the whole GIF canvas.
+            frame_text_y = axes_bottom - footer_gap
 
             ax = fig.add_axes([left, axes_bottom, axes_width, axes_height])
             ax.set_aspect("equal", adjustable="box")
@@ -207,7 +203,7 @@ class MacropropPlotter:
 
             # Figure coordinates keep title and animation text independent of axes size.
             fig.text(0.5, 0.975, title, ha="center", va="top", fontsize=12)
-            frame_text = fig.text(0.5, frame_text_y, "", ha="center", va="bottom", fontsize=frame_fontsize, fontweight=None if show_metrics_bottom else "bold")
+            frame_text = fig.text(0.5, frame_text_y, "", ha="center", va="top", fontsize=frame_fontsize, fontweight=None if show_metrics_bottom else "bold")
 
             def update(frame):
                 j = j_indexes[frame]
