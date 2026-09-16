@@ -8,13 +8,14 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from skimage.metrics import structural_similarity as ssim
 
 FIGSIZE_MAP = {
-    "ATC":                  (6, 4),
-    "ATC4TEST":             (6, 4),
-    "HERMES-T":             (5, 4),
-    "HERMES-BO":            (7, 4),
-    "HERMES-BN":            (4, 7),
-    "HERMES-CR-90":         (5, 4),
-    "HERMES-CR-90-OBST":    (5, 4),
+    # Width includes the colorbar; height includes title + bottom text.
+    "ATC":               (6.2, 3.1),
+    "ATC4TEST":          (6.2, 3.1),
+    "HERMES-T":          (6.2, 3.4),
+    "HERMES-BO":         (7.2, 3.5),
+    "HERMES-BN":         (4.8, 7.0),
+    "HERMES-CR-90":      (6.2, 3.4),
+    "HERMES-CR-90-OBST": (6.2, 3.4),
 }
 
 FRAME_TEXT_MAP = {
@@ -143,8 +144,52 @@ class MacropropPlotter:
             if figsize is None:
                 logging.info("Dataset not supported!!!!")
                 continue
-            fig, ax = plt.subplots(1, 1, figsize=figsize, facecolor='white')
-            fig.subplots_adjust(hspace=0.1, wspace=0.1)
+
+            fig_w, fig_h = figsize
+            fig = plt.figure(figsize=figsize, dpi=120, facecolor="white")
+
+            # Use a fixed region for the bottom text.  This removes any dependence on
+            # a negative axes coordinate such as y=-0.24.
+            if show_metrics_bottom:
+                axes_bottom = 0.34
+                frame_text_y = 0.035
+                frame_fontsize = 8
+            else:
+                axes_bottom = 0.17
+                frame_text_y = 0.045
+                frame_fontsize = 11
+
+            left = 0.09
+            axes_width = 0.72                 # leave room for the colorbar on the right
+            data_aspect = rho.shape[1] / rho.shape[0]   # width / height, e.g. 36 / 12
+
+            axes_height = axes_width * fig_w / (data_aspect * fig_h)
+            max_axes_height = 0.84 - axes_bottom          # preserve title space
+            if axes_height > max_axes_height:
+                axes_height = max_axes_height
+                axes_width = axes_height * data_aspect * fig_h / fig_w
+
+            ax = fig.add_axes([left, axes_bottom, axes_width, axes_height])
+            ax.set_aspect("equal", adjustable="box")
+            ax.set_anchor("C")
+
+            # A dedicated colorbar axes prevents fig.colorbar(..., ax=ax) from resizing
+            # the main plot again.
+            cbar_gap = 0.025
+            cbar_width = 0.020
+            cax = fig.add_axes([left + axes_width + cbar_gap, axes_bottom, cbar_width, axes_height])
+            # Initial plot and color bar
+            axp = ax.matshow(rho, cmap=plt.cm.Blues, vmin=rho_min, vmax=rho_max)
+            Q = ax.quiver(mu_v[0], -mu_v[1],color="green",angles="xy",scale_units="xy",scale=self.velScale,minshaft=3.5,width=0.009,headwidth=self.headwidth)
+            # color bar setup
+            cbar = fig.colorbar(axp, cax=cax, orientation="vertical")
+            cbar.set_label("Density rho", fontsize=11)
+            cbar.ax.tick_params(labelsize=10)
+
+            # Figure coordinates keep title and animation text independent of axes size.
+            fig.text(0.5, 0.955, title, ha="center", va="top", fontsize=12)
+            frame_text = fig.text(0.5, frame_text_y, "", ha="center", va="bottom", fontsize=frame_fontsize, fontweight=None if show_metrics_bottom else "bold")
+
 
             # Set up the initial plot and color bar
             one_seq_img = seq_frames[i]
@@ -152,20 +197,6 @@ class MacropropPlotter:
             one_sample_img = one_seq_img[:, :, :, j].cpu()
             rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
             mu_v = torch.squeeze(one_sample_img[1:3, :, :], axis=0)
-
-            # Initial plot and color bar
-            axp = ax.matshow(rho, cmap=plt.cm.Blues, vmin=rho_min, vmax=rho_max)
-            Q = ax.quiver(mu_v[0, :, :], -mu_v[1, :, :], color='green', angles='xy', scale_units='xy', scale=self.velScale, minshaft=3.5, width=0.009, headwidth=self.headwidth)
-            # color bar setup
-            cbar = fig.colorbar(axp, ax=ax, orientation='vertical', fraction=0.015)
-            cbar.set_label('Density rho', fontsize=11)
-            cbar.ax.tick_params(labelsize=10)
-
-            plt.title(title, fontsize=12)
-            if show_metrics_bottom:
-                frame_text = ax.text(0.5, -0.24, '', transform=ax.transAxes, ha='center', fontsize=10)
-            else:
-                frame_text = ax.text(0.5, -0.15, '', transform=ax.transAxes, ha='center', fontsize=11, fontweight='bold')
 
             def update(frame):
                 j = j_indexes[frame]
@@ -210,10 +241,10 @@ class MacropropPlotter:
                     frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)}')
 
             # Set up animation for the current sequence
-            ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True)
+            ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True, blit=False)
             # Save each sequence as a separate GIF
             gif_name = f"{self.output_dir}/mprops_GT_seq_{i // 2 + 1}.gif" if (i + 1) % 2 == 0 else f"{self.output_dir}/mprops_seq_{i // 2 + 1}.gif"
-            ani.save(gif_name, writer=PillowWriter(fps=2))
+            ani.save(gif_name, writer=PillowWriter(fps=2), dpi=120, savefig_kwargs={"facecolor": "white"},)
             plt.close(fig)
 
     def plotDensityOverTime(self, seq_frames):
