@@ -159,6 +159,13 @@ class MacropropPlotter:
                 frame_text_y = 0.045
                 frame_fontsize = 11
 
+            # Set up the initial plot and color bar
+            one_seq_img = seq_frames[i]
+            j = j_indexes[0]
+            one_sample_img = one_seq_img[:, :, :, j].cpu()
+            rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
+            mu_v = torch.squeeze(one_sample_img[1:3, :, :], axis=0)
+
             left = 0.09
             axes_width = 0.72                 # leave room for the colorbar on the right
             data_aspect = rho.shape[1] / rho.shape[0]   # width / height, e.g. 36 / 12
@@ -189,14 +196,6 @@ class MacropropPlotter:
             # Figure coordinates keep title and animation text independent of axes size.
             fig.text(0.5, 0.955, title, ha="center", va="top", fontsize=12)
             frame_text = fig.text(0.5, frame_text_y, "", ha="center", va="bottom", fontsize=frame_fontsize, fontweight=None if show_metrics_bottom else "bold")
-
-
-            # Set up the initial plot and color bar
-            one_seq_img = seq_frames[i]
-            j = j_indexes[0]
-            one_sample_img = one_seq_img[:, :, :, j].cpu()
-            rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
-            mu_v = torch.squeeze(one_sample_img[1:3, :, :], axis=0)
 
             def update(frame):
                 j = j_indexes[frame]
