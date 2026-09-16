@@ -8,8 +8,8 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from skimage.metrics import structural_similarity as ssim
 
 FIGSIZE_MAP = {
-    "ATC":                  (7, 4),
-    "ATC4TEST":             (7, 4),
+    "ATC":                  (6, 4),
+    "ATC4TEST":             (6, 4),
     "HERMES-T":             (5, 4),
     "HERMES-BO":            (7, 4),
     "HERMES-BN":            (4, 7),
@@ -69,13 +69,13 @@ class MacropropPlotter:
 
     def plotStatic(self, seq_frames, match, plotMprop, plotPast):
         if plotMprop=="Density":
-            title = f"Sampling density with {self.arch} architecture\nPast Len:{self.past_len} and Future Len:{self.future_len}"
+            title = f"Sampling density with {self.arch}, P/F : {self.past_len}/{self.future_len}"
             figName = f"{self.output_dir}/mpSampling_{self.arch}_4Density_{match.group()}.svg"
         elif plotMprop=="Uncertainty":
-            title = f"Sampling uncertainty with {self.arch} architecture\nPast Len:{self.past_len} and Future Len:{self.future_len}"
+            title = f"Sampling uncertainty with {self.arch}, P/F : {self.past_len}/{self.future_len}"
             figName = f"{self.output_dir}/mpSampling_{self.arch}_4Uncertainty_{match.group()}.svg"
         else:
-            title =  f"Sampling macroprops with {self.arch} architecture\nPast Len:{self.past_len} and Future Len:{self.future_len}"
+            title =  f"Sampling macroprops with {self.arch}, P/F : {self.past_len}/{self.future_len}"
             figName= f"{self.output_dir}/mpSampling_{self.arch}_{match.group()}.svg"
 
         j_indexes = self._get_j_indexes(plotPast)
@@ -126,7 +126,7 @@ class MacropropPlotter:
     def plotDynamic(self, seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv):
         j_indexes = self._get_j_indexes(plotPast="All")
         rho_min, rho_max = 0, self.max_rho4plot
-        title =  f"Sampling macroprops with {self.arch} architecture\nPast Len:{self.past_len} and Future Len:{self.future_len}"
+        title =  f"Sampling macroprops with {self.arch}, P/F : {self.past_len}/{self.future_len}"
         # Iterate over each sequence to create a GIF for each
         for i in range(self.samples4plot*2):
             figsize = FIGSIZE_MAP.get(self.dataset_name)
