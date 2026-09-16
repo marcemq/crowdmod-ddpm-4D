@@ -9,8 +9,8 @@ from skimage.metrics import structural_similarity as ssim
 
 FIGSIZE_MAP = {
     # Width includes the colorbar; height includes title + bottom text.
-    "ATC":               (6.2, 2.4),
-    "ATC4TEST":          (6.2, 2.4),
+    "ATC":               (6.2, 2.3),
+    "ATC4TEST":          (6.2, 2.3),
     "HERMES-T":          (6.2, 3.4),
     "HERMES-BO":         (7.2, 3.5),
     "HERMES-BN":         (4.8, 7.0),
