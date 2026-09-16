@@ -9,8 +9,8 @@ from skimage.metrics import structural_similarity as ssim
 
 FIGSIZE_MAP = {
     # Width includes the colorbar; height includes title + bottom text.
-    "ATC":               (6.2, 3.1),
-    "ATC4TEST":          (6.2, 3.1),
+    "ATC":               (6.2, 2.4),
+    "ATC4TEST":          (6.2, 2.4),
     "HERMES-T":          (6.2, 3.4),
     "HERMES-BO":         (7.2, 3.5),
     "HERMES-BN":         (4.8, 7.0),
@@ -145,19 +145,23 @@ class MacropropPlotter:
                 logging.info("Dataset not supported!!!!")
                 continue
 
-            fig_w, fig_h = figsize
-            fig = plt.figure(figsize=figsize, dpi=120, facecolor="white")
-
-            # Reserve enough space below for the animated frame text.
-            # This is the minimum bottom edge; it may move upward for wide datasets.
+            # The metric version needs more vertical room than the frame-only version.
             if show_metrics_bottom:
+                # Keep the base FIGSIZE_MAP dimensions for the multi-line metrics block.
+                fig_w, fig_h = figsize
+                axes_top = 0.82
                 min_axes_bottom = 0.30
-                footer_gap = 0.04
+                footer_gap = 0.035
                 frame_fontsize = 8
             else:
-                min_axes_bottom = 0.15
-                footer_gap = 0.06
+                # ATC's wide 36x12 grid is compact in a 6.2 x 2.4 inch canvas.
+                fig_w, fig_h = figsize
+                axes_top = 0.79
+                min_axes_bottom = 0.12
+                footer_gap = 0.050
                 frame_fontsize = 11
+
+            fig = plt.figure(figsize=(fig_w, fig_h), dpi=120, facecolor="white")
 
             # Set up the initial plot and color bar
             one_seq_img = seq_frames[i]
@@ -166,14 +170,14 @@ class MacropropPlotter:
             rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
             mu_v = torch.squeeze(one_sample_img[1:3, :, :], axis=0)
 
-            # Keep the plot close to the title, regardless of its data aspect ratio.
-            axes_top = 0.86
+            # rho has shape (height, width), for example ATC: (12, 36).
             left = 0.09
-            axes_width = 0.72                 # leave room for the colorbar on the right
-            data_aspect = float(rho.shape[-1]) / float(rho.shape[-2])   # width / height, e.g. 36 / 12
+            axes_width = 0.72
+            data_aspect = float(rho.shape[-1]) / float(rho.shape[-2])
+
             axes_height = axes_width * fig_w / (data_aspect * fig_h)
 
-            # Do not allow the plot to overlap the bottom text area.
+            # Reduce the plot width only when a tall dataset would collide with its footer.
             max_axes_height = axes_top - min_axes_bottom
             if axes_height > max_axes_height:
                 axes_height = max_axes_height
@@ -186,7 +190,7 @@ class MacropropPlotter:
 
             ax = fig.add_axes([left, axes_bottom, axes_width, axes_height])
             ax.set_aspect("equal", adjustable="box")
-            ax.set_anchor("C")
+            #ax.set_anchor("C")
 
             # A dedicated colorbar axes prevents fig.colorbar(..., ax=ax) from resizing
             # the main plot again.
