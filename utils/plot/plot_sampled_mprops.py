@@ -148,14 +148,14 @@ class MacropropPlotter:
             fig_w, fig_h = figsize
             fig = plt.figure(figsize=figsize, dpi=120, facecolor="white")
 
-            # Use a fixed region for the bottom text.  This removes any dependence on
-            # a negative axes coordinate such as y=-0.24.
+            # Reserve enough space below for the animated frame text.
+            # This is the minimum bottom edge; it may move upward for wide datasets.
             if show_metrics_bottom:
-                axes_bottom = 0.34
+                min_axes_bottom = 0.30
                 frame_text_y = 0.035
                 frame_fontsize = 8
             else:
-                axes_bottom = 0.17
+                min_axes_bottom = 0.15
                 frame_text_y = 0.045
                 frame_fontsize = 11
 
@@ -166,9 +166,21 @@ class MacropropPlotter:
             rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
             mu_v = torch.squeeze(one_sample_img[1:3, :, :], axis=0)
 
+            # Keep the plot close to the title, regardless of its data aspect ratio.
+            axes_top = 0.86
             left = 0.09
             axes_width = 0.72                 # leave room for the colorbar on the right
-            data_aspect = rho.shape[1] / rho.shape[0]   # width / height, e.g. 36 / 12
+            data_aspect = float(rho.shape[-1]) / float(rho.shape[-2])   # width / height, e.g. 36 / 12
+            axes_height = axes_width * fig_w / (data_aspect * fig_h)
+
+            # Do not allow the plot to overlap the bottom text area.
+            max_axes_height = axes_top - min_axes_bottom
+            if axes_height > max_axes_height:
+                axes_height = max_axes_height
+                axes_width = axes_height * data_aspect * fig_h / fig_w
+
+            # Crucially: calculate bottom after determining the final plot height.
+            axes_bottom = axes_top - axes_height
 
             axes_height = axes_width * fig_w / (data_aspect * fig_h)
             max_axes_height = 0.84 - axes_bottom          # preserve title space
@@ -194,7 +206,7 @@ class MacropropPlotter:
             cbar.ax.tick_params(labelsize=10)
 
             # Figure coordinates keep title and animation text independent of axes size.
-            fig.text(0.5, 0.955, title, ha="center", va="top", fontsize=12)
+            fig.text(0.5, 0.975, title, ha="center", va="top", fontsize=12)
             frame_text = fig.text(0.5, frame_text_y, "", ha="center", va="bottom", fontsize=frame_fontsize, fontweight=None if show_metrics_bottom else "bold")
 
             def update(frame):
