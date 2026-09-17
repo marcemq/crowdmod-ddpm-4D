@@ -206,7 +206,7 @@ class MacropropPlotter:
             cbar.ax.tick_params(labelsize=10)
 
             # Figure coordinates keep title and animation text independent of axes size.
-            fig.text(0.5, 0.999, title, ha="center", va="top", fontsize=12)
+            fig.text(0.5, 0.999, title, ha="center", va="top", fontsize=13)
             frame_text = fig.text(0.5, frame_text_y, "", ha="center", va="top", fontsize=frame_fontsize, fontweight=None if show_metrics_bottom else "bold")
 
             def update(frame):
