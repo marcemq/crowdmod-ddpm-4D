@@ -29,6 +29,28 @@ FRAME_TEXT_MAP = {
 }
 
 class MacropropPlotter:
+    # ---- Layout constants (inches) ----
+    CELL_SIZE   = 0.15   # inches per grid cell — single knob for overall resolution/density
+    MIN_AXES_W, MIN_AXES_H = 2.2, 1.5
+    MAX_AXES_W, MAX_AXES_H = 6.5, 4.5
+
+    LEFT_MARGIN    = 0.55   # row tick labels
+    CBAR_GAP       = 0.10
+    CBAR_WIDTH     = 0.18
+    CBAR_LABEL_PAD = 0.55   # "Density rho" label + colorbar ticks
+
+    TITLE_FONTSIZE    = 13
+    TITLE_TOP_PAD     = 0.06
+    TITLE_LINE_H      = 0.24
+    TITLE_BOTTOM_GAP  = 0.06
+
+    FOOTER_TOP_GAP        = 0.05
+    FOOTER_BOTTOM_PAD     = 0.04
+    FOOTER_FONTSIZE_SINGLE, FOOTER_FONTSIZE_MULTI = 11, 8
+    FOOTER_LINE_H_SINGLE,   FOOTER_LINE_H_MULTI   = 0.22, 0.15
+
+    FONT_CHAR_WIDTH_EM = 0.5
+
     def __init__(self, cfg, output_dir, arch="DDPM-UNet", velScale=0.5, velUncScale=1.0, headwidth=5):
         self.output_dir = output_dir
         self.dataset_name = cfg.DATASET.NAME
@@ -77,6 +99,19 @@ class MacropropPlotter:
                 rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
                 rho_max = max(rho_max, torch.max(rho).item())
         return rho_min, rho_max
+
+    def _estimate_text_width_in(self, text, fontsize):
+        return len(text) * fontsize / 72.0 * self.FONT_CHAR_WIDTH_EM
+
+    def _fit_axes_size_in(self, rows, cols):
+        """Axes size in inches, exactly matching the grid's aspect ratio
+        (so ax.set_aspect('equal') has no leftover slack inside its box),
+        clamped to a sane visual range."""
+        axes_w, axes_h = cols * self.CELL_SIZE, rows * self.CELL_SIZE
+        shrink = min(self.MAX_AXES_W / axes_w, self.MAX_AXES_H / axes_h, 1.0)
+        axes_w, axes_h = axes_w * shrink, axes_h * shrink
+        grow = max(self.MIN_AXES_W / axes_w, self.MIN_AXES_H / axes_h, 1.0)
+        return axes_w * grow, axes_h * grow
 
     def plotStatic(self, seq_frames, match, plotMprop, plotPast):
         if plotMprop=="Density":
@@ -135,6 +170,98 @@ class MacropropPlotter:
         fig.savefig(figName, format='svg', bbox_inches='tight')
 
     def plotDynamic(self, seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv, show_metrics_bottom):
+        j_indexes = self._get_j_indexes(plotPast="All")
+        rho_min, rho_max = 0, self.max_rho4plot
+
+        # ---- Layout computed once — identical for every GIF in this batch ----
+        axes_w, axes_h = self._fit_axes_size_in(self.rows, self.cols)
+        fig_w = self.LEFT_MARGIN + axes_w + self.CBAR_GAP + self.CBAR_WIDTH + self.CBAR_LABEL_PAD
+
+        title_full = f"Sampling macroprops with {self.arch}, P/F : {self.past_len}/{self.future_len}"
+        if self._estimate_text_width_in(title_full, self.TITLE_FONTSIZE) <= fig_w - 0.15:
+            title_lines = [title_full]
+        else:
+            title_lines = [f"Sampling macroprops with {self.arch}",
+                            f"P/F : {self.past_len}/{self.future_len}"]
+        title_block_h = self.TITLE_TOP_PAD + len(title_lines) * self.TITLE_LINE_H
+
+        footer_fontsize = self.FOOTER_FONTSIZE_MULTI if show_metrics_bottom else self.FOOTER_FONTSIZE_SINGLE
+        footer_line_h   = self.FOOTER_LINE_H_MULTI if show_metrics_bottom else self.FOOTER_LINE_H_SINGLE
+        n_footer_lines  = 5 if show_metrics_bottom else 1
+        footer_block_h  = n_footer_lines * footer_line_h + self.FOOTER_BOTTOM_PAD
+
+        fig_h = title_block_h + self.TITLE_BOTTOM_GAP + axes_h + self.FOOTER_TOP_GAP + footer_block_h
+
+        axes_rect = [self.LEFT_MARGIN / fig_w,
+                     (footer_block_h + self.FOOTER_TOP_GAP) / fig_h,
+                     axes_w / fig_w, axes_h / fig_h]
+        cax_rect  = [(self.LEFT_MARGIN + axes_w + self.CBAR_GAP) / fig_w,
+                     axes_rect[1], self.CBAR_WIDTH / fig_w, axes_rect[3]]
+        title_y   = 1.0 - self.TITLE_TOP_PAD / fig_h
+        footer_y  = footer_block_h / fig_h
+        title_text = "\n".join(title_lines)
+
+        for i in range(self.samples4plot * 2):
+            fig = plt.figure(figsize=(fig_w, fig_h), dpi=120, facecolor="white")
+
+            one_seq_img = seq_frames[i]
+            j = j_indexes[0]
+            one_sample_img = one_seq_img[:, :, :, j].cpu()
+            rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
+            mu_v = torch.squeeze(one_sample_img[1:3, :, :], axis=0)
+
+            ax = fig.add_axes(axes_rect)
+            ax.set_aspect("equal", adjustable="box")
+            cax = fig.add_axes(cax_rect)
+
+            axp = ax.matshow(rho, cmap=plt.cm.Blues, vmin=rho_min, vmax=rho_max)
+            Q = ax.quiver(mu_v[0], -mu_v[1], color="green", angles="xy", scale_units="xy",
+                           scale=self.velScale, minshaft=3.5, width=0.009, headwidth=self.headwidth)
+            cbar = fig.colorbar(axp, cax=cax, orientation="vertical")
+            cbar.set_label("Density rho", fontsize=11)
+            cbar.ax.tick_params(labelsize=10)
+
+            fig.text(0.5, title_y, title_text, ha="center", va="top", fontsize=self.TITLE_FONTSIZE)
+            frame_text = fig.text(0.5, footer_y, "", ha="center", va="top",
+                                   fontsize=footer_fontsize,
+                                   fontweight=None if show_metrics_bottom else "bold")
+
+            def update(frame):
+                j = j_indexes[frame]
+                one_sample_img = one_seq_img[:, :, :, j].cpu()
+                rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
+                mu_v = torch.squeeze(one_sample_img[1:3, :, :], axis=0)
+                axp.set_array(rho)
+                Q.set_UVC(mu_v[0, :, :], -mu_v[1, :, :])
+                if (i + 1) % 2 == 0:
+                    frame_text.set_color('black')
+                    mask_psnr_text = psnr_text = ssim_text = tv_text = ""
+                else:
+                    seq_idx = i // 2
+                    psnr_text = (f'psnr_rho:{seq_psnr[seq_idx, frame, 0]:.3f}, '
+                                 f'psnr_vx:{seq_psnr[seq_idx, frame, 1]:.3f}, '
+                                 f'psnr_vy:{seq_psnr[seq_idx, frame, 2]:.3f}')
+                    mask_psnr_text = (f'mpsnr_rho:{seq_masked_psnr[seq_idx, frame, 0]:.3f}, '
+                                 f'mpsnr_vx:{seq_masked_psnr[seq_idx, frame, 1]:.3f}, '
+                                 f'mpsnr_vy:{seq_masked_psnr[seq_idx, frame, 2]:.3f}')
+                    ssim_text = (f'ssim_rho:{seq_ssim[seq_idx, frame, 0]:.3f}, '
+                                 f'ssim_vx:{seq_ssim[seq_idx, frame, 1]:.3f}, '
+                                 f'ssim_vy:{seq_ssim[seq_idx, frame, 2]:.3f}')
+                    tv_text   = (f'tv_rho:{seq_tv[seq_idx, frame, 0]:.3f}, '
+                                 f'tv_vx:{seq_tv[seq_idx, frame, 1]:.3f}, '
+                                 f'tv_vy:{seq_tv[seq_idx, frame, 2]:.3f}')
+                    frame_text.set_color('black' if frame < self.past_len else 'blue')
+                if show_metrics_bottom:
+                    frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)} \n {psnr_text} \n {mask_psnr_text} \n {ssim_text} \n {tv_text}')
+                else:
+                    frame_text.set_text(f'Frame: {frame + 1}/{len(j_indexes)}')
+
+            ani = animation.FuncAnimation(fig, update, frames=len(j_indexes), repeat=True, blit=False)
+            gif_name = f"{self.output_dir}/mprops_GT_seq_{i // 2 + 1}.gif" if (i + 1) % 2 == 0 else f"{self.output_dir}/mprops_seq_{i // 2 + 1}.gif"
+            ani.save(gif_name, writer=PillowWriter(fps=2), dpi=120, savefig_kwargs={"facecolor": "white"})
+            plt.close(fig)
+
+    def plotDynamic_ori(self, seq_frames, seq_psnr, seq_masked_psnr, seq_ssim, seq_tv, show_metrics_bottom):
         j_indexes = self._get_j_indexes(plotPast="All")
         rho_min, rho_max = 0, self.max_rho4plot
         title =  f"Sampling macroprops with {self.arch}, P/F : {self.past_len}/{self.future_len}"
