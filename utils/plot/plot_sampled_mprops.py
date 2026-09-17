@@ -36,13 +36,14 @@ class MacropropPlotter:
 
     LEFT_MARGIN    = 0.55   # row tick labels
     CBAR_GAP       = 0.10
-    CBAR_WIDTH     = 0.18
-    CBAR_LABEL_PAD = 0.55   # "Density rho" label + colorbar ticks
+    CBAR_WIDTH     = 0.10
+    CBAR_LABEL_PAD = 0.42   # "Density rho" label + colorbar ticks
 
-    TITLE_FONTSIZE    = 13
+    TITLE_FONTSIZE    = 12
     TITLE_TOP_PAD     = 0.06
     TITLE_LINE_H      = 0.24
     TITLE_BOTTOM_GAP  = 0.06
+    TOP_TICKS_H       = 0.20
 
     FOOTER_TOP_GAP        = 0.05
     FOOTER_BOTTOM_PAD     = 0.04
@@ -183,6 +184,7 @@ class MacropropPlotter:
         else:
             title_lines = [f"Sampling macroprops with {self.arch}",
                             f"P/F : {self.past_len}/{self.future_len}"]
+
         title_block_h = self.TITLE_TOP_PAD + len(title_lines) * self.TITLE_LINE_H
 
         footer_fontsize = self.FOOTER_FONTSIZE_MULTI if show_metrics_bottom else self.FOOTER_FONTSIZE_SINGLE
@@ -190,7 +192,8 @@ class MacropropPlotter:
         n_footer_lines  = 5 if show_metrics_bottom else 1
         footer_block_h  = n_footer_lines * footer_line_h + self.FOOTER_BOTTOM_PAD
 
-        fig_h = title_block_h + self.TITLE_BOTTOM_GAP + axes_h + self.FOOTER_TOP_GAP + footer_block_h
+        # title -> [gap + top tick-label row] -> axes -> footer
+        fig_h = (title_block_h + self.TITLE_BOTTOM_GAP + self.TOP_TICKS_H + axes_h + self.FOOTER_TOP_GAP + footer_block_h)
 
         axes_rect = [self.LEFT_MARGIN / fig_w,
                      (footer_block_h + self.FOOTER_TOP_GAP) / fig_h,
