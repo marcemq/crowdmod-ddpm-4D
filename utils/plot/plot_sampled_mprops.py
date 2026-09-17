@@ -156,9 +156,9 @@ class MacropropPlotter:
             else:
                 # ATC's wide 36x12 grid is compact in a 6.2 x 2.4 inch canvas.
                 fig_w, fig_h = figsize
-                axes_top = 0.84
-                min_axes_bottom = 0.06
-                footer_gap = 0.035
+                axes_top = 0.78
+                min_axes_bottom = 0.15
+                footer_gap = 0.045
                 frame_fontsize = 11
 
             fig = plt.figure(figsize=(fig_w, fig_h), dpi=120, facecolor="white")
@@ -194,8 +194,8 @@ class MacropropPlotter:
 
             # A dedicated colorbar axes prevents fig.colorbar(..., ax=ax) from resizing
             # the main plot again.
-            cbar_gap = 0.015
-            cbar_width = 0.019
+            cbar_gap = 0.016
+            cbar_width = 0.020
             cax = fig.add_axes([left + axes_width + cbar_gap, axes_bottom, cbar_width, axes_height])
             # Initial plot and color bar
             axp = ax.matshow(rho, cmap=plt.cm.Blues, vmin=rho_min, vmax=rho_max)
@@ -206,8 +206,8 @@ class MacropropPlotter:
             cbar.ax.tick_params(labelsize=10)
 
             # Figure coordinates keep title and animation text independent of axes size.
-            fig.text(0.5, 0.995, title, ha="center", va="top", fontsize=13)
-            frame_text = fig.text(0.5, frame_text_y, "", ha="center", va="top", fontsize=frame_fontsize, fontweight=None if show_metrics_bottom else "bold")
+            fig.text(0.5, 0.985, title, ha="center", va="top", fontsize=13)
+            frame_text = fig.text(0.5, frame_text_y, "", ha="center", va="bottom", fontsize=frame_fontsize, fontweight=None if show_metrics_bottom else "bold")
 
             def update(frame):
                 j = j_indexes[frame]
