@@ -11,11 +11,11 @@ FIGSIZE_MAP = {
     # Width includes the colorbar; height includes title + bottom text.
     "ATC":               (6.2, 2.3),
     "ATC4TEST":          (6.2, 2.3),
-    "HERMES-T":          (6.2, 3.4),
-    "HERMES-BO":         (7.2, 3.5),
-    "HERMES-BN":         (4.8, 7.0),
-    "HERMES-CR-90":      (6.2, 3.4),
-    "HERMES-CR-90-OBST": (6.2, 3.4),
+    "HERMES-T":          (6.2, 3.0),
+    "HERMES-BO":         (6.0, 3.0),
+    "HERMES-BN":         (4.2, 6.2),
+    "HERMES-CR-90":      (5.8, 3.0),
+    "HERMES-CR-90-OBST": (5.8, 3.0),
 }
 
 FRAME_TEXT_MAP = {
@@ -156,9 +156,9 @@ class MacropropPlotter:
             else:
                 # ATC's wide 36x12 grid is compact in a 6.2 x 2.4 inch canvas.
                 fig_w, fig_h = figsize
-                axes_top = 0.79
-                min_axes_bottom = 0.12
-                footer_gap = 0.050
+                axes_top = 0.84
+                min_axes_bottom = 0.06
+                footer_gap = 0.035
                 frame_fontsize = 11
 
             fig = plt.figure(figsize=(fig_w, fig_h), dpi=120, facecolor="white")
@@ -170,9 +170,9 @@ class MacropropPlotter:
             rho = torch.squeeze(one_sample_img[0:1, :, :], axis=0)
             mu_v = torch.squeeze(one_sample_img[1:3, :, :], axis=0)
 
-            # rho has shape (height, width), for example ATC: (12, 36).
-            left = 0.09
-            axes_width = 0.72
+            # General setup for layout
+            left = 0.07
+            axes_width = 0.80
             data_aspect = float(rho.shape[-1]) / float(rho.shape[-2])
 
             axes_height = axes_width * fig_w / (data_aspect * fig_h)
@@ -194,8 +194,8 @@ class MacropropPlotter:
 
             # A dedicated colorbar axes prevents fig.colorbar(..., ax=ax) from resizing
             # the main plot again.
-            cbar_gap = 0.025
-            cbar_width = 0.020
+            cbar_gap = 0.015
+            cbar_width = 0.019
             cax = fig.add_axes([left + axes_width + cbar_gap, axes_bottom, cbar_width, axes_height])
             # Initial plot and color bar
             axp = ax.matshow(rho, cmap=plt.cm.Blues, vmin=rho_min, vmax=rho_max)
@@ -206,7 +206,7 @@ class MacropropPlotter:
             cbar.ax.tick_params(labelsize=10)
 
             # Figure coordinates keep title and animation text independent of axes size.
-            fig.text(0.5, 0.999, title, ha="center", va="top", fontsize=13)
+            fig.text(0.5, 0.995, title, ha="center", va="top", fontsize=13)
             frame_text = fig.text(0.5, frame_text_y, "", ha="center", va="top", fontsize=frame_fontsize, fontweight=None if show_metrics_bottom else "bold")
 
             def update(frame):
