@@ -88,31 +88,58 @@ def pick_default_plot(keys: list, requested: str = None) -> str:
             return k
     return keys[0] if keys else ""
 
+def _common_token_prefix(names: list, sep: str = "_") -> list:
+    """
+    Longest common prefix at token boundaries (split on `sep`), so
+    'output_atc_conic' / 'output_atc_cosine' -> ['output', 'atc'],
+    not the character-level 'output_atc_co'.
+    """
+    if len(names) < 2:
+        return []
+    prefix = []
+    for toks in zip(*(n.split(sep) for n in names)):
+        if all(t == toks[0] for t in toks):
+            prefix.append(toks[0])
+        else:
+            break
+    return prefix
+
 
 def derive_labels(folders: list, label_mode: str, lambda_divisor: float):
     """
     Turn folder names into short display labels by stripping their longest
-    common prefix (e.g. 'output_hermes_bn_004' -> '004'). With
-    label_mode='lambda', additionally interpret that suffix as an integer
-    scaled by lambda_divisor (default 1000), e.g. '004' -> 'λ=0.004' --
-    this matches the output_hermes_bn_004/016/032/.../128 naming, but is
-    just a display convenience: it's only ever a guess, so it's flagged
-    here and easy to turn off with --label-mode raw.
+    common (token-level) prefix, e.g.
+        output_hermes_bn_004 -> '004'   (lambda sweep)
+        output_atc_conic     -> 'conic' (FM W_TYPE sweep)
+
+    label_mode:
+      'auto'   (default) -> 'lambda' if every suffix is an integer, else 'raw'
+      'lambda' -> interpret integer suffixes as lambda_divisor-scaled values
+                  ('004' -> 'λ=0.004'); non-integer suffixes stay as-is
+      'raw'    -> show the stripped suffix untouched
+
+    Returns (labels_dict, resolved_mode) so the caller can pick a fitting
+    page title / default output filename.
     """
-    prefix = os.path.commonprefix(folders) if len(folders) > 1 else ""
-    labels = {}
+    n = len(_common_token_prefix(folders))
+    suffixes = {}
     for name in folders:
-        suffix = name[len(prefix):] if prefix and name.startswith(prefix) else name
-        suffix = suffix.strip("_-") or name
+        rest = "_".join(name.split("_")[n:])
+        suffixes[name] = rest or name   # fall back to full name if nothing is left
+
+    if label_mode == "auto":
+        label_mode = "lambda" if all(s.isdigit() for s in suffixes.values()) else "raw"
+
+    labels = {}
+    for name, suffix in suffixes.items():
         if label_mode == "lambda":
             try:
-                val = int(suffix) / lambda_divisor
-                labels[name] = f"\u03bb={val:g}"
+                labels[name] = f"\u03bb={int(suffix) / lambda_divisor:g}"
                 continue
             except ValueError:
                 pass
         labels[name] = suffix
-    return labels
+    return labels, label_mode
 
 
 HTML_TEMPLATE = r"""<!DOCTYPE html>
@@ -447,7 +474,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Generate a static HTML page comparing comp_plots/ metric figures "
                     "(e.g. summary_psnr_bn) across several experiment output directories, "
-                    "such as a LAMBDA_GUIDANCE sweep."
+                    "such as a LAMBDA_GUIDANCE sweep (DDPM) or a W_TYPE / INTEGRATOR sweep (FM)."
     )
     parser.add_argument('--parent-dir', type=str, required=True,
                          help='Directory containing the experiment subfolders (e.g. output_hermes_bn_004, '
@@ -457,6 +484,7 @@ if __name__ == '__main__':
                               "(comparison_models_plot.py's default output dir name).")
     parser.add_argument('--output-html', type=str, default=None,
                          help='Path to write the HTML file. Defaults to <parent-dir>/lambda_comparison.html '
+                              'for lambda sweeps, <parent-dir>/sweep_comparison.html otherwise, '
                               'so relative paths resolve correctly.')
     parser.add_argument('--folders-file', type=str, default=None,
                          help="YAML file with a top-level FOLDERS list of experiment dir names to load, "
@@ -468,11 +496,11 @@ if __name__ == '__main__':
     parser.add_argument('--default-plot', type=str, default=None,
                          help='Plot key selected when the page first loads (e.g. summary_psnr_bn). '
                               'Defaults to the first summary_psnr_* plot found, else the first plot alphabetically.')
-    parser.add_argument('--label-mode', type=str, default='lambda', choices=['lambda', 'raw'],
-                         help="How to label each folder. 'lambda' (default) strips the folders' common prefix "
-                              "and interprets the remaining suffix as an int scaled by --lambda-divisor, e.g. "
-                              "'output_hermes_bn_004' -> 'λ=0.004' -- this is a naming assumption, disable with "
-                              "--label-mode raw to just show the stripped suffix as-is.")
+    parser.add_argument('--label-mode', type=str, default='auto', choices=['auto', 'lambda', 'raw'],
+                         help="How to label each folder. 'auto' (default): if every folder suffix is an integer "
+                              "it is treated as a lambda (e.g. '004' -> 'λ=0.004'), otherwise the stripped "
+                              "suffix is shown as-is (e.g. 'conic', 'linear'). 'lambda' forces the lambda "
+                              "interpretation, 'raw' disables it.")
     parser.add_argument('--lambda-divisor', type=float, default=1000,
                          help='Divisor used to convert a folder name suffix to a lambda value in --label-mode lambda '
                               "(e.g. '004' / 1000 -> 0.004).")
@@ -480,7 +508,7 @@ if __name__ == '__main__':
                          help='Browser width (px) the grid is calibrated to show about 4 cards per row at; '
                               'it still reflows fluidly at any actual window size.')
     parser.add_argument('--title', type=str, default=None,
-                         help='Page title. Defaults to the parent-dir name.')
+                         help='Page title. Defaults to a title based on the sweep type and the parent-dir name.')
     args = parser.parse_args()
 
     parent_dir = Path(args.parent_dir)
@@ -513,7 +541,7 @@ if __name__ == '__main__':
     default_plot = pick_default_plot(plot_keys, args.default_plot)
     plot_groups = group_plot_keys(plot_keys)
 
-    labels = derive_labels(folders, args.label_mode, args.lambda_divisor)
+    labels, resolved_mode = derive_labels(folders, args.label_mode, args.lambda_divisor)
     folders_json_ready = [{"dir": name, "label": labels[name]} for name in folders]
 
     # ~3 cards per row at the reference width, same fluid auto-fit/minmax()
@@ -525,8 +553,15 @@ if __name__ == '__main__':
     usable = args.reference_width - padding
     min_card_px = max(280, int((usable - gap * (target_cols - 1)) / target_cols))
 
-    output_path = Path(args.output_html) if args.output_html else parent_dir / "lambda_comparison.html"
-    title = args.title or f"LAMBDA_GUIDANCE comparison — {parent_dir.name}"
+    if resolved_mode == "lambda":
+        default_title = f"LAMBDA_GUIDANCE comparison \u2014 {parent_dir.name}"
+        default_html  = "lambda_comparison.html"
+    else:
+        default_title = f"Sweep comparison \u2014 {parent_dir.name}"
+        default_html  = "sweep_comparison.html"
+
+    output_path = Path(args.output_html) if args.output_html else parent_dir / default_html
+    title = args.title or default_title
 
     generate_html(folders_json_ready, plot_groups, default_plot, output_path, title,
                   min_card_px, args.comp_plots_subdir, len(plot_keys))
@@ -538,5 +573,8 @@ if __name__ == '__main__':
     print(f"\nWrote {output_path}")
     print("Open it directly in a browser (relative paths assume it stays next to the experiment folders).")
 
-# execution example:
-# python3 utils/plot/lambda_comparison_viewer.py --parent-dir=output_hermes_bn_sweep/ --default-plot=summary_psnr_bn
+# execution examples:
+# DDPM lambda sweep:
+#   python3 utils/plot/lambda_comparison_viewer.py --parent-dir=output_hermes_bn_sweep/ --default-plot=summary_psnr_bn
+# FM sweep (conic vs linear):
+#   python3 utils/plot/lambda_comparison_viewer.py --parent-dir=output_atc_fm_sweep/ --default-plot=summary_psnr_atc

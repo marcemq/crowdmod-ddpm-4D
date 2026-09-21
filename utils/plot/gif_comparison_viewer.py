@@ -18,13 +18,13 @@ FRAMES_CACHE_DIRNAME = ".frames_cache"
 # exactly figsize[0]/figsize[1] -- used here only to keep each card's <img>
 # from distorting, not for sizing the grid itself.
 FIGSIZE_MAP = {
-    "ATC":                  (6, 4),
-    "ATC4TEST":             (6, 4),
-    "HERMES-T":             (5, 4),
-    "HERMES-BO":            (7, 4),
-    "HERMES-BN":            (4, 7),
-    "HERMES-CR-90":         (5, 4),
-    "HERMES-CR-90-OBST":    (5, 4),
+    "ATC":               (6.2, 2.3),
+    "ATC4TEST":          (6.2, 2.3),
+    "HERMES-T":          (6.2, 3.0),
+    "HERMES-BO":         (6.0, 3.0),
+    "HERMES-BN":         (4.2, 6.2),
+    "HERMES-CR-90":      (5.8, 3.0),
+    "HERMES-CR-90-OBST": (5.8, 3.0),
 }
 DEFAULT_FIGSIZE = (7, 4)  # fallback when the dataset can't be detected/given
 

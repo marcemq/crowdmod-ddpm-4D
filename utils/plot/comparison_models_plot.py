@@ -362,7 +362,7 @@ if __name__ == '__main__':
         'psnr_otime':     ('PSNR',          files['psnr_otime'],      (10, 42)),
         'mpsnr_otime':    ('MASK_PSNR',     files['mpsnr_otime'],     (10, 42)),
         'ssim_otime':     ('SSIM',          files['ssim_otime'],      (0, 1)),
-        'tv_otime':       ('TV',            files['tv_otime'],        (0, 80)),
+        'tv_otime':       ('TV',            files['tv_otime'],        (0, 25)),
         'max_psnr_otime': ('MAX_PSNR',      files['max_psnr_otime'],  (10, 42)),
         'max_mpsnr_otime':('MAX_MASK_PSNR', files['max_mpsnr_otime'], (10, 42)),
         'max_ssim_otime': ('MAX_SSIM',      files['max_ssim_otime'],  (0, 1)),
