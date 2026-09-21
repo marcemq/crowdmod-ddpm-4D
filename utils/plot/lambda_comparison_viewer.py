@@ -554,11 +554,11 @@ if __name__ == '__main__':
     min_card_px = max(280, int((usable - gap * (target_cols - 1)) / target_cols))
 
     if resolved_mode == "lambda":
-        default_title = f"LAMBDA_GUIDANCE comparison \u2014 {parent_dir.name}"
-        default_html  = "lambda_comparison.html"
-    else:
-        default_title = f"Sweep comparison \u2014 {parent_dir.name}"
-        default_html  = "sweep_comparison.html"
+        default_title = f"DDPM LAMBDA_GUIDANCE comparison \u2014 {parent_dir.name}"
+        default_html  = "ddpm_lambda_comparison.html"
+    else: 
+        default_title = f"FM linear/Conic comparison \u2014 {parent_dir.name}"
+        default_html  = "fm_sweep_comparison.html"
 
     output_path = Path(args.output_html) if args.output_html else parent_dir / default_html
     title = args.title or default_title
