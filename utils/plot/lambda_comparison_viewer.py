@@ -556,7 +556,7 @@ if __name__ == '__main__':
     if resolved_mode == "lambda":
         default_title = f"DDPM LAMBDA_GUIDANCE comparison \u2014 {parent_dir.name}"
         default_html  = "ddpm_lambda_comparison.html"
-    else: 
+    else:
         default_title = f"FM linear/Conic comparison \u2014 {parent_dir.name}"
         default_html  = "fm_sweep_comparison.html"
 
