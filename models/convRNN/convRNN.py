@@ -262,7 +262,7 @@ class ConvRNN_model:
             random_past_samples = past_test[random_past_idx]
             random_future_samples = future_test[random_past_idx]
             predictions = self._generate_convRNN(random_past_samples, random_future_samples, teacher_forcing=False)
-            setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter)
+            setup_predictions_plot(predictions, random_past_idx, random_past_samples, random_future_samples, model_fullname, plotType, plotMprop, plotPast, macropropPlotter, self.cfg.METRICS.SHOW_METRICS_BOTTOM)
             logging.info(f"All sampling macroprops seqs saved in {self.output_dir}")
             break
 

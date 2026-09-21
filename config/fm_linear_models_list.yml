@@ -1,0 +1,10 @@
+# List the exact model dir names, in the order you want them displayed.
+MODELS:
+  - "FM-UNet_mE000_Linear_iEuler600"
+  - "FM-UNet_mE000_Linear_iEuler150"
+  - "FM-UNet_mE000_Linear_iEuler100"
+  - "FM-UNet_mE000_Linear_iEuler50"
+  - "FM-UNet_mE000_Linear_iHeun300"
+  - "FM-UNet_mE000_Linear_iHeun75"
+  - "FM-UNet_mE000_Linear_iHeun50"
+  - "FM-UNet_mE000_Linear_iHeun25"

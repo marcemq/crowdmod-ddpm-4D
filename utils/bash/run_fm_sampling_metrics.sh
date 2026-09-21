@@ -22,7 +22,7 @@ fi
 
 # # ── Dataset config and files ──────────────────────────────────────────────
 configs_list=(
-    "config/ATC_ddpm.yml"
+    "config/ATC.yml"
     "config/HERMES-T.yml"
     "config/HERMES-BO.yml"
     "config/HERMES-BN.yml"
@@ -56,8 +56,8 @@ log_file="logs/run_fm_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$log_file") 2>&1
 
 # ── Integration steps to sweep ───────────────────────────────────────────────────
-euler_steps=(1000 800 600 500)
-heun_steps=(500 400 300 250)
+euler_steps=(600 500 250 150 100 50)
+heun_steps=(300 250 150 75 50 25)
 
 # ── Shared flags ─────────────────────────────────────────────────────────────
 COMMON_FLAGS=(

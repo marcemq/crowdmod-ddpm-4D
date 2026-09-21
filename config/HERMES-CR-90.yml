@@ -158,6 +158,7 @@ MODEL:
           - 0.9
           - 0.999
 METRICS:
+  SHOW_METRICS_BOTTOM: False
   PRED_MPROPS_FACTOR: [1, 1, 1]
   MPROPS_COUNT: 3    # Metrics consider rho, vx, vy predictions only
   MOTION_FEATURE:
