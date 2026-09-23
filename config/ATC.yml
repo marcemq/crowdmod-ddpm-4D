@@ -48,6 +48,7 @@ MODEL:
     SIGMA: 0.001         # Sigma value for DDIM sampling
     DDIM_DIVIDER: 2     # Define number of timesteps for taus subset
     GUIDANCE: 'None'    # Possible values: None, Sparsity, mass_preservation
+    LAMBDA_GUIDANCE: 0.004
     CHECKPOINTS_TO_KEEP: 7
     UNET:
       CONDITION: "Past"
