@@ -13,7 +13,10 @@ def make_short_name(long_name: str) -> str:
     s = s.replace('gNone',     'gN')
     s = s.replace('GRUCell',   'GRU')
     s = s.replace('LSTMCell',  'LSTM')
-    s = s.replace('Linear_intgEuler', 'LpEi')
+    s = s.replace('Linear_iEuler', 'Li_Eu')
+    s = s.replace('Linear_iHeun', 'Li_He')
+    s = s.replace('Conic_iEuler', 'Co_Eu')
+    s = s.replace('Conic_iHeun', 'Co_He')
     s = re.sub(r'_+', '_', s).strip('_')
     return s
 
