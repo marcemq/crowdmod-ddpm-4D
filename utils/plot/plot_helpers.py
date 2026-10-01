@@ -1,11 +1,11 @@
 import itertools
 import re
- 
+
 NBSP = "\u00a0"  # non-breaking space: matplotlib keeps it when measuring text
- 
+
 # Long-name patterns, e.g. "..._Conic_iHeun150" (or "..._Conic_intgHeun150")
 _FM_RE = re.compile(r'(Linear|Conic)_i(?:ntg)?(Euler|Heun)(\d*)')
- 
+
 _W_SHORT     = {'Linear': 'Li', 'Conic': 'Co'}
 _INTEG_SHORT = {'Euler': 'Eu', 'Heun': 'He'}
 _W_ORDER     = {'Linear': 0, 'Conic': 1}
@@ -51,23 +51,23 @@ def model_sort_key(long_name: str):
     if fm:
         w, integ, steps = fm.groups()
         return (3, _W_ORDER.get(w, 9), _INTEG_ORDER.get(integ, 9), int(steps or 0), long_name)
- 
+
     ddim = re.search(r'sDDIMdiv(\d+)', long_name)
     if ddim:
         return (2, 0, _guidance_rank(long_name), int(ddim.group(1)), long_name)
- 
+
     if 'sDDPM' in long_name:
         return (1, 0, _guidance_rank(long_name), 0, long_name)
- 
+
     if long_name.startswith('ConvRNN'):
         return (0, 0, 0, 0, long_name)
- 
+
     return (9, 0, 0, 0, long_name)
 
 # Backward-compatible alias (old name used by comparison_models_plot.py)
 ddim_sort_key = model_sort_key
  
- 
+
 def pad_labels(long_names) -> dict:
     """
     Build {long_name: padded_short_label} where every label has the same length:
@@ -78,17 +78,17 @@ def pad_labels(long_names) -> dict:
     """
     longs  = list(long_names)
     shorts = [make_short_name(n) for n in longs]
- 
+
     # widest number at each "n-th number in the label" position
     max_w = {}
     for s in shorts:
         for i, d in enumerate(re.findall(r'\d+', s)):
             max_w[i] = max(max_w.get(i, 0), len(d))
- 
+
     def zero_pad(s):
         counter = itertools.count()
         return re.sub(r'\d+', lambda m: m.group().zfill(max_w[next(counter)]), s)
- 
+
     shorts = [zero_pad(s) for s in shorts]
     width  = max(len(s) for s in shorts)
     return {n: s.ljust(width, NBSP) for n, s in zip(longs, shorts)}
