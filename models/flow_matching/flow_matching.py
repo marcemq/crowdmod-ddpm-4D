@@ -295,7 +295,7 @@ class FM_model:
             break
 
     def generate_metrics(self, batched_test_data, chunkRepdPastSeq, metric, batches_to_use, samples_per_batch, model_fullname, output_dir):
-        logging.info(f'model full name:{model_fullname}')
+        logging.info(f'model full name: {model_fullname}')
         create_directory(self.output_dir)
 
         self.u_predictor.load_state_dict(torch.load(model_fullname, map_location=torch.device('cpu'), weights_only=True)['model'])
