@@ -122,8 +122,9 @@ def get_checkpoint_save_path(cfg, arch, epoch):
     """
     Return checkpoint save complete path based on arch.
     """
-    backbone_cfg = get_backbone_cfg(cfg, arch)
-    total_epochs = backbone_cfg.TRAIN.EPOCHS
+    if arch in ["DDPM-UNet", "DDPM-DiT", "FM-UNet", "FM-DiT"]:
+        backbone_cfg = get_backbone_cfg(cfg, arch)
+        total_epochs = backbone_cfg.TRAIN.EPOCHS
 
     if arch in ["DDPM-UNet", "DDPM-DiT"]:
         save_path = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, total_epochs, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
