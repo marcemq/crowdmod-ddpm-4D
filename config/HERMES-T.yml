@@ -150,7 +150,7 @@ MODEL:
     ENC_KERNELS: [3, 3, 3, 3, 3, 3]
     FORC_KERNELS: [3, 4, 3, 4, 3, 3, 3]
     TRAIN:
-      EPOCHS: 400
+      EPOCHS: 600
       SOLVER:
         LR: 0.0005
         WEIGHT_DECAY: 0.0001
