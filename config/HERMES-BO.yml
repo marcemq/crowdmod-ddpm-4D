@@ -150,7 +150,7 @@ MODEL:
     ENC_KERNELS: [3, 3, 3, 3, 3, 3]
     FORC_KERNELS: [3, 4, 3, 4, 3, 3, 3]
     TRAIN:
-      EPOCHS: 400
+      EPOCHS: 600
       SOLVER:
         LR: 0.0005
         WEIGHT_DECAY: 0.0001
@@ -160,7 +160,7 @@ MODEL:
         SCHEDULER:
           FACTOR: 0.5       # halve LR on plateau
           PATIENCE: 10      # wait 10 epochs of no improvement before reducing
-          MIN_LR: 0.000001  # floor so LR never dies completely
+          MIN_LR: 0.0000001  # floor so LR never dies completely
 METRICS:
   SHOW_METRICS_BOTTOM: False
   PRED_MPROPS_FACTOR: [1, 1, 1]
