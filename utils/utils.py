@@ -152,8 +152,9 @@ def get_model_fullname(cfg, arch, epoch):
     """
     Return model fullname based on arch.
     """
-    backbone_cfg = get_backbone_cfg(cfg, arch)
-    total_epochs = backbone_cfg.TRAIN.EPOCHS
+    if arch in ["DDPM-UNet", "DDPM-DiT", "FM-UNet", "FM-DiT"]:
+        backbone_cfg = get_backbone_cfg(cfg, arch)
+        total_epochs = backbone_cfg.TRAIN.EPOCHS
 
     if arch in ["DDPM-UNet", "DDPM-DiT"]:
         model_fullname = cfg.DATA_FS.SAVE_DIR+(cfg.MODEL.NAME.format(arch, total_epochs, cfg.DATASET.PAST_LEN, cfg.DATASET.FUTURE_LEN, epoch, "NA"))
