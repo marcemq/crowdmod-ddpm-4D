@@ -71,7 +71,7 @@ def metrics_mgmt(args, cfg):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A script to generate metrics from a trained model.")
     parser.add_argument('--chunk-repd-past-seq', type=int, default=None, help='Chunk of repeteaded past sequences to use when predict.')
-    parser.add_argument('--metric', type=str, default='ALL', help='Name of the metric to compute, options: PSNR|SSIM|MOTION_FEAT_BHATT|ENERGY|RE_DENSITY|ALL')
+    parser.add_argument('--metric', type=str, default='ALL', help='Name of the metric to compute, options: PSNR|SSIM|MF_BHATT|MF_MSE|ENERGY|RE_DENSITY|ALL')
     parser.add_argument('--batches-to-use', type=int, default=1, help='Total of batches to use to compute metrics.')
     parser.add_argument('--config-yml-file', type=str, default='config/4test/ATC_ddpm.yml', help='Configuration YML file for specific dataset.')
     parser.add_argument('--configList-yml-file', type=str, default='config/4test/ATC_ddpm_datafiles.yml',help='Configuration YML macroprops list for specific dataset.')
