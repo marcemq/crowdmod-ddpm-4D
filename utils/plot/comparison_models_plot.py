@@ -9,7 +9,7 @@ from utils.utils import create_directory
 from utils.plot.plot_helpers import model_sort_key, pad_labels
 
 variables  = ['rho', 'vx', 'vy']
-var_labels = [r'$\rho$ (rho)', 'vx', 'vy']
+var_labels = [r'$\rho$', r'$v_x$', r'$v_y$']
 frame_cols = ['f6', 'f7', 'f8']
 frame_labels = ['f+1', 'f+2', 'f+3']
 x = np.arange(len(frame_labels))
@@ -90,7 +90,7 @@ def draw_row_labels(ax, colors, labels):
         ax.text(-0.02, mi, labels[model],
                 transform=ax.get_yaxis_transform(),
                 ha='right', va='center',
-                fontsize=9, color=color,
+                fontsize=11, color=color,
                 family=LABEL_FONT['family'], weight=LABEL_FONT['weight'])
 
 def summary_figsize(n_models, n_cols):
@@ -149,7 +149,7 @@ def metrics_comparison_models(title, files_dict, figure_name, ylim, colors):
 
         ax.set_title(var_label, fontsize=12, fontweight='medium', pad=8)
         ax.set_xticks(x)
-        ax.set_xticklabels(frame_labels, fontsize=9)
+        ax.set_xticklabels(frame_labels, fontsize=10)
         ax.set_xlabel('Predicted frame', fontsize=9, color='#888888')
         ax.set_xlim(-0.4, len(frame_labels) - 0.6)
         ax.set_ylim(ylim)
@@ -225,7 +225,8 @@ def metrics_summary(title, files_dict, figure_name, ylabel, colors, xlim=None, f
     model_names = list(colors.keys())
     y_positions = np.arange(len(model_names))
 
-    fig, axes = plt.subplots(1, 3, figsize=summary_figsize(len(model_names), 3), sharey=True)
+    #fig, axes = plt.subplots(1, 3, figsize=summary_figsize(len(model_names), 3), sharey=True)
+    fig, axes = plt.subplots(1, 3, figsize=(5.5,3.5), sharey=True)
     fig.subplots_adjust(wspace=0.15)
 
     for pi, (var, var_label) in enumerate(zip(variables, var_labels)):
@@ -244,13 +245,13 @@ def metrics_summary(title, files_dict, figure_name, ylabel, colors, xlim=None, f
                           linewidth=0.8, linestyle='--', alpha=0.5)
 
         ax.set_title(var_label, fontsize=13, fontweight='medium', pad=8)
-        ax.set_xlabel(ylabel, fontsize=10, color='#888888')
+        ax.set_xlabel(ylabel, fontsize=9, color='#888888')
         _style_summary_axis(ax, pi, len(model_names), y_positions, xlim)
 
         if pi == 0:
             draw_row_labels(ax, colors, labels)
 
-    fig.suptitle(title, fontsize=13, fontweight='medium', y=1.02)
+    fig.suptitle(title, fontsize=13, fontweight='medium', y=0.96)
     plt.tight_layout()
     plt.subplots_adjust(left=0.15)
     plt.savefig(figure_name + '.pdf', bbox_inches='tight', dpi=300)
@@ -275,7 +276,8 @@ def bathh_comparison_models(title, files_dict, figure_name, colors, xlim=None):
     model_names = list(colors.keys())
     y_positions = np.arange(len(model_names))
 
-    fig, axes = plt.subplots(1, 2, figsize=summary_figsize(len(model_names), 2), sharey=True)
+    #fig, axes = plt.subplots(1, 2, figsize=summary_figsize(len(model_names), 2), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(5,3.5), sharey=True)
     fig.subplots_adjust(wspace=0.15)
 
     for pi, (bhatt_var, bhatt_var_label) in enumerate(zip(bhatt_variables, bhatt_var_labels)):
@@ -283,15 +285,15 @@ def bathh_comparison_models(title, files_dict, figure_name, colors, xlim=None):
 
         for mi, (model, color) in enumerate(colors.items()):
             s = stats[model][bhatt_var]
-            _summary_row(ax, y_positions[mi], color, s['med'], s['q1'], s['q3'])
+            _summary_row(ax, y_positions[mi], color, s['med'], s['q1'], s['q3'], value_fontsize=7.5)
 
-        ax.set_title(bhatt_var_label, fontsize=13, fontweight='medium', pad=8)
+        ax.set_xlabel(bhatt_var_label, fontsize=9, fontweight='medium', labelpad=8, color='#888888')
         _style_summary_axis(ax, pi, len(model_names), y_positions, xlim)
 
         if pi == 0:
             draw_row_labels(ax, colors, labels)
 
-    fig.suptitle(title, fontsize=13, fontweight='medium', y=1.02)
+    fig.suptitle(title, fontsize=13, fontweight='medium', y=0.95)
     plt.tight_layout()
     plt.subplots_adjust(left=0.15)
     plt.savefig(figure_name + '.pdf', bbox_inches='tight', dpi=300)
@@ -366,6 +368,6 @@ if __name__ == '__main__':
     bathh_comparison_models(title=f"{args.dataset} -- BHATT COEF of motion feature summary",
                     files_dict=files['bhatt'],
                     figure_name=str(out_dir / f"summary_bhatt_{short_ds_names[args.dataset]}"),
-                    xlim=(0.2, 0.8),
+                    xlim=(0.0, 1.0),
                     colors=colors,
                 )
