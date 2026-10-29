@@ -16,12 +16,10 @@ class MotionFeatureExtractor:
         self.N = self.r * self.c
         self.num_magnitude_bins = num_magnitude_bins
         self.num_angle_bins = num_angle_bins
-        self.scaler = MinMaxScaler(feature_range=(0, 255))
         self.mag_rho, self.angle_phi = self.compute_norm_angle_4samples()
 
         # Magnitudes are normalized and log-transformed
-        #self.mag_rho_transf          =  self.mag_rho_transform_old()
-        self.mag_rho_transf          =  self.mag_rho_transform()
+        self.mag_rho_transf = self.mag_rho_transform()
 
     def get_vel_vector_field(self, one_seq):
         v_x = one_seq[1, :, :, :]  # Shape (r, c, F)
@@ -32,19 +30,6 @@ class MotionFeatureExtractor:
         # Stack v_x and v_y along the last axis to create U of shape (F, N, 2)
         U = np.stack((v_x_flat, v_y_flat), axis=-1)  # Shape (F, N, 2)
         return U
-
-    def mag_rho_transform_old(self):
-        mag_rho_transf = np.zeros((self.nsamples, self.F, self.N))
-        total_clipped = 0
-        for sample in range(self.nsamples):
-            mag_rho_sample = self.mag_rho[sample]
-            # Bug here: min/max are computed for each 
-            mag_rho_normalized = self.scaler.fit_transform(mag_rho_sample).reshape(self.F, self.N)
-            # Range here is [0,8]
-            mag_rho_log = np.log2(mag_rho_normalized + 1)
-            mag_rho_transf[sample] = mag_rho_log
-
-        return mag_rho_transf
 
     # Compute the magnitude and angle for each key point in the vector field 
     def compute_norm_angle_4samples(self):
@@ -216,12 +201,13 @@ def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.0
                     # Append this histogram to the motion feature vector avoing division by cero
                     mf_vec_pred.append(hist_1D_pred)
                     mf_vec_gt.append(hist_1D_gt)
+
         # Concatenate histograms from all volumes into a single vector
         mf_vec_pred = np.concatenate(mf_vec_pred)
-        mf_vec_pred = mf_vec_pred / (mf_vec_pred.sum() + 1)
+        mf_vec_pred = mf_vec_pred / (mf_vec_pred.sum() + 1e-8)
 
         mf_vec_gt = np.concatenate(mf_vec_gt)
-        mf_vec_gt = mf_vec_gt / (mf_vec_gt.sum() + 1)
+        mf_vec_gt = mf_vec_gt / (mf_vec_gt.sum() + 1e-8)
 
         all_mf_pred.append(mf_vec_pred)
         all_mf_gt.append(mf_vec_gt)
@@ -241,6 +227,9 @@ def get_bhattacharyya_dist_coef(P, Q):
     """
     P = np.array(P)
     Q = np.array(Q)
+    # Check that if both distributions empty means identical
+    if P.sum() < 1e-8 and Q.sum() < 1e-8:
+        return 0.0, 1.0
     # Compute Bhattacharyya coefficient
     bhattacharyya_coef = np.sum(np.sqrt(P * Q))
     # Avoid taking the log of zero by adding a small epsilon
