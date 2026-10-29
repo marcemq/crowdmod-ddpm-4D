@@ -251,7 +251,8 @@ class MetricsGenerator:
         if mse_metric:
             mfeat_mse = self._motion_feature_by_mse(mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt)
         if bhatt_metrics:
-            mfeat_bhatt_dist, mfeat_bhatt_coef = self._motion_feature_by_bhattacharyya(mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt)
+            #mfeat_bhatt_dist, mfeat_bhatt_coef = self._motion_feature_by_bhattacharyya(mf_2D_pred, mf_2D_gt, mf_1D_pred, mf_1D_gt)
+            mfeat_bhatt_dist, mfeat_bhatt_coef = self._motion_feature_by_bhattacharyya(mf_2D_gt, mf_2D_gt, mf_1D_gt, mf_1D_gt)
 
         self.data_dict['MF_MSE']= mfeat_mse
         self.data_dict['MF_BHATT_DIST'] = mfeat_bhatt_dist
