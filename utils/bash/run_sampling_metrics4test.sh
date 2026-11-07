@@ -62,7 +62,7 @@ COMMON_FLAGS=(
 )
 METRICS_FLAGS=(
     --chunk-repd-past-seq=20
-    --batches-to-use=2
+    --batches-to-use=20
 )
 
 # ── Helper: run samples + metrics ────────────────────────────────────────────
@@ -89,7 +89,7 @@ run_pair_convrnn() {
     python3 generate_metrics.py \
         "${COMMON_FLAGS[@]}" \
         "${METRICS_FLAGS[@]}" \
-        --arch="DDPM-UNet"
+        --arch="ConvRNN"
 }
 
 banner() { echo; echo "══════════════════════════════════════"; echo "$@"; echo "══════════════════════════════════════"; }
