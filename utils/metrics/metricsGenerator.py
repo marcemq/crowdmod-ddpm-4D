@@ -241,8 +241,8 @@ class MetricsGenerator:
         """
         Compute motion feature based metric for predicted and gt sequences.
         """
-        mf_extractor_pred = MotionFeatureExtractor(self.pred_seq_list, f=self.params.MOTION_FEATURE.f, k=self.params.MOTION_FEATURE.k, gamma=self.params.MOTION_FEATURE.GAMMA, output_dir=self.output_dir)
-        mf_extractor_gt = MotionFeatureExtractor(self.gt_seq_list, f=self.params.MOTION_FEATURE.f, k=self.params.MOTION_FEATURE.k, gamma=self.params.MOTION_FEATURE.GAMMA, output_dir=self.output_dir)
+        mf_extractor_pred = MotionFeatureExtractor(self.pred_seq_list, f=self.params.MOTION_FEATURE.f, k=self.params.MOTION_FEATURE.k, gamma=self.params.MOTION_FEATURE.GAMMA, output_dir=self.output_dir, rho_thresh=self.params.MOTION_FEATURE.RHO_THRESH)
+        mf_extractor_gt = MotionFeatureExtractor(self.gt_seq_list, f=self.params.MOTION_FEATURE.f, k=self.params.MOTION_FEATURE.k, gamma=self.params.MOTION_FEATURE.GAMMA, output_dir=self.output_dir, rho_thresh=self.params.MOTION_FEATURE.RHO_THRESH)
 
         mf_2D_pred, mf_2D_gt = get_motion_feature_2D_hist(mf_extractor_pred, mf_extractor_gt)
         mf_1D_pred, mf_1D_gt = get_motion_feature_1D_hist(mf_extractor_pred, mf_extractor_gt)

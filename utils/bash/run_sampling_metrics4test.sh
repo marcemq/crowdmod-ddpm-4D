@@ -59,17 +59,29 @@ COMMON_FLAGS=(
     --config-yml-file="$config"
     --configList-yml-file="$datafiles"
     --model-sample-to-load="$MODEL_CKPT"
-    --arch="DDPM-UNet"
 )
 METRICS_FLAGS=(
     --chunk-repd-past-seq=20
-    --batches-to-use=2
+    --batches-to-use=20
 )
 
 # ── Helper: run samples + metrics ────────────────────────────────────────────
-run_pair() {
+run_pair_ddpm() {
     python3 generate_samples.py \
         "${COMMON_FLAGS[@]}" \
+        --arch="DDPM-UNet" \
+        --plot-type="Dynamic" \
+        --from-fixed-past=True
+
+    python3 generate_metrics.py \
+        "${COMMON_FLAGS[@]}" \
+        "${METRICS_FLAGS[@]}"
+}
+
+run_pair_convrnn() {
+    python3 generate_samples.py \
+        "${COMMON_FLAGS[@]}" \
+        --arch="ConvRNN" \
         --plot-type="Dynamic" \
         --from-fixed-past=True
 
@@ -85,12 +97,12 @@ banner "Dataset : ${config}  |  Datafiles : ${datafiles}  |  Ckpt : ${MODEL_CKPT
 
 # 1. Vanilla DDPM
 banner "DDPM — no guidance"
-run_pair
+run_pair_ddpm
 
 # 2. DDPM + sparsity guidance
 banner "DDPM — sparsity guidance"
 yq -i '.MODEL.DDPM.GUIDANCE = "Sparsity"' "$config"
-run_pair
+run_pair_ddpm
 
 git restore $config
 
@@ -103,9 +115,19 @@ for div in "${ddim_div[@]}"; do
     yq -i '.MODEL.DDPM.GUIDANCE  = "Sparsity"' "$config"
     DIV="$div" yq -i '.MODEL.DDPM.DDIM_DIVIDER = env(DIV)' "$config"
 
-    run_pair
+    run_pair_ddpm
     git restore "$config"
 
 done
+
+# 4. ConvRNN with GRU
+banner "ConvRNN with GRU cell"
+run_pair_convrnn
+
+# 5. ConvRNN with LSTM
+banner "ConvRNN with LSTM cell"
+yq -i '.MODEL.CONVRNN.CELL_CLASS = "ConvLSTMCell"' "$config"
+run_pair_convrnn
+git restore "$config"
 
 banner "All runs completed."
