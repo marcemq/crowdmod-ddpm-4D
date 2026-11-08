@@ -3,10 +3,11 @@ from utils.plot.plot_metrics import plot_motion_feat_hist2D, plot_motion_feat_hi
 from sklearn.preprocessing import MinMaxScaler
 
 class MotionFeatureExtractor:
-    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=12, num_angle_bins=12, output_dir=None):
+    def __init__(self, seq_list, f, k, gamma=0.5, num_magnitude_bins=12, num_angle_bins=12, output_dir=None, rho_thresh=0.1):
         self.f = f
         self.k = k
         self.gamma = gamma
+        self.rho_thresh = rho_thresh
         self.nsamples = len(seq_list)
         self.seq_list = seq_list
         self.output_dir = output_dir
@@ -16,12 +17,10 @@ class MotionFeatureExtractor:
         self.N = self.r * self.c
         self.num_magnitude_bins = num_magnitude_bins
         self.num_angle_bins = num_angle_bins
-        self.scaler = MinMaxScaler(feature_range=(0, 255))
         self.mag_rho, self.angle_phi = self.compute_norm_angle_4samples()
 
         # Magnitudes are normalized and log-transformed
-        #self.mag_rho_transf          =  self.mag_rho_transform_old()
-        self.mag_rho_transf          =  self.mag_rho_transform()
+        self.mag_rho_transf = self.mag_rho_transform()
 
     def get_vel_vector_field(self, one_seq):
         v_x = one_seq[1, :, :, :]  # Shape (r, c, F)
@@ -32,19 +31,6 @@ class MotionFeatureExtractor:
         # Stack v_x and v_y along the last axis to create U of shape (F, N, 2)
         U = np.stack((v_x_flat, v_y_flat), axis=-1)  # Shape (F, N, 2)
         return U
-
-    def mag_rho_transform_old(self):
-        mag_rho_transf = np.zeros((self.nsamples, self.F, self.N))
-        total_clipped = 0
-        for sample in range(self.nsamples):
-            mag_rho_sample = self.mag_rho[sample]
-            # Bug here: min/max are computed for each 
-            mag_rho_normalized = self.scaler.fit_transform(mag_rho_sample).reshape(self.F, self.N)
-            # Range here is [0,8]
-            mag_rho_log = np.log2(mag_rho_normalized + 1)
-            mag_rho_transf[sample] = mag_rho_log
-
-        return mag_rho_transf
 
     # Compute the magnitude and angle for each key point in the vector field 
     def compute_norm_angle_4samples(self):
@@ -60,7 +46,10 @@ class MotionFeatureExtractor:
         U = stacked_seqs[:, 1:3, :, :, :].transpose(0, 4, 2, 3, 1).reshape(self.nsamples,self.F, self.N, 2)
         mag_rho   = np.sqrt(U[..., 0]**2 + U[..., 1]**2)  # Shape (nsamples, F, N)
         angle_phi = np.arctan2(U[..., 1], U[..., 0])  # Shape (nsamples, F, N)
-        return mag_rho, angle_phi
+        # zero out velocity where each sequence's OWN density says the cell is empty
+        rho  = stacked_seqs[:, 0].transpose(0, 3, 1, 2).reshape(self.nsamples, self.F, self.N)
+        keep = rho >= self.rho_thresh
+        return np.where(keep, mag_rho, 0.0), np.where(keep, angle_phi, 0.0)
 
     # Transform magnitudes to log space after normalization to [0, 255]
     def mag_rho_transform(self):
@@ -193,8 +182,10 @@ def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.0
                     mag_vol_pred, angle_vol_pred = get_mag_angle_volume(mag_rho_rs_pred, angle_phi_rs_pred, i, row, col, mf_pred.f, mf_pred.k)
                     mag_vol_gt, angle_vol_gt = get_mag_angle_volume(mag_rho_rs_gt, angle_phi_rs_gt, i, row, col, mf_gt.f, mf_gt.k)
                     # Quantize only angles
-                    angle_bins_pred = np.digitize(angle_vol_pred, np.linspace(-np.pi, np.pi, mf_pred.num_angle_bins+1)) - 1
-                    angle_bins_gt = np.digitize(angle_vol_gt, np.linspace(-np.pi, np.pi, mf_gt.num_angle_bins+1)) - 1
+                    edges_pred = np.linspace(-np.pi, np.pi, mf_pred.num_angle_bins + 1)
+                    edges_gt   = np.linspace(-np.pi, np.pi, mf_gt.num_angle_bins + 1)
+                    angle_bins_pred = np.clip(np.digitize(angle_vol_pred, edges_pred) - 1, 0, mf_pred.num_angle_bins - 1)
+                    angle_bins_gt   = np.clip(np.digitize(angle_vol_gt,   edges_gt)   - 1, 0, mf_gt.num_angle_bins - 1)
                     # Initialize a 1D histogram (8 bins for angles)
                     hist_1D_pred = np.zeros(mf_pred.num_angle_bins)
                     hist_1D_gt = np.zeros(mf_gt.num_angle_bins)
@@ -216,12 +207,13 @@ def get_motion_feature_1D_hist(mf_pred, mf_gt, num_plot_hist1D=10, plot_prob=0.0
                     # Append this histogram to the motion feature vector avoing division by cero
                     mf_vec_pred.append(hist_1D_pred)
                     mf_vec_gt.append(hist_1D_gt)
+
         # Concatenate histograms from all volumes into a single vector
         mf_vec_pred = np.concatenate(mf_vec_pred)
-        mf_vec_pred = mf_vec_pred / (mf_vec_pred.sum() + 1)
+        mf_vec_pred = mf_vec_pred / (mf_vec_pred.sum() + 1e-8)
 
         mf_vec_gt = np.concatenate(mf_vec_gt)
-        mf_vec_gt = mf_vec_gt / (mf_vec_gt.sum() + 1)
+        mf_vec_gt = mf_vec_gt / (mf_vec_gt.sum() + 1e-8)
 
         all_mf_pred.append(mf_vec_pred)
         all_mf_gt.append(mf_vec_gt)
@@ -241,6 +233,9 @@ def get_bhattacharyya_dist_coef(P, Q):
     """
     P = np.array(P)
     Q = np.array(Q)
+    # Check that if both distributions empty means identical
+    if P.sum() < 1e-8 and Q.sum() < 1e-8:
+        return 0.0, 1.0
     # Compute Bhattacharyya coefficient
     bhattacharyya_coef = np.sum(np.sqrt(P * Q))
     # Avoid taking the log of zero by adding a small epsilon
