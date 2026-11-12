@@ -90,7 +90,7 @@ def draw_row_labels(ax, colors, labels):
         ax.text(-0.02, mi, labels[model],
                 transform=ax.get_yaxis_transform(),
                 ha='right', va='center',
-                fontsize=11, color=color,
+                fontsize=14, color=color,
                 family=LABEL_FONT['family'], weight=LABEL_FONT['weight'])
 
 def summary_figsize(n_models, n_cols):
@@ -147,10 +147,10 @@ def metrics_comparison_models(title, files_dict, figure_name, ylim, colors):
                 label=labels[model],
             )
 
-        ax.set_title(var_label, fontsize=12, fontweight='medium', pad=8)
+        ax.set_title(var_label, fontsize=14, fontweight='medium', pad=8)
         ax.set_xticks(x)
         ax.set_xticklabels(frame_labels, fontsize=10)
-        ax.set_xlabel('Predicted frame', fontsize=9, color='#888888')
+        #ax.set_xlabel('Predicted frame', fontsize=9, color='#888888')
         ax.set_xlim(-0.4, len(frame_labels) - 0.6)
         ax.set_ylim(ylim)
         ax.tick_params(axis='y', labelsize=9, colors='#888888')
@@ -160,6 +160,8 @@ def metrics_comparison_models(title, files_dict, figure_name, ylim, colors):
         ax.yaxis.grid(True, color='#eeeeee', zorder=0)
         ax.set_axisbelow(True)
 
+    fig.suptitle(title, fontsize=13, fontweight='medium', y=0.95)
+
     legend_handles = [
         mlines.Line2D([], [], color=color, linewidth=0.5, linestyle='-', marker='o',
                       markersize=3, markerfacecolor=color, markeredgecolor=color,
@@ -167,14 +169,15 @@ def metrics_comparison_models(title, files_dict, figure_name, ylim, colors):
         for model, color in colors.items()
     ]
 
-    fig.suptitle(title, fontsize=13, fontweight='medium', y=0.95)
     fig.legend(
         handles=legend_handles,
         loc='lower center',
         ncol=4,
-        prop={'family': LABEL_FONT['family'], 'size': 8},
+        prop={'family': LABEL_FONT['family'], 'size': 9.5},
         frameon=False,
-        bbox_to_anchor=(0.5, -0.15),
+        bbox_to_anchor=(0.5, -0.17),
+        columnspacing=0.5,  # default is 2.0
+        handletextpad=0.4,  # default is 0.8
     )
 
     plt.tight_layout()
@@ -226,7 +229,7 @@ def metrics_summary(title, files_dict, figure_name, ylabel, colors, xlim=None, f
     y_positions = np.arange(len(model_names))
 
     #fig, axes = plt.subplots(1, 3, figsize=summary_figsize(len(model_names), 3), sharey=True)
-    fig, axes = plt.subplots(1, 3, figsize=(5.5,3.5), sharey=True)
+    fig, axes = plt.subplots(1, 3, figsize=(5.5,4.2), sharey=True)
     fig.subplots_adjust(wspace=0.15)
 
     for pi, (var, var_label) in enumerate(zip(variables, var_labels)):
@@ -234,7 +237,7 @@ def metrics_summary(title, files_dict, figure_name, ylabel, colors, xlim=None, f
 
         for mi, (model, color) in enumerate(colors.items()):
             s = stats[model][var]
-            _summary_row(ax, y_positions[mi], color, s['med'], s['q1'], s['q3'], value_fontsize=value_fontsize)
+            _summary_row(ax, y_positions[mi], color, s['med'], s['q1'], s['q3'], value_fontsize=10)
 
             if files_max_dict:
                 max_med = max_stats[model][var]
@@ -244,14 +247,14 @@ def metrics_summary(title, files_dict, figure_name, ylabel, colors, xlim=None, f
                 ax.hlines(y_positions[mi], s['med'], max_med, color=color,
                           linewidth=0.8, linestyle='--', alpha=0.5)
 
-        ax.set_title(var_label, fontsize=13, fontweight='medium', pad=8)
-        ax.set_xlabel(ylabel, fontsize=9, color='#888888')
+        ax.set_title(var_label, fontsize=14, fontweight='bold', pad=8)
+        #ax.set_xlabel(ylabel, fontsize=9, color='#888888')
         _style_summary_axis(ax, pi, len(model_names), y_positions, xlim)
 
         if pi == 0:
             draw_row_labels(ax, colors, labels)
 
-    fig.suptitle(title, fontsize=13, fontweight='medium', y=0.96)
+    fig.suptitle(title, fontsize=14, fontweight='medium', y=0.96)
     plt.tight_layout()
     plt.subplots_adjust(left=0.15)
     plt.savefig(figure_name + '.pdf', bbox_inches='tight', dpi=300)
@@ -332,18 +335,18 @@ if __name__ == '__main__':
         'mpsnr_otime':    ('MASK_PSNR',     files['mpsnr_otime'],     (10, 42)),
         'ssim_otime':     ('SSIM',          files['ssim_otime'],      (0, 1)),
         'tv_otime':       ('TV',            files['tv_otime'],        tv_range),
-        'max_psnr_otime': ('MAX_PSNR',      files['max_psnr_otime'],  (10, 42)),
+        'max_psnr_otime': ('MAX_PSNR',      files['max_psnr_otime'],  (20, 45)),
         'max_mpsnr_otime':('MAX_MASK_PSNR', files['max_mpsnr_otime'], (10, 42)),
-        'max_ssim_otime': ('MAX_SSIM',      files['max_ssim_otime'],  (0, 1)),
+        'max_ssim_otime': ('MAX_SSIM',      files['max_ssim_otime'],  (0.2, 1.2)),
     }
 
     plots_config = {
-        'psnr':     ('PSNR',          files['psnr'],      (10, 40)),
-        'mpsnr':    ('MASK_PSNR',     files['mpsnr'],     (10, 40)),
-        'ssim':     ('SSIM',          files['ssim'],      (0.2, 1)),
-        'max_psnr': ('MAX_PSNR',      files['max_psnr'],  (10, 40)),
-        'max_mpsnr':('MAX_MASK_PSNR', files['max_mpsnr'], (10, 40)),
-        'max_ssim': ('MAX_SSIM',      files['max_ssim'],  (0.2, 1)),
+        'psnr':     ('PSNR',          files['psnr'],      (10, 50)),
+        'mpsnr':    ('MASK_PSNR',     files['mpsnr'],     (10, 50)),
+        'ssim':     ('SSIM',          files['ssim'],      (0.4, 1.2)),
+        'max_psnr': ('MAX_PSNR',      files['max_psnr'],  (20, 40)),
+        'max_mpsnr':('MAX_MASK_PSNR', files['max_mpsnr'], (10, 50)),
+        'max_ssim': ('MAX_SSIM',      files['max_ssim'],  (0.3, 1.0)),
     }
 
     for key, (metric_label, files_dict, ylim) in plots_config_otime.items():
