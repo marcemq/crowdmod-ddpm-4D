@@ -43,7 +43,7 @@ class FM_model:
 
         self.integrators = {
             "Euler": self.sampling_with_euler,
-            "Heun": self.sampling_with_euler,
+            "Heun": self.sampling_with_heun,
         }
 
     def _get_u_predictor_cfg(self):
