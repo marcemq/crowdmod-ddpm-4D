@@ -74,6 +74,11 @@ datafiles="${datafiles_list[$DS_IDX]}"
 # ── Always restore config on exit (clean or crash) ──────────────────────────
 trap 'echo "[trap] Restoring $config"; git restore "$config"' EXIT
 
+# ── Log file (one per dataset run) ──────────────────────────────────────────
+mkdir -p logs
+log_file="logs/run_fm_$(basename "$config" .yml)_$(date +%Y%m%d_%H%M%S).log"
+exec > >(tee -a "$log_file") 2>&1
+
 # ── Sweep parameters ────────────────────────────────────────────────────────
 IFS=',' read -ra lambda_list <<< "$LAMBDAS"
 ddim_div=(2 4 5 10 20 50 100)

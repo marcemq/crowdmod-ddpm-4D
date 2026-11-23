@@ -71,8 +71,9 @@ datafiles="${datafiles_list[$DS_IDX]}"
 # ── Always restore config on exit (clean or crash) ──────────────────────────
 trap 'echo "[trap] Restoring $config"; git restore "$config"' EXIT
 
-# ── Log file ───────────────────────────────────────────────────
-log_file="logs/run_fm_$(date +%Y%m%d_%H%M%S).log"
+# ── Log file (one per dataset run) ──────────────────────────────────────────
+mkdir -p logs
+log_file="logs/run_fm_$(basename "$config" .yml)_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$log_file") 2>&1
 
 # ── Integration steps to sweep ───────────────────────────────────────────────────
@@ -93,8 +94,8 @@ COMMON_FLAGS=(
     --arch="FM-UNet"
 )
 METRICS_FLAGS=(
-    --chunk-repd-past-seq=2
-    --batches-to-use=2
+    --chunk-repd-past-seq=20
+    --batches-to-use=20
 )
 
 # ── Helper: run samples + metrics ────────────────────────────────────────────
@@ -155,10 +156,8 @@ run_experiment() {
     check_clean_out
     reset_config                                   # reset FIRST, then edit
 
-    W="$w_type" INTG="$intg" \
-        yq -i '.MODEL.FM.W_TYPE = env(W) | .MODEL.FM.INTEGRATOR = env(INTG)' "$config"
-    STEPS="$steps" \
-        yq -i ".MODEL.FM.INTEGRATOR_STEPS.${intg^^} = env(STEPS)" "$config"
+    W="$w_type" INTG="$intg" yq -i '.MODEL.FM.W_TYPE = env(W) | .MODEL.FM.INTEGRATOR = env(INTG)' "$config"
+    STEPS="$steps" yq -i ".MODEL.FM.INTEGRATOR_STEPS.${intg^^} = env(STEPS)" "$config"
 
     run_pair
     collect "$w_type"
