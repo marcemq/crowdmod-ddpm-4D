@@ -93,8 +93,8 @@ COMMON_FLAGS=(
     --arch="FM-UNet"
 )
 METRICS_FLAGS=(
-    --chunk-repd-past-seq=20
-    --batches-to-use=20
+    --chunk-repd-past-seq=2
+    --batches-to-use=2
 )
 
 # ── Helper: run samples + metrics ────────────────────────────────────────────
