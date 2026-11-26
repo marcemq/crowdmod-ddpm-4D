@@ -43,7 +43,7 @@ class FM_model:
 
         self.integrators = {
             "Euler": self.sampling_with_euler,
-            "Heun": self.sampling_with_euler,
+            "Heun": self.sampling_with_heun,
         }
 
     def _get_u_predictor_cfg(self):
@@ -207,14 +207,16 @@ class FM_model:
         # Noise from a normal distribution
         xt = torch.randn((nsamples, self.mprops_count, self.cfg.MACROPROPS.ROWS, self.cfg.MACROPROPS.COLS, self.cfg.DATASET.FUTURE_LEN), device=self.device)
         time_max_pos = self.cfg.MODEL.FM.TIME_MAX_POS
-        delta = 1 / self.cfg.MODEL.FM.INTEGRATOR_STEPS.EULER
+        n_steps = self.cfg.MODEL.FM.INTEGRATOR_STEPS.EULER
+        delta = 1.0 / n_steps
 
-        pbar = tqdm(range(1, self.cfg.MODEL.FM.INTEGRATOR_STEPS.EULER + 1), desc="Sampling (Euler)")
+        pbar = tqdm(range(1, n_steps + 1), desc="Sampling (Euler)")
 
         # Cycle over the integration steps
-        for i, t in enumerate(torch.linspace(0, 1, self.cfg.MODEL.FM.INTEGRATOR_STEPS.EULER, device=self.device), start=1):
-            time_indices = (t * time_max_pos).clamp(0, time_max_pos-1).long()
-            time_indices = time_indices.to(self.device).expand(xt.size(0))
+        for i in range(n_steps):
+            t = i * delta
+            idx = min(int(t * time_max_pos + 1e-6), time_max_pos - 1)
+            time_indices = torch.full((xt.size(0),), idx, dtype=torch.long, device=self.device)
             # Predict u 'velocity'
             u = self.u_predictor(xt, time_indices, past)
             # Euler Integration step
@@ -231,19 +233,24 @@ class FM_model:
         # Noise from a normal distribution
         xt = torch.randn((nsamples, self.mprops_count, self.cfg.MACROPROPS.ROWS, self.cfg.MACROPROPS.COLS, self.cfg.DATASET.FUTURE_LEN), device=self.device)
         time_max_pos = self.cfg.MODEL.FM.TIME_MAX_POS
-        delta = 1 / self.cfg.MODEL.FM.INTEGRATOR_STEPS.HEUN
+        n_steps = self.cfg.MODEL.FM.INTEGRATOR_STEPS.HEUN
+        delta = 1 / n_steps
 
-        pbar = tqdm(range(1, self.cfg.MODEL.FM.INTEGRATOR_STEPS.HEUN + 1), desc="Sampling (Heun)")
-        delta_k2 = 1
+        pbar = tqdm(range(1, n_steps + 1), desc="Sampling (Heun)")
+
         # Cycle over the integration steps
-        for i, t in enumerate(torch.linspace(0, 1, self.cfg.MODEL.FM.INTEGRATOR_STEPS.HEUN, device=self.device), start=1):
-            time_indices = (t * time_max_pos).clamp(0, time_max_pos-1).long()
-            time_indices = time_indices.to(self.device).expand(xt.size(0))
+        for i in range(n_steps):
+            t = i * delta
+            idx      = min(int(t * time_max_pos + 1e-6), time_max_pos - 1)
+            idx_next = min(int((t + delta) * time_max_pos + 1e-6), time_max_pos - 1)
+            time_indices      = torch.full((xt.size(0),), idx,      dtype=torch.long, device=self.device)
+            time_indices_next = torch.full((xt.size(0),), idx_next, dtype=torch.long, device=self.device)
+
             # Apply Heun scheme RK2
             k1 = self.u_predictor(xt, time_indices, past)
             x_tilde = xt + delta * k1
-            k2 = self.u_predictor(x_tilde, time_indices + delta_k2, past)
-            xt = xt + 0.5*delta * (k1+k2)
+            k2 = self.u_predictor(x_tilde, time_indices_next, past)
+            xt = xt + 0.5 * delta * (k1 + k2)
             pbar.update(1)
 
         pbar.close()
