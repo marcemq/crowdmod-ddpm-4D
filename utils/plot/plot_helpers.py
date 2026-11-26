@@ -16,14 +16,14 @@ def make_short_name(long_name: str) -> str:
     Derive a short plot label from a long model directory name.
     """
     s = long_name
-    s = s.replace('DDPM-UNet', 'DIF-U')
-    s = s.replace('FM-UNet',   'FM-U')
+    s = s.replace('DDPM-UNet', 'DIF')
+    s = s.replace('FM-UNet',   'FM')
     s = s.replace('ConvRNN',   'Conv')
     s = re.sub(r'sDDIMdiv(\d+)', r'DDIM_D\1', s)
     s = s.replace('gSparsity', 'gS')
     s = s.replace('gNone',     'gN')
-    s = s.replace('GRUCell',   'GRU')
-    s = s.replace('LSTMCell',  'LSTM')
+    s = s.replace('_GRUCell',   'GRU')
+    s = s.replace('_LSTMCell',  'LSTM')
     s = _FM_RE.sub(
         lambda m: f"{_W_SHORT[m.group(1)]}_{_INTEG_SHORT[m.group(2)]}{m.group(3)}", s
     )
